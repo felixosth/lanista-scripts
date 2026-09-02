@@ -1,0 +1,2305 @@
+{
+    "id": 447087,
+    "may_see": true,
+    "type": 15,
+    "mode": 0,
+    "mode_display": "Normal",
+    "is_adventure_battle": false,
+    "is_monster_ladder_battle": true,
+    "live_pause": 10,
+    "show_battle_info": true,
+    "type_display": "Monsterjakt",
+    "audience_count": 46673,
+    "rounds": [
+        {
+            "order": -1,
+            "text": [
+                {
+                    "key": "battle.setup_round",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ledare",
+                "off_hand_id": 22,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 0,
+                    "damage_done": 0,
+                    "damage_taken": 0,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 0,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 0,
+                    "total_damage_done": 0,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 166,
+                "fightable_id": 1646,
+                "focused_role": "Ingen",
+                "main_hand_id": 36,
+                "battle_tactic": 7,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 166,
+                "battle_tactic_name": "OFFENSIVE_LIGHT",
+                "give_up_percentage": 0.2
+            }
+        },
+        {
+            "order": 0,
+            "text": [
+                {
+                    "key": "battle.used_live_consumable",
+                    "args": {
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "consumable_name": "Droppar av Fokus",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.consumable_buff_weaponskill.consumable_buff_weaponskill_text_2",
+                    "args": {
+                        "value": "+5",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "weaponskill": "yxor",
+                        "consumable_name": "Droppar av Fokus",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.consumable_buff_weaponskill.consumable_buff_weaponskill_text",
+                    "args": {
+                        "value": "+5",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "weaponskill": "k\u00e4ttingvapen",
+                        "consumable_name": "Droppar av Fokus",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.consumable_buff_weaponskill.consumable_buff_weaponskill_text_2",
+                    "args": {
+                        "value": "+5",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "weaponskill": "Obev\u00e4pnat",
+                        "consumable_name": "Droppar av Fokus",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.consumable_buff_weaponskill.consumable_buff_weaponskill_text_4",
+                    "args": {
+                        "value": "+5",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "weaponskill": "hammare",
+                        "consumable_name": "Droppar av Fokus",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.consumable_buff_weaponskill.consumable_buff_weaponskill_text_2",
+                    "args": {
+                        "value": "+5",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "weaponskill": "sk\u00f6ldar",
+                        "consumable_name": "Droppar av Fokus",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.consumable_buff_weaponskill.consumable_buff_weaponskill_text",
+                    "args": {
+                        "value": "+5",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "weaponskill": "stickvapen",
+                        "consumable_name": "Droppar av Fokus",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.consumable_buff_weaponskill.consumable_buff_weaponskill_text_2",
+                    "args": {
+                        "value": "+5",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "weaponskill": "stavar",
+                        "consumable_name": "Droppar av Fokus",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.consumable_buff_weaponskill.consumable_buff_weaponskill_text",
+                    "args": {
+                        "value": "+5",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "weaponskill": "sv\u00e4rd",
+                        "consumable_name": "Droppar av Fokus",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.ranged.ranged_attack_text_1",
+                    "args": {
+                        "damage": "<strong>1<\/strong>",
+                        "weapon": "Slunga",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "body_hit_area": "benen",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.enchant_debuff_stat.enchant_debuff_stat_text_2",
+                    "args": {
+                        "stat": "Undvika anfall",
+                        "value": 5,
+                        "weapon": "Slunga",
+                        "enchant": "Slunga",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.enchant_debuff_weaponskill.enchant_debuff_weaponskill_text_4",
+                    "args": {
+                        "value": 4,
+                        "weapon": "Slunga",
+                        "enchant": "Slunga",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "weaponskill": "k\u00e4ttingvapen, hammare, stickvapen och sv\u00e4rd",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.enchant_debuff_weaponskill.enchant_debuff_weaponskill_text_4",
+                    "args": {
+                        "value": 4,
+                        "weapon": "Slunga",
+                        "enchant": "Slunga",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "weaponskill": "yxor",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.start.start_text_12",
+                    "args": {
+                        "weapon": "Krigsyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.dodge.dodge_text_10",
+                    "args": {
+                        "weapon": "Krigsyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage_intro",
+                    "args": {
+                        "player": "<red>Fullvuxen Drakorm<\/red>",
+                        "battle_effect_text": "g\u00f6r pl\u00f6tsligt ett utfall i raseri f\u00f6r att skada en motst\u00e5ndare.",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage",
+                    "args": {
+                        "damage": "<strong>16<\/strong>",
+                        "player": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break_simple",
+                    "args": []
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_3",
+                    "args": {
+                        "weapon": "Drakbett",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Umbrayil<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_5",
+                    "args": {
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Umbrayil<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.weapon_block.weapon_block_text_5",
+                    "args": {
+                        "damage": "<strong>21<\/strong>",
+                        "weapon": "Drakbett",
+                        "block_item": "Krigssv\u00e4rd",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Umbrayil<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_21",
+                    "args": {
+                        "weapon": "Krigsyxa",
+                        "player_one": "<green>Virtuos Mjurnira<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.miss.miss_text_8",
+                    "args": {
+                        "weapon": "Krigsyxa",
+                        "player_one": "<green>Virtuos Mjurnira<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_4",
+                    "args": {
+                        "weapon": "Krigssv\u00e4rd",
+                        "player_one": "<green>Virtuos Umbrayil<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.dodge.dodge_text_7",
+                    "args": {
+                        "weapon": "Krigssv\u00e4rd",
+                        "player_one": "<green>Virtuos Umbrayil<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage_intro",
+                    "args": {
+                        "player": "<red>Fullvuxen Drakorm<\/red>",
+                        "battle_effect_text": "g\u00f6r pl\u00f6tsligt ett utfall i raseri f\u00f6r att skada en motst\u00e5ndare.",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage",
+                    "args": {
+                        "damage": "<strong>18<\/strong>",
+                        "player": "<green>Virtuos Umbrayil<\/green>",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break_simple",
+                    "args": []
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_7",
+                    "args": {
+                        "weapon": "Dubbelyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_5",
+                    "args": {
+                        "damage": "<strong>17<\/strong>",
+                        "weapon": "Dubbelyxa",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_6",
+                    "args": {
+                        "weapon": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_8",
+                    "args": {
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_2",
+                    "args": {
+                        "damage": "<strong>5<\/strong>",
+                        "weapon": "N\/A",
+                        "armor_name": "Onkhv\u00e4vsskor",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "armor_block": 2,
+                        "body_hit_area": "f\u00f6tterna",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.racials.orc_proc",
+                    "args": {
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_3",
+                    "args": {
+                        "weapon": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_6",
+                    "args": {
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_7",
+                    "args": {
+                        "damage": "<strong>6 <i class=\"fa fa-stars\"><\/i><\/strong>",
+                        "weapon": "N\/A",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "body_hit_area": "f\u00f6tterna",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.critical_attack_suffix.critical_attack_suffix_text_5",
+                    "args": {
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.racials.absorption",
+                    "args": {
+                        "damage": "<strong>2<\/strong>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_7",
+                    "args": {
+                        "weapon": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Umbrayil<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_9",
+                    "args": {
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Umbrayil<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_4",
+                    "args": {
+                        "damage": "<strong>7<\/strong>",
+                        "weapon": "N\/A",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Umbrayil<\/green>",
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.battle_effects_damage_intro",
+                    "args": {
+                        "player": "<red>Fullvuxen Drakorm<\/red>",
+                        "battle_effect_text": "g\u00f6r ett utfall och skadar obarmh\u00e4rtigt alla motst\u00e5ndare samtidigt.",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage",
+                    "args": {
+                        "damage": "<strong>18<\/strong>",
+                        "player": "<green>Virtuos Umbrayil<\/green>",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage",
+                    "args": {
+                        "damage": "<strong>16<\/strong>",
+                        "player": "<green>Virtuos Mjurnira<\/green>",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage",
+                    "args": {
+                        "damage": "<strong>16<\/strong>",
+                        "player": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break_simple",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ledare",
+                "off_hand_id": 22,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 0,
+                    "damage_done": 18,
+                    "damage_taken": 37,
+                    "critical_hits": 1,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 1,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 17,
+                    "total_damage_done": 18,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 129,
+                "fightable_id": 1646,
+                "focused_role": "Ingen",
+                "main_hand_id": 36,
+                "battle_tactic": 7,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 166,
+                "battle_tactic_name": "OFFENSIVE_LIGHT",
+                "give_up_percentage": 0.2
+            }
+        },
+        {
+            "order": 1,
+            "text": [
+                {
+                    "key": "battle.start.start_text_3",
+                    "args": {
+                        "weapon": "Krigsyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_1",
+                    "args": {
+                        "damage": "<strong>19<\/strong>",
+                        "weapon": "Krigsyxa",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "body_hit_area": "f\u00f6tterna",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_3",
+                    "args": {
+                        "weapon": "Drakbett",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_1",
+                    "args": {
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_3",
+                    "args": {
+                        "damage": "<strong>20<\/strong>",
+                        "weapon": "Drakbett",
+                        "armor_name": "Onkhv\u00e4vshandskar",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "armor_block": 2,
+                        "body_hit_area": "armen",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_3",
+                    "args": {
+                        "weapon": "Krigsyxa",
+                        "player_one": "<green>Virtuos Mjurnira<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_2",
+                    "args": {
+                        "damage": "<strong>25<\/strong>",
+                        "weapon": "Krigsyxa",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Virtuos Mjurnira<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_2",
+                    "args": {
+                        "weapon": "Krigssv\u00e4rd",
+                        "player_one": "<green>Virtuos Umbrayil<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_5",
+                    "args": {
+                        "damage": "<strong>29<\/strong>",
+                        "weapon": "Krigssv\u00e4rd",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Virtuos Umbrayil<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "body_hit_area": "benen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_1",
+                    "args": {
+                        "weapon": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Umbrayil<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_9",
+                    "args": {
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Umbrayil<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.weapon_block.weapon_block_text_6",
+                    "args": {
+                        "damage": "<strong>9<\/strong>",
+                        "weapon": "N\/A",
+                        "block_item": "Krigssv\u00e4rd",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Umbrayil<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_1",
+                    "args": {
+                        "weapon": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_9",
+                    "args": {
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_2",
+                    "args": {
+                        "damage": "<strong>6<\/strong>",
+                        "weapon": "N\/A",
+                        "armor_name": "Onkhv\u00e4vsjacka",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "armor_block": 3,
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_1",
+                    "args": {
+                        "weapon": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_2",
+                    "args": {
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.dodge.dodge_text_1",
+                    "args": {
+                        "weapon": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.battle_effects_damage_intro",
+                    "args": {
+                        "player": "<red>Fullvuxen Drakorm<\/red>",
+                        "battle_effect_text": "g\u00f6r ett utfall och skadar obarmh\u00e4rtigt alla motst\u00e5ndare samtidigt.",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage",
+                    "args": {
+                        "damage": "<strong>18<\/strong>",
+                        "player": "<green>Virtuos Umbrayil<\/green>",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage",
+                    "args": {
+                        "damage": "<strong>16<\/strong>",
+                        "player": "<green>Virtuos Mjurnira<\/green>",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage",
+                    "args": {
+                        "damage": "<strong>16<\/strong>",
+                        "player": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break_simple",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ledare",
+                "off_hand_id": 22,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 1,
+                    "misses": 0,
+                    "damage_done": 19,
+                    "damage_taken": 42,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 3,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 19,
+                    "total_damage_done": 19,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 87,
+                "fightable_id": 1646,
+                "focused_role": "Ingen",
+                "main_hand_id": 36,
+                "battle_tactic": 7,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 166,
+                "battle_tactic_name": "OFFENSIVE_LIGHT",
+                "give_up_percentage": 0.2
+            }
+        },
+        {
+            "order": 2,
+            "text": [
+                {
+                    "key": "battle.start.start_text_15",
+                    "args": {
+                        "weapon": "Krigsyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_1",
+                    "args": {
+                        "damage": "<strong>23<\/strong>",
+                        "weapon": "Krigsyxa",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_17",
+                    "args": {
+                        "weapon": "Drakbett",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Umbrayil<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_3",
+                    "args": {
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Umbrayil<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_2",
+                    "args": {
+                        "damage": "<strong>23 <i class=\"fa fa-stars\"><\/i><\/strong>",
+                        "weapon": "Drakbett",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Umbrayil<\/green>",
+                        "body_hit_area": "benen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.critical_attack_suffix.critical_attack_suffix_text_6",
+                    "args": {
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_14",
+                    "args": {
+                        "weapon": "Krigsyxa",
+                        "player_one": "<green>Virtuos Mjurnira<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_4",
+                    "args": {
+                        "damage": "<strong>25<\/strong>",
+                        "weapon": "Krigsyxa",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Virtuos Mjurnira<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "body_hit_area": "benen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_9",
+                    "args": {
+                        "weapon": "Krigssv\u00e4rd",
+                        "player_one": "<green>Virtuos Umbrayil<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.dodge.dodge_text_8",
+                    "args": {
+                        "weapon": "Krigssv\u00e4rd",
+                        "player_one": "<green>Virtuos Umbrayil<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage_intro",
+                    "args": {
+                        "player": "<red>Fullvuxen Drakorm<\/red>",
+                        "battle_effect_text": "g\u00f6r pl\u00f6tsligt ett utfall i raseri f\u00f6r att skada en motst\u00e5ndare.",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage",
+                    "args": {
+                        "damage": "<strong>18<\/strong>",
+                        "player": "<green>Virtuos Umbrayil<\/green>",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break_simple",
+                    "args": []
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_5",
+                    "args": {
+                        "weapon": "Dubbelyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.dodge.dodge_text_10",
+                    "args": {
+                        "weapon": "Dubbelyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage_intro",
+                    "args": {
+                        "player": "<red>Fullvuxen Drakorm<\/red>",
+                        "battle_effect_text": "g\u00f6r pl\u00f6tsligt ett utfall i raseri f\u00f6r att skada en motst\u00e5ndare.",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage",
+                    "args": {
+                        "damage": "<strong>16<\/strong>",
+                        "player": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break_simple",
+                    "args": []
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_6",
+                    "args": {
+                        "weapon": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_9",
+                    "args": {
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_1",
+                    "args": {
+                        "damage": "<strong>4<\/strong>",
+                        "weapon": "N\/A",
+                        "armor_name": "Onkhv\u00e4vsjacka",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "armor_block": 3,
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_7",
+                    "args": {
+                        "weapon": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_6",
+                    "args": {
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.shield_absorb.shield_absorb_text_4",
+                    "args": {
+                        "damage": "<strong>-11<\/strong>",
+                        "weapon": "N\/A",
+                        "absorbed": 7,
+                        "block_item": "Liten bj\u00f6rnsk\u00f6ld",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_4",
+                    "args": {
+                        "weapon": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_4",
+                    "args": {
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.shield_absorb.shield_absorb_text_2",
+                    "args": {
+                        "damage": "<strong>-7<\/strong>",
+                        "weapon": "N\/A",
+                        "absorbed": 11,
+                        "block_item": "Liten bj\u00f6rnsk\u00f6ld",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.battle_effects_damage_intro",
+                    "args": {
+                        "player": "<red>Fullvuxen Drakorm<\/red>",
+                        "battle_effect_text": "g\u00f6r ett utfall och skadar obarmh\u00e4rtigt alla motst\u00e5ndare samtidigt.",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage",
+                    "args": {
+                        "damage": "<strong>16<\/strong>",
+                        "player": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage",
+                    "args": {
+                        "damage": "<strong>18<\/strong>",
+                        "player": "<green>Virtuos Umbrayil<\/green>",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage",
+                    "args": {
+                        "damage": "<strong>16<\/strong>",
+                        "player": "<green>Virtuos Mjurnira<\/green>",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break_simple",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ledare",
+                "off_hand_id": 22,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 0,
+                    "damage_done": 23,
+                    "damage_taken": 36,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 1,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 23,
+                    "total_damage_done": 23,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 51,
+                "fightable_id": 1646,
+                "focused_role": "Ingen",
+                "main_hand_id": 36,
+                "battle_tactic": 7,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 166,
+                "battle_tactic_name": "OFFENSIVE_LIGHT",
+                "give_up_percentage": 0.2
+            }
+        },
+        {
+            "order": 3,
+            "text": [
+                {
+                    "key": "battle.consumable_buff_weaponskill_removed.consumable_buff_weaponskill_removed_text_3",
+                    "args": {
+                        "value": 5,
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "weaponskill": "yxor",
+                        "consumable_name": "Droppar av Fokus",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.consumable_buff_weaponskill_removed.consumable_buff_weaponskill_removed_text_4",
+                    "args": {
+                        "value": 5,
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "weaponskill": "k\u00e4ttingvapen",
+                        "consumable_name": "Droppar av Fokus",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.consumable_buff_weaponskill_removed.consumable_buff_weaponskill_removed_text_4",
+                    "args": {
+                        "value": 5,
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "weaponskill": "Obev\u00e4pnat",
+                        "consumable_name": "Droppar av Fokus",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.consumable_buff_weaponskill_removed.consumable_buff_weaponskill_removed_text_4",
+                    "args": {
+                        "value": 5,
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "weaponskill": "hammare",
+                        "consumable_name": "Droppar av Fokus",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.consumable_buff_weaponskill_removed.consumable_buff_weaponskill_removed_text_3",
+                    "args": {
+                        "value": 5,
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "weaponskill": "sk\u00f6ldar",
+                        "consumable_name": "Droppar av Fokus",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.consumable_buff_weaponskill_removed.consumable_buff_weaponskill_removed_text_3",
+                    "args": {
+                        "value": 5,
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "weaponskill": "stickvapen",
+                        "consumable_name": "Droppar av Fokus",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.consumable_buff_weaponskill_removed.consumable_buff_weaponskill_removed_text",
+                    "args": {
+                        "value": 5,
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "weaponskill": "stavar",
+                        "consumable_name": "Droppar av Fokus",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.consumable_buff_weaponskill_removed.consumable_buff_weaponskill_removed_text",
+                    "args": {
+                        "value": 5,
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "weaponskill": "sv\u00e4rd",
+                        "consumable_name": "Droppar av Fokus",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_6",
+                    "args": {
+                        "weapon": "Krigsyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_glancing_dodge.attack_text_2",
+                    "args": {
+                        "damage": "<strong>10<\/strong>",
+                        "weapon": "Krigsyxa",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_2",
+                    "args": {
+                        "weapon": "Drakbett",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_1",
+                    "args": {
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_7",
+                    "args": {
+                        "damage": "<strong>14<\/strong>",
+                        "weapon": "Drakbett",
+                        "armor_name": "L\u00e4derbyxor",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "armor_block": 3,
+                        "body_hit_area": "benen",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.racials.absorption",
+                    "args": {
+                        "damage": "<strong>2<\/strong>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_17",
+                    "args": {
+                        "weapon": "Krigsyxa",
+                        "player_one": "<green>Virtuos Mjurnira<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.dodge.dodge_text_5",
+                    "args": {
+                        "weapon": "Krigsyxa",
+                        "player_one": "<green>Virtuos Mjurnira<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage_intro",
+                    "args": {
+                        "player": "<red>Fullvuxen Drakorm<\/red>",
+                        "battle_effect_text": "g\u00f6r pl\u00f6tsligt ett utfall i raseri f\u00f6r att skada en motst\u00e5ndare.",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage",
+                    "args": {
+                        "damage": "<strong>16<\/strong>",
+                        "player": "<green>Virtuos Mjurnira<\/green>",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break_simple",
+                    "args": []
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_27",
+                    "args": {
+                        "weapon": "Krigssv\u00e4rd",
+                        "player_one": "<green>Virtuos Umbrayil<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_7",
+                    "args": {
+                        "damage": "<strong>30<\/strong>",
+                        "weapon": "Krigssv\u00e4rd",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Virtuos Umbrayil<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "body_hit_area": "huvudet",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_3",
+                    "args": {
+                        "weapon": "Dubbelyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_glancing_dodge.attack_text_3",
+                    "args": {
+                        "damage": "<strong>9<\/strong>",
+                        "weapon": "Dubbelyxa",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_6",
+                    "args": {
+                        "weapon": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Umbrayil<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_6",
+                    "args": {
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Umbrayil<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_4",
+                    "args": {
+                        "damage": "<strong>5<\/strong>",
+                        "weapon": "N\/A",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Umbrayil<\/green>",
+                        "body_hit_area": "huvudet",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_5",
+                    "args": {
+                        "weapon": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Umbrayil<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_8",
+                    "args": {
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Umbrayil<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_6",
+                    "args": {
+                        "damage": "<strong>9<\/strong>",
+                        "weapon": "N\/A",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Umbrayil<\/green>",
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_6",
+                    "args": {
+                        "weapon": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_1",
+                    "args": {
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_4",
+                    "args": {
+                        "damage": "<strong>6<\/strong>",
+                        "weapon": "N\/A",
+                        "armor_name": "Onkhv\u00e4vsbyxor",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "armor_block": 3,
+                        "body_hit_area": "benen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.battle_effects_damage_intro",
+                    "args": {
+                        "player": "<red>Fullvuxen Drakorm<\/red>",
+                        "battle_effect_text": "g\u00f6r ett utfall och skadar obarmh\u00e4rtigt alla motst\u00e5ndare samtidigt.",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage",
+                    "args": {
+                        "damage": "<strong>18<\/strong>",
+                        "player": "<green>Virtuos Umbrayil<\/green>",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.too_much_damage.too_much_damage_text_3",
+                    "args": {
+                        "player": "<green>Virtuos Umbrayil<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.battle_effects_damage",
+                    "args": {
+                        "damage": "<strong>16<\/strong>",
+                        "player": "<green>Virtuos Mjurnira<\/green>",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage",
+                    "args": {
+                        "damage": "<strong>16<\/strong>",
+                        "player": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.too_much_damage.too_much_damage_text_1",
+                    "args": {
+                        "player": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.break_simple",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ledare",
+                "off_hand_id": 22,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 0,
+                    "damage_done": 19,
+                    "damage_taken": 22,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 1,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 10,
+                    "total_damage_done": 19,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 29,
+                "fightable_id": 1646,
+                "focused_role": "Ingen",
+                "main_hand_id": 36,
+                "battle_tactic": 7,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 166,
+                "battle_tactic_name": "OFFENSIVE_LIGHT",
+                "give_up_percentage": 0.2
+            }
+        },
+        {
+            "order": 4,
+            "text": [
+                {
+                    "key": "battle.start.start_text_7",
+                    "args": {
+                        "weapon": "Drakbett",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.shield_block.shield_block_text_1",
+                    "args": {
+                        "damage": "<strong>5<\/strong>",
+                        "weapon": "Drakbett",
+                        "absorbed": 18,
+                        "block_item": "Liten bj\u00f6rnsk\u00f6ld",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_8",
+                    "args": {
+                        "weapon": "Krigsyxa",
+                        "player_one": "<green>Virtuos Mjurnira<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_1",
+                    "args": {
+                        "damage": "<strong>28<\/strong>",
+                        "weapon": "Krigsyxa",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Virtuos Mjurnira<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_6",
+                    "args": {
+                        "weapon": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.shield_absorb.shield_absorb_text_1",
+                    "args": {
+                        "damage": "<strong>-7<\/strong>",
+                        "weapon": "N\/A",
+                        "absorbed": 11,
+                        "block_item": "Liten bj\u00f6rnsk\u00f6ld",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_6",
+                    "args": {
+                        "weapon": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_4",
+                    "args": {
+                        "damage": "<strong>4<\/strong>",
+                        "weapon": "N\/A",
+                        "armor_name": "L\u00e4derjacka",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "armor_block": 3,
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.racials.absorption",
+                    "args": {
+                        "damage": "<strong>2<\/strong>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_6",
+                    "args": {
+                        "weapon": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_6",
+                    "args": {
+                        "damage": "<strong>3<\/strong>",
+                        "weapon": "N\/A",
+                        "armor_name": "L\u00e4derbyxor",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "armor_block": 3,
+                        "body_hit_area": "benen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.racials.absorption",
+                    "args": {
+                        "damage": "<strong>2<\/strong>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.battle_effects_damage_intro",
+                    "args": {
+                        "player": "<red>Fullvuxen Drakorm<\/red>",
+                        "battle_effect_text": "g\u00f6r ett utfall och skadar obarmh\u00e4rtigt alla motst\u00e5ndare samtidigt.",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage",
+                    "args": {
+                        "damage": "<strong>16<\/strong>",
+                        "player": "<green>Virtuos Mjurnira<\/green>",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break_simple",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ledare",
+                "off_hand_id": 22,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 0,
+                    "damage_done": 0,
+                    "damage_taken": 0,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 0,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 0,
+                    "total_damage_done": 0,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 29,
+                "fightable_id": 1646,
+                "focused_role": "Ingen",
+                "main_hand_id": 36,
+                "battle_tactic": 7,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 166,
+                "battle_tactic_name": "OFFENSIVE_LIGHT",
+                "give_up_percentage": 0.2
+            }
+        },
+        {
+            "order": 5,
+            "text": [
+                {
+                    "key": "battle.start.start_text_18",
+                    "args": {
+                        "weapon": "Drakbett",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.shield_block.shield_block_text_5",
+                    "args": {
+                        "damage": "<strong>4<\/strong>",
+                        "weapon": "Drakbett",
+                        "absorbed": 18,
+                        "block_item": "Liten bj\u00f6rnsk\u00f6ld",
+                        "player_one": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_14",
+                    "args": {
+                        "weapon": "Krigsyxa",
+                        "player_one": "<green>Virtuos Mjurnira<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.dodge.dodge_text_7",
+                    "args": {
+                        "weapon": "Krigsyxa",
+                        "player_one": "<green>Virtuos Mjurnira<\/green>",
+                        "player_two": "<red>Fullvuxen Drakorm<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage_intro",
+                    "args": {
+                        "player": "<red>Fullvuxen Drakorm<\/red>",
+                        "battle_effect_text": "g\u00f6r pl\u00f6tsligt ett utfall i raseri f\u00f6r att skada en motst\u00e5ndare.",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_damage",
+                    "args": {
+                        "damage": "<strong>16<\/strong>",
+                        "player": "<green>Virtuos Mjurnira<\/green>",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.too_much_damage.too_much_damage_text_1",
+                    "args": {
+                        "player": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.break_simple",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ledare",
+                "off_hand_id": 22,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 0,
+                    "damage_done": 0,
+                    "damage_taken": 0,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 0,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 0,
+                    "total_damage_done": 0,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 29,
+                "fightable_id": 1646,
+                "focused_role": "Ingen",
+                "main_hand_id": 36,
+                "battle_tactic": 7,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 166,
+                "battle_tactic_name": "OFFENSIVE_LIGHT",
+                "give_up_percentage": 0.2
+            }
+        },
+        {
+            "order": 6,
+            "text": [
+                {
+                    "key": "battle.winners_npcs.winners_text_1",
+                    "args": {
+                        "players": "<red>Fullvuxen Drakorm<\/red>",
+                        "player_two": "<green>Virtuos Umbrayil<\/green>, <green>Virtuos Mjurnira<\/green> och <green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.avatar_of_the_game.avatar_of_the_game_4",
+                    "args": {
+                        "player": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.losers.losers_text_4",
+                    "args": {
+                        "players": "<green>Virtuos Umbrayil<\/green>, <green>Virtuos Mjurnira<\/green> och <green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.loser_simple.loser_simple_text_3",
+                    "args": {
+                        "xp": "<strong>8<\/strong>",
+                        "coins": "<strong>1<\/strong>",
+                        "player": "<green>Virtuos Umbrayil<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.loser_simple.loser_simple_text_4",
+                    "args": {
+                        "xp": "<strong>8<\/strong>",
+                        "coins": "<strong>1<\/strong>",
+                        "player": "<green>Virtuos Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.loser_simple.loser_simple_text_1",
+                    "args": {
+                        "xp": "<strong>8<\/strong>",
+                        "coins": "<strong>1<\/strong>",
+                        "player": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.stats.stats_text_1",
+                    "args": {
+                        "name": "<green>Virtuos Umbrayil<\/green>",
+                        "blocks": 2,
+                        "dodges": 0,
+                        "misses": 0,
+                        "damage_done": 59,
+                        "damage_taken": 152,
+                        "critical_hits": 0,
+                        "shield_blocks": 0,
+                        "weapon_blocks": 2,
+                        "partial_misses": 0,
+                        "attacks_against": 6,
+                        "glancing_dodges": 0,
+                        "max_damage_done": 30,
+                        "total_damage_done": 59,
+                        "glancing_shield_blocks": 0,
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.stats.stats_text_1",
+                    "args": {
+                        "name": "<green>Virtuos Mjurnira<\/green>",
+                        "blocks": 5,
+                        "dodges": 0,
+                        "misses": 1,
+                        "damage_done": 78,
+                        "damage_taken": 139,
+                        "critical_hits": 0,
+                        "shield_blocks": 5,
+                        "weapon_blocks": 0,
+                        "partial_misses": 0,
+                        "attacks_against": 9,
+                        "glancing_dodges": 0,
+                        "max_damage_done": 28,
+                        "total_damage_done": 78,
+                        "glancing_shield_blocks": 0,
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.stats.stats_text_1",
+                    "args": {
+                        "name": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "blocks": 0,
+                        "dodges": 1,
+                        "misses": 0,
+                        "damage_done": 79,
+                        "damage_taken": 137,
+                        "critical_hits": 1,
+                        "shield_blocks": 0,
+                        "weapon_blocks": 0,
+                        "partial_misses": 0,
+                        "attacks_against": 6,
+                        "glancing_dodges": 0,
+                        "max_damage_done": 23,
+                        "total_damage_done": 79,
+                        "glancing_shield_blocks": 0,
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.stats.stats_text_1",
+                    "args": {
+                        "name": "<red>Fullvuxen Drakorm<\/red>",
+                        "blocks": 0,
+                        "dodges": 8,
+                        "misses": 0,
+                        "damage_done": 428,
+                        "damage_taken": 216,
+                        "critical_hits": 2,
+                        "shield_blocks": 0,
+                        "weapon_blocks": 0,
+                        "partial_misses": 0,
+                        "attacks_against": 17,
+                        "glancing_dodges": 2,
+                        "max_damage_done": 23,
+                        "total_damage_done": 532,
+                        "glancing_shield_blocks": 0,
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ledare",
+                "off_hand_id": 22,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 0,
+                    "damage_done": 0,
+                    "damage_taken": 0,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 0,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 0,
+                    "total_damage_done": 0,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 29,
+                "fightable_id": 1646,
+                "focused_role": "Ingen",
+                "main_hand_id": 36,
+                "battle_tactic": 7,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 166,
+                "battle_tactic_name": "OFFENSIVE_LIGHT",
+                "give_up_percentage": 0.2
+            }
+        }
+    ],
+    "legacy_rounds": null,
+    "extra_audience": false,
+    "live": true,
+    "finished": true,
+    "next_round_at": "2026-09-02T13:29:16.000000Z",
+    "microtime": "0.00699100 1788355857",
+    "seconds_to_next_round": 100,
+    "created_at": "2026-09-02T13:28:19.000000Z",
+    "roles_enabled": true,
+    "one_on_one": false,
+    "monster_ladder_rewards": [],
+    "participants": [
+        {
+            "id": 1075691,
+            "won": false,
+            "slayed": false,
+            "infirmary": false,
+            "team": 1,
+            "xp_gained": 8,
+            "coins_gained": 1,
+            "name_nr": "",
+            "unique_id": "avatar_37",
+            "role_type": "TAUNT",
+            "focused_role_type": "NONE",
+            "given_up": true,
+            "fighter": {
+                "level": 14,
+                "name": "Virtuos Umbrayil",
+                "id": 37,
+                "is_avatar": true,
+                "race": "troll",
+                "captain": false,
+                "unique_id": "avatar_37",
+                "dead": false
+            }
+        },
+        {
+            "id": 1075692,
+            "won": false,
+            "slayed": false,
+            "infirmary": false,
+            "team": 1,
+            "xp_gained": 8,
+            "coins_gained": 1,
+            "name_nr": "",
+            "unique_id": "avatar_43",
+            "role_type": "DPS",
+            "focused_role_type": "NONE",
+            "given_up": true,
+            "fighter": {
+                "level": 14,
+                "name": "Virtuos Mjurnira",
+                "id": 43,
+                "is_avatar": true,
+                "race": "dv\u00e4rg",
+                "captain": false,
+                "unique_id": "avatar_43",
+                "dead": false
+            }
+        },
+        {
+            "id": 1075693,
+            "won": true,
+            "slayed": false,
+            "infirmary": false,
+            "team": 2,
+            "xp_gained": 0,
+            "coins_gained": 0,
+            "name_nr": "",
+            "unique_id": "npc_234_xZL3rz8Td7mJf7HJ",
+            "role_type": null,
+            "focused_role_type": null,
+            "given_up": false,
+            "fighter": {
+                "level": 20,
+                "name": "Fullvuxen Drakorm",
+                "id": 234,
+                "is_avatar": false,
+                "race": null,
+                "captain": false,
+                "unique_id": "npc_234_xZL3rz8Td7mJf7HJ",
+                "dead": false
+            }
+        },
+        {
+            "id": 1075690,
+            "won": false,
+            "slayed": false,
+            "infirmary": false,
+            "team": 1,
+            "xp_gained": 8,
+            "coins_gained": 1,
+            "name_nr": "",
+            "unique_id": "avatar_1646",
+            "role_type": "SUPPORT",
+            "focused_role_type": "NONE",
+            "given_up": true,
+            "fighter": {
+                "level": 16,
+                "name": "Rotv\u00e4ltare Br\u00fbshm\u00e9c",
+                "id": 1646,
+                "is_avatar": true,
+                "race": "ork",
+                "captain": true,
+                "unique_id": "avatar_1646",
+                "dead": false
+            }
+        }
+    ],
+    "team_participants": [],
+    "tactics": {
+        "give_up_percentage": "20%",
+        "give_up_percentage_value": 0.2,
+        "battle_tactic": "Offensiv - l\u00e4tta attacker",
+        "start_hp": 166,
+        "battle_tactic_value": 7,
+        "focused_role": 0,
+        "battle_role": 2,
+        "planned_consumable": null
+    },
+    "tournament": null,
+    "ranking_points": []
+}
