@@ -1,0 +1,428 @@
+{
+    "id": 506373,
+    "may_see": true,
+    "type": 1,
+    "mode": 0,
+    "mode_display": "Normal",
+    "is_adventure_battle": false,
+    "is_monster_ladder_battle": false,
+    "live_pause": null,
+    "show_battle_info": true,
+    "type_display": "slumpduell",
+    "audience_count": 3341,
+    "rounds": [
+        {
+            "order": 0,
+            "text": [
+                {
+                    "key": "battle.ranged.ranged_attack_text_5",
+                    "args": {
+                        "damage": "<strong>2<\/strong>",
+                        "weapon": "Slunga",
+                        "player_one": "<red>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/red>",
+                        "player_two": "<green>Bulton<\/green>",
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.enchant_debuff_stat.enchant_debuff_stat_text",
+                    "args": {
+                        "stat": "Undvika anfall",
+                        "value": 5,
+                        "weapon": "Slunga",
+                        "enchant": "Slunga",
+                        "player_one": "<green>Bulton<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.enchant_debuff_weaponskill.enchant_debuff_weaponskill_text_4",
+                    "args": {
+                        "value": 4,
+                        "weapon": "Slunga",
+                        "enchant": "Slunga",
+                        "player_one": "<green>Bulton<\/green>",
+                        "weaponskill": "yxor, hammare, stickvapen, stavar och sv\u00e4rd",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_3",
+                    "args": {
+                        "weapon": "Morgulyxa",
+                        "player_one": "<red>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/red>",
+                        "player_two": "<green>Bulton<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_4",
+                    "args": {
+                        "damage": "<strong>36<\/strong>",
+                        "weapon": "Morgulyxa",
+                        "armor_name": "Tygbyxor",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/red>",
+                        "player_two": "<green>Bulton<\/green>",
+                        "armor_block": 1,
+                        "body_hit_area": "benen",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.ranged.ranged_attack_text_6",
+                    "args": {
+                        "damage": "<strong>18<\/strong>",
+                        "weapon": "Dubbeleggad Kastyxa",
+                        "player_one": "<green>Bulton<\/green>",
+                        "player_two": "<red>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/red>",
+                        "body_hit_area": "armen",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_3",
+                    "args": {
+                        "weapon": "Bergets sl\u00e4gga",
+                        "player_one": "<green>Bulton<\/green>",
+                        "player_two": "<red>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.racials.troll_proc",
+                    "args": {
+                        "player_one": "<green>Bulton<\/green>",
+                        "player_two": "<red>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_2",
+                    "args": {
+                        "damage": "<strong>58<\/strong>",
+                        "weapon": "Bergets sl\u00e4gga",
+                        "armor_name": "Onkhv\u00e4vsm\u00f6ssa",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Bulton<\/green>",
+                        "player_two": "<red>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/red>",
+                        "armor_block": 3,
+                        "body_hit_area": "huvudet",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.racials.orc_proc",
+                    "args": {
+                        "player_one": "<red>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ingen",
+                "off_hand_id": 962,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 0,
+                    "damage_done": 38,
+                    "damage_taken": 76,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 1,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 36,
+                    "total_damage_done": 38,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 107,
+                "fightable_id": 1646,
+                "focused_role": "Ingen",
+                "main_hand_id": 50,
+                "battle_tactic": 8,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 183,
+                "battle_tactic_name": "OFFENSIVE_HEAVY",
+                "give_up_percentage": 0.3
+            }
+        },
+        {
+            "order": 1,
+            "text": [
+                {
+                    "key": "battle.start.start_text_25",
+                    "args": {
+                        "weapon": "Morgulyxa",
+                        "player_one": "<red>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/red>",
+                        "player_two": "<green>Bulton<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_5",
+                    "args": {
+                        "damage": "<strong>34<\/strong>",
+                        "weapon": "Morgulyxa",
+                        "armor_name": "Onkhv\u00e4vsjacka",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/red>",
+                        "player_two": "<green>Bulton<\/green>",
+                        "armor_block": 3,
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.too_much_damage.too_much_damage_text_2",
+                    "args": {
+                        "player": "<green>Bulton<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ingen",
+                "off_hand_id": 962,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 0,
+                    "damage_done": 34,
+                    "damage_taken": 0,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 0,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 34,
+                    "total_damage_done": 34,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 107,
+                "fightable_id": 1646,
+                "focused_role": "Ingen",
+                "main_hand_id": 50,
+                "battle_tactic": 8,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 183,
+                "battle_tactic_name": "OFFENSIVE_HEAVY",
+                "give_up_percentage": 0.3
+            }
+        },
+        {
+            "order": 2,
+            "text": [
+                {
+                    "key": "battle.winner.winner_text_1",
+                    "args": {
+                        "xp": "<strong>157<\/strong>",
+                        "coins": "<strong>10<\/strong>",
+                        "player": "<red>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.loser.loser_text_1",
+                    "args": {
+                        "xp": "<strong>0<\/strong>",
+                        "coins": "<strong>0<\/strong>",
+                        "player": "<green>Bulton<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.stats.stats_text_1",
+                    "args": {
+                        "name": "<green>Bulton<\/green>",
+                        "blocks": 0,
+                        "dodges": 0,
+                        "misses": 0,
+                        "damage_done": 76,
+                        "damage_taken": 72,
+                        "critical_hits": 0,
+                        "shield_blocks": 0,
+                        "weapon_blocks": 0,
+                        "partial_misses": 0,
+                        "attacks_against": 2,
+                        "glancing_dodges": 0,
+                        "max_damage_done": 58,
+                        "total_damage_done": 76,
+                        "glancing_shield_blocks": 0,
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.stats.stats_text_1",
+                    "args": {
+                        "name": "<red>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/red>",
+                        "blocks": 0,
+                        "dodges": 0,
+                        "misses": 0,
+                        "damage_done": 72,
+                        "damage_taken": 76,
+                        "critical_hits": 0,
+                        "shield_blocks": 0,
+                        "weapon_blocks": 0,
+                        "partial_misses": 0,
+                        "attacks_against": 1,
+                        "glancing_dodges": 0,
+                        "max_damage_done": 36,
+                        "total_damage_done": 72,
+                        "glancing_shield_blocks": 0,
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ingen",
+                "off_hand_id": 962,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 0,
+                    "damage_done": 0,
+                    "damage_taken": 0,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 0,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 0,
+                    "total_damage_done": 0,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 107,
+                "fightable_id": 1646,
+                "focused_role": "Ingen",
+                "main_hand_id": 50,
+                "battle_tactic": 8,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 183,
+                "battle_tactic_name": "OFFENSIVE_HEAVY",
+                "give_up_percentage": 0.3
+            }
+        }
+    ],
+    "legacy_rounds": null,
+    "extra_audience": false,
+    "live": false,
+    "finished": true,
+    "next_round_at": null,
+    "microtime": "0.78572600 1788444935",
+    "seconds_to_next_round": -1,
+    "created_at": "2026-09-03T14:00:00.000000Z",
+    "roles_enabled": false,
+    "one_on_one": true,
+    "monster_ladder_rewards": [],
+    "participants": [
+        {
+            "id": 1214222,
+            "won": false,
+            "slayed": false,
+            "infirmary": false,
+            "team": 1,
+            "xp_gained": 0,
+            "coins_gained": 0,
+            "name_nr": "",
+            "unique_id": "avatar_1826",
+            "role_type": "NONE",
+            "focused_role_type": "NONE",
+            "given_up": false,
+            "fighter": {
+                "level": 18,
+                "name": "Bulton",
+                "id": 1826,
+                "is_avatar": true,
+                "race": "troll",
+                "captain": false,
+                "unique_id": "avatar_1826",
+                "dead": false
+            }
+        },
+        {
+            "id": 1214223,
+            "won": true,
+            "slayed": false,
+            "infirmary": false,
+            "team": 2,
+            "xp_gained": 157,
+            "coins_gained": 10,
+            "name_nr": "",
+            "unique_id": "avatar_1646",
+            "role_type": "NONE",
+            "focused_role_type": "NONE",
+            "given_up": false,
+            "fighter": {
+                "level": 18,
+                "name": "Rotv\u00e4ltare Br\u00fbshm\u00e9c",
+                "id": 1646,
+                "is_avatar": true,
+                "race": "ork",
+                "captain": false,
+                "unique_id": "avatar_1646",
+                "dead": false
+            }
+        }
+    ],
+    "team_participants": [],
+    "tactics": {
+        "give_up_percentage": "30%",
+        "give_up_percentage_value": 0.3,
+        "battle_tactic": "Offensiv - tunga attacker",
+        "start_hp": 183,
+        "battle_tactic_value": 8,
+        "focused_role": 0,
+        "battle_role": 0,
+        "planned_consumable": null
+    },
+    "tournament": null,
+    "ranking_points": []
+}

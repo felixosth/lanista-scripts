@@ -1,0 +1,2731 @@
+{
+    "id": 504450,
+    "may_see": true,
+    "type": 15,
+    "mode": 0,
+    "mode_display": "Normal",
+    "is_adventure_battle": false,
+    "is_monster_ladder_battle": true,
+    "live_pause": 10,
+    "show_battle_info": true,
+    "type_display": "Monsterjakt",
+    "audience_count": 60010,
+    "rounds": [
+        {
+            "order": -1,
+            "text": [
+                {
+                    "key": "battle.setup_round",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ledare",
+                "off_hand_id": 962,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 0,
+                    "damage_done": 0,
+                    "damage_taken": 0,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 0,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 0,
+                    "total_damage_done": 0,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 173,
+                "fightable_id": 1646,
+                "focused_role": "Provokat\u00f6r",
+                "main_hand_id": 50,
+                "battle_tactic": 5,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 173,
+                "battle_tactic_name": "DEFENSIVE_HEAVY",
+                "give_up_percentage": 0.3
+            }
+        },
+        {
+            "order": 0,
+            "text": [
+                {
+                    "key": "battle.used_live_consumable",
+                    "args": {
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "consumable_name": "Heroisk Olja",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.consumable_buff_stat.consumable_buff_stat_text_2",
+                    "args": {
+                        "stat": "Ledarskap",
+                        "value": "+20",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "consumable_name": "Heroisk Olja",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_13",
+                    "args": {
+                        "weapon": "Svart evighetens flamma",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Agh<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_3",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Agh<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_7",
+                    "args": {
+                        "damage": "<strong>29<\/strong>",
+                        "weapon": "Svart evighetens flamma",
+                        "armor_name": "Goblinsk spikhj\u00e4lm",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Agh<\/green>",
+                        "armor_block": 4,
+                        "body_hit_area": "huvudet",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.ranged.ranged_attack_text_4",
+                    "args": {
+                        "damage": "<strong>1<\/strong>",
+                        "weapon": "Slunga",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "body_hit_area": "benen",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.enchant_debuff_stat.enchant_debuff_stat_text",
+                    "args": {
+                        "stat": "Undvika anfall",
+                        "value": 5,
+                        "weapon": "Slunga",
+                        "enchant": "Slunga",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.enchant_debuff_weaponskill.enchant_debuff_weaponskill_text_2",
+                    "args": {
+                        "value": 4,
+                        "weapon": "Slunga",
+                        "enchant": "Slunga",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "weaponskill": "hammare, stickvapen, stavar och sv\u00e4rd",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.enchant_debuff_weaponskill.enchant_debuff_weaponskill_text",
+                    "args": {
+                        "value": 4,
+                        "weapon": "Slunga",
+                        "enchant": "Slunga",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "weaponskill": "yxor och k\u00e4ttingvapen",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.start.start_text_4",
+                    "args": {
+                        "weapon": "Morgulyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block_partial_miss.attack_with_armor_block_text_2",
+                    "args": {
+                        "damage": "<strong>9<\/strong>",
+                        "weapon": "Morgulyxa",
+                        "armor_name": "Mirakelst\u00e5l",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "armor_block": 2,
+                        "body_hit_area": "axlarna",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_3",
+                    "args": {
+                        "weapon": "Stor morgonstj\u00e4rna",
+                        "player_one": "<green>M\u00e4staren Agh<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.dodge.dodge_text_8",
+                    "args": {
+                        "weapon": "Stor morgonstj\u00e4rna",
+                        "player_one": "<green>M\u00e4staren Agh<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_7",
+                    "args": {
+                        "weapon": "Besmyckad klyvyxa",
+                        "player_one": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_5",
+                    "args": {
+                        "damage": "<strong>43 <i class=\"fa fa-stars\"><\/i><\/strong>",
+                        "weapon": "Besmyckad klyvyxa",
+                        "armor_name": "Mirakelst\u00e5l",
+                        "block_item": "N\/A",
+                        "player_one": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "armor_block": 2,
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.critical_attack_suffix.critical_attack_suffix_text_1",
+                    "args": {
+                        "player_one": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_2",
+                    "args": {
+                        "weapon": "Svart evighetens flamma",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_6",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.weapon_block.weapon_block_text_2",
+                    "args": {
+                        "damage": "<strong>32<\/strong>",
+                        "weapon": "Svart evighetens flamma",
+                        "block_item": "Bevandrad krigsyxa",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_4",
+                    "args": {
+                        "weapon": "Svart visslande dolk",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Agh<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_7",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Agh<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_2",
+                    "args": {
+                        "damage": "<strong>15<\/strong>",
+                        "weapon": "Svart visslande dolk",
+                        "armor_name": "Goblinsk tvebrynja",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Agh<\/green>",
+                        "armor_block": 4,
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.battle_effects_heal_intro",
+                    "args": {
+                        "player": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "battle_effect_text": "uppsamlar sin kraft f\u00f6r att hela sig sj\u00e4lv och alla i sitt lag.",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_heal",
+                    "args": {
+                        "heal": 40,
+                        "player": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break_simple",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ledare",
+                "off_hand_id": 962,
+                "round_stats": {
+                    "blocks": 1,
+                    "dodges": 0,
+                    "misses": 1,
+                    "damage_done": 10,
+                    "damage_taken": 0,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 1,
+                    "partial_misses": 1,
+                    "attacks_against": 1,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 9,
+                    "total_damage_done": 10,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 173,
+                "fightable_id": 1646,
+                "focused_role": "Provokat\u00f6r",
+                "main_hand_id": 50,
+                "battle_tactic": 5,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 173,
+                "battle_tactic_name": "DEFENSIVE_HEAVY",
+                "give_up_percentage": 0.3
+            }
+        },
+        {
+            "order": 1,
+            "text": [
+                {
+                    "key": "battle.start.start_text_8",
+                    "args": {
+                        "weapon": "Svart evighetens flamma",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_6",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.shield_absorb.shield_absorb_text_4",
+                    "args": {
+                        "damage": "<strong>-7<\/strong>",
+                        "weapon": "Svart evighetens flamma",
+                        "absorbed": 18,
+                        "block_item": "Bj\u00f6rnsk\u00f6ld",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_6",
+                    "args": {
+                        "weapon": "Morgulyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.weapon_block.weapon_block_text_3",
+                    "args": {
+                        "damage": "<strong>31<\/strong>",
+                        "weapon": "Morgulyxa",
+                        "block_item": "Svart visslande dolk",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_2",
+                    "args": {
+                        "weapon": "Stor morgonstj\u00e4rna",
+                        "player_one": "<green>M\u00e4staren Agh<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_1",
+                    "args": {
+                        "damage": "<strong>35<\/strong>",
+                        "weapon": "Stor morgonstj\u00e4rna",
+                        "armor_name": "Mirakelst\u00e5l",
+                        "block_item": "N\/A",
+                        "player_one": "<green>M\u00e4staren Agh<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "armor_block": 2,
+                        "body_hit_area": "huvudet",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_5",
+                    "args": {
+                        "weapon": "Besmyckad klyvyxa",
+                        "player_one": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.dodge.dodge_text_9",
+                    "args": {
+                        "weapon": "Besmyckad klyvyxa",
+                        "player_one": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_7",
+                    "args": {
+                        "weapon": "Svart evighetens flamma",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Agh<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_9",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Agh<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_2",
+                    "args": {
+                        "damage": "<strong>38<\/strong>",
+                        "weapon": "Svart evighetens flamma",
+                        "armor_name": "Goblinsk tvebrynja",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Agh<\/green>",
+                        "armor_block": 4,
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_1",
+                    "args": {
+                        "weapon": "Bevandrad krigsyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_2",
+                    "args": {
+                        "damage": "<strong>28<\/strong>",
+                        "weapon": "Bevandrad krigsyxa",
+                        "armor_name": "Mirakelst\u00e5l",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "armor_block": 2,
+                        "body_hit_area": "benen",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.battle_effects_heal_intro",
+                    "args": {
+                        "player": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "battle_effect_text": "uppsamlar sin kraft f\u00f6r att hela sig sj\u00e4lv och alla i sitt lag.",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_heal",
+                    "args": {
+                        "heal": 40,
+                        "player": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break_simple",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ledare",
+                "off_hand_id": 962,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 0,
+                    "damage_done": 28,
+                    "damage_taken": 0,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 0,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 28,
+                    "total_damage_done": 59,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 173,
+                "fightable_id": 1646,
+                "focused_role": "Provokat\u00f6r",
+                "main_hand_id": 50,
+                "battle_tactic": 5,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 173,
+                "battle_tactic_name": "DEFENSIVE_HEAVY",
+                "give_up_percentage": 0.3
+            }
+        },
+        {
+            "order": 2,
+            "text": [
+                {
+                    "key": "battle.consumable_buff_stat_removed.consumable_buff_stat_removed_text_3",
+                    "args": {
+                        "stat": "Ledarskap",
+                        "value": 20,
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "consumable_name": "Heroisk Olja",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_22",
+                    "args": {
+                        "weapon": "Svart evighetens flamma",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_2",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.weapon_block.weapon_block_text_5",
+                    "args": {
+                        "damage": "<strong>29<\/strong>",
+                        "weapon": "Svart evighetens flamma",
+                        "block_item": "Bevandrad krigsyxa",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.item_broken.item_broken_text_3",
+                    "args": {
+                        "player": "Rotv\u00e4ltare Br\u00fbshm\u00e9c",
+                        "block_item": "Bevandrad krigsyxa",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_16",
+                    "args": {
+                        "weapon": "Morgulyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.dodge.dodge_text_2",
+                    "args": {
+                        "weapon": "Morgulyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_11",
+                    "args": {
+                        "weapon": "Stor morgonstj\u00e4rna",
+                        "player_one": "<green>M\u00e4staren Agh<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.dodge.dodge_text_4",
+                    "args": {
+                        "weapon": "Stor morgonstj\u00e4rna",
+                        "player_one": "<green>M\u00e4staren Agh<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_4",
+                    "args": {
+                        "weapon": "Besmyckad klyvyxa",
+                        "player_one": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block_glancing_dodge.attack_with_armor_block_text_4",
+                    "args": {
+                        "damage": "<strong>20 <i class=\"fa fa-stars\"><\/i><\/strong>",
+                        "weapon": "Besmyckad klyvyxa",
+                        "armor_name": "Mirakelst\u00e5l",
+                        "block_item": "N\/A",
+                        "player_one": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "armor_block": 2,
+                        "body_hit_area": "huvudet",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.critical_attack_suffix.critical_attack_suffix_text_4",
+                    "args": {
+                        "player_one": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_1",
+                    "args": {
+                        "weapon": "Svart evighetens flamma",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_10",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.shield_block.shield_block_text_2",
+                    "args": {
+                        "damage": "<strong>19<\/strong>",
+                        "weapon": "Svart evighetens flamma",
+                        "absorbed": 25,
+                        "block_item": "Bj\u00f6rnsk\u00f6ld",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_4",
+                    "args": {
+                        "weapon": "Tr\u00e4skhammare",
+                        "player_one": "<green>M\u00e4staren Agh<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_5",
+                    "args": {
+                        "damage": "<strong>38<\/strong>",
+                        "weapon": "Tr\u00e4skhammare",
+                        "armor_name": "Mirakelst\u00e5l",
+                        "block_item": "N\/A",
+                        "player_one": "<green>M\u00e4staren Agh<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "armor_block": 2,
+                        "body_hit_area": "axlarna",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_3",
+                    "args": {
+                        "weapon": "Svart visslande dolk",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Agh<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_9",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Agh<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_3",
+                    "args": {
+                        "damage": "<strong>18<\/strong>",
+                        "weapon": "Svart visslande dolk",
+                        "armor_name": "Goblinsk spikhj\u00e4lm",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Agh<\/green>",
+                        "armor_block": 4,
+                        "body_hit_area": "huvudet",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.too_much_damage.too_much_damage_text_4",
+                    "args": {
+                        "player": "<green>M\u00e4staren Agh<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.battle_effects_heal_intro",
+                    "args": {
+                        "player": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "battle_effect_text": "uppsamlar sin kraft f\u00f6r att hela sig sj\u00e4lv och alla i sitt lag.",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_heal",
+                    "args": {
+                        "heal": 40,
+                        "player": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break_simple",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ledare",
+                "off_hand_id": 962,
+                "round_stats": {
+                    "blocks": 1,
+                    "dodges": 0,
+                    "misses": 0,
+                    "damage_done": 0,
+                    "damage_taken": 0,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 1,
+                    "partial_misses": 0,
+                    "attacks_against": 1,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 0,
+                    "total_damage_done": 0,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 173,
+                "fightable_id": 1646,
+                "focused_role": "Provokat\u00f6r",
+                "main_hand_id": 50,
+                "battle_tactic": 5,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 173,
+                "battle_tactic_name": "DEFENSIVE_HEAVY",
+                "give_up_percentage": 0.3
+            }
+        },
+        {
+            "order": 3,
+            "text": [
+                {
+                    "key": "battle.start.start_text_30",
+                    "args": {
+                        "weapon": "Svart evighetens flamma",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_4",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.shield_block.shield_block_text_5",
+                    "args": {
+                        "damage": "<strong>2<\/strong>",
+                        "weapon": "Svart evighetens flamma",
+                        "absorbed": 25,
+                        "block_item": "Bj\u00f6rnsk\u00f6ld",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_19",
+                    "args": {
+                        "weapon": "Morgulyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.dodge.dodge_text_10",
+                    "args": {
+                        "weapon": "Morgulyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_9",
+                    "args": {
+                        "weapon": "Besmyckad klyvyxa",
+                        "player_one": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_6",
+                    "args": {
+                        "damage": "<strong>28<\/strong>",
+                        "weapon": "Besmyckad klyvyxa",
+                        "armor_name": "Mirakelst\u00e5l",
+                        "block_item": "N\/A",
+                        "player_one": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "armor_block": 2,
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_4",
+                    "args": {
+                        "weapon": "Svart evighetens flamma",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_10",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_3",
+                    "args": {
+                        "damage": "<strong>35<\/strong>",
+                        "weapon": "Svart evighetens flamma",
+                        "armor_name": "Bergets benskydd",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "armor_block": 7,
+                        "body_hit_area": "benen",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.racials.absorption",
+                    "args": {
+                        "damage": "<strong>2<\/strong>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_3",
+                    "args": {
+                        "weapon": "sin knytn\u00e4ve",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.miss.miss_text_7",
+                    "args": {
+                        "weapon": "sin knytn\u00e4ve",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_4",
+                    "args": {
+                        "weapon": "Svart visslande dolk",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_4",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_5",
+                    "args": {
+                        "damage": "<strong>17<\/strong>",
+                        "weapon": "Svart visslande dolk",
+                        "armor_name": "Onkhv\u00e4vsjacka",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "armor_block": 3,
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_4",
+                    "args": {
+                        "weapon": "Svart visslande dolk",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_7",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.shield_absorb.shield_absorb_text_2",
+                    "args": {
+                        "damage": "<strong>-4<\/strong>",
+                        "weapon": "Svart visslande dolk",
+                        "absorbed": 21,
+                        "block_item": "Bj\u00f6rnsk\u00f6ld",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.battle_effects_heal_intro",
+                    "args": {
+                        "player": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "battle_effect_text": "uppsamlar sin kraft f\u00f6r att hela sig sj\u00e4lv och alla i sitt lag.",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_heal",
+                    "args": {
+                        "heal": 40,
+                        "player": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break_simple",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ledare",
+                "off_hand_id": 962,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 1,
+                    "damage_done": 0,
+                    "damage_taken": 17,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 1,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 0,
+                    "total_damage_done": 0,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 156,
+                "fightable_id": 1646,
+                "focused_role": "Provokat\u00f6r",
+                "main_hand_id": 50,
+                "battle_tactic": 5,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 173,
+                "battle_tactic_name": "DEFENSIVE_HEAVY",
+                "give_up_percentage": 0.3
+            }
+        },
+        {
+            "order": 4,
+            "text": [
+                {
+                    "key": "battle.start.start_text_16",
+                    "args": {
+                        "weapon": "Svart evighetens flamma",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_8",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_3",
+                    "args": {
+                        "damage": "<strong>12<\/strong>",
+                        "weapon": "Svart evighetens flamma",
+                        "armor_name": "Bergets skor",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "armor_block": 5,
+                        "body_hit_area": "f\u00f6tterna",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.racials.absorption",
+                    "args": {
+                        "damage": "<strong>2<\/strong>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_3",
+                    "args": {
+                        "weapon": "Morgulyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_1",
+                    "args": {
+                        "damage": "<strong>32<\/strong>",
+                        "weapon": "Morgulyxa",
+                        "armor_name": "Mirakelst\u00e5l",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "armor_block": 2,
+                        "body_hit_area": "armen",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_16",
+                    "args": {
+                        "weapon": "Besmyckad klyvyxa",
+                        "player_one": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block_glancing_dodge.attack_with_armor_block_text_1",
+                    "args": {
+                        "damage": "<strong>13<\/strong>",
+                        "weapon": "Besmyckad klyvyxa",
+                        "armor_name": "Mirakelst\u00e5l",
+                        "block_item": "N\/A",
+                        "player_one": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "armor_block": 2,
+                        "body_hit_area": "armen",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_1",
+                    "args": {
+                        "weapon": "Svart evighetens flamma",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_4",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_4",
+                    "args": {
+                        "damage": "<strong>16<\/strong>",
+                        "weapon": "Svart evighetens flamma",
+                        "armor_name": "Onkhv\u00e4vsm\u00f6ssa",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "armor_block": 3,
+                        "body_hit_area": "huvudet",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.racials.orc_proc",
+                    "args": {
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_6",
+                    "args": {
+                        "weapon": "sin knytn\u00e4ve",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.miss.miss_text_10",
+                    "args": {
+                        "weapon": "sin knytn\u00e4ve",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_2",
+                    "args": {
+                        "weapon": "Svart visslande dolk",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_9",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.shield_absorb.shield_absorb_text_4",
+                    "args": {
+                        "damage": "<strong>-3<\/strong>",
+                        "weapon": "Svart visslande dolk",
+                        "absorbed": 22,
+                        "block_item": "Bj\u00f6rnsk\u00f6ld",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.battle_effects_heal_intro",
+                    "args": {
+                        "player": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "battle_effect_text": "uppsamlar sin kraft f\u00f6r att hela sig sj\u00e4lv och alla i sitt lag.",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_heal",
+                    "args": {
+                        "heal": 40,
+                        "player": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break_simple",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ledare",
+                "off_hand_id": 962,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 1,
+                    "damage_done": 32,
+                    "damage_taken": 16,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 1,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 32,
+                    "total_damage_done": 32,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 140,
+                "fightable_id": 1646,
+                "focused_role": "Provokat\u00f6r",
+                "main_hand_id": 50,
+                "battle_tactic": 5,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 173,
+                "battle_tactic_name": "DEFENSIVE_HEAVY",
+                "give_up_percentage": 0.3
+            }
+        },
+        {
+            "order": 5,
+            "text": [
+                {
+                    "key": "battle.start.start_text_23",
+                    "args": {
+                        "weapon": "Svart evighetens flamma",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_8",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.shield_absorb.shield_absorb_text_4",
+                    "args": {
+                        "damage": "<strong>-4<\/strong>",
+                        "weapon": "Svart evighetens flamma",
+                        "absorbed": 21,
+                        "block_item": "Bj\u00f6rnsk\u00f6ld",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_22",
+                    "args": {
+                        "weapon": "Morgulyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_3",
+                    "args": {
+                        "damage": "<strong>37 <i class=\"fa fa-stars\"><\/i><\/strong>",
+                        "weapon": "Morgulyxa",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.critical_attack_suffix.critical_attack_suffix_text_2",
+                    "args": {
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_4",
+                    "args": {
+                        "weapon": "Besmyckad klyvyxa",
+                        "player_one": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_1",
+                    "args": {
+                        "damage": "<strong>33<\/strong>",
+                        "weapon": "Besmyckad klyvyxa",
+                        "armor_name": "Mirakelst\u00e5l",
+                        "block_item": "N\/A",
+                        "player_one": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "armor_block": 2,
+                        "body_hit_area": "f\u00f6tterna",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_3",
+                    "args": {
+                        "weapon": "Svart evighetens flamma",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_8",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_7",
+                    "args": {
+                        "damage": "<strong>22<\/strong>",
+                        "weapon": "Svart evighetens flamma",
+                        "armor_name": "Onkhv\u00e4vsjacka",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "armor_block": 3,
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_4",
+                    "args": {
+                        "weapon": "sin knytn\u00e4ve",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.miss.miss_text_11",
+                    "args": {
+                        "weapon": "sin knytn\u00e4ve",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_7",
+                    "args": {
+                        "weapon": "Svart visslande dolk",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_9",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_3",
+                    "args": {
+                        "damage": "<strong>18<\/strong>",
+                        "weapon": "Svart visslande dolk",
+                        "armor_name": "Bevandrade tygbyxor",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "armor_block": 2,
+                        "body_hit_area": "benen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.battle_effects_heal_intro",
+                    "args": {
+                        "player": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "battle_effect_text": "uppsamlar sin kraft f\u00f6r att hela sig sj\u00e4lv och alla i sitt lag.",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_heal",
+                    "args": {
+                        "heal": 40,
+                        "player": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break_simple",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ledare",
+                "off_hand_id": 962,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 1,
+                    "damage_done": 37,
+                    "damage_taken": 40,
+                    "critical_hits": 1,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 2,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 37,
+                    "total_damage_done": 37,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 100,
+                "fightable_id": 1646,
+                "focused_role": "Provokat\u00f6r",
+                "main_hand_id": 50,
+                "battle_tactic": 5,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 173,
+                "battle_tactic_name": "DEFENSIVE_HEAVY",
+                "give_up_percentage": 0.3
+            }
+        },
+        {
+            "order": 6,
+            "text": [
+                {
+                    "key": "battle.start.start_text_6",
+                    "args": {
+                        "weapon": "Svart evighetens flamma",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_5",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_5",
+                    "args": {
+                        "damage": "<strong>22<\/strong>",
+                        "weapon": "Svart evighetens flamma",
+                        "armor_name": "Bergets axelpl\u00e5t",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "armor_block": 5,
+                        "body_hit_area": "axlarna",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.racials.absorption",
+                    "args": {
+                        "damage": "<strong>2<\/strong>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_17",
+                    "args": {
+                        "weapon": "Morgulyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_4",
+                    "args": {
+                        "damage": "<strong>27<\/strong>",
+                        "weapon": "Morgulyxa",
+                        "armor_name": "Mirakelst\u00e5l",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "armor_block": 2,
+                        "body_hit_area": "armen",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_1",
+                    "args": {
+                        "weapon": "Besmyckad klyvyxa",
+                        "player_one": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_4",
+                    "args": {
+                        "damage": "<strong>29<\/strong>",
+                        "weapon": "Besmyckad klyvyxa",
+                        "armor_name": "Mirakelst\u00e5l",
+                        "block_item": "N\/A",
+                        "player_one": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "armor_block": 2,
+                        "body_hit_area": "f\u00f6tterna",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_6",
+                    "args": {
+                        "weapon": "Svart evighetens flamma",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_1",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_5",
+                    "args": {
+                        "damage": "<strong>43<\/strong>",
+                        "weapon": "Svart evighetens flamma",
+                        "armor_name": "Onkhv\u00e4vsjacka",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "armor_block": 3,
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_6",
+                    "args": {
+                        "weapon": "sin knytn\u00e4ve",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.miss.miss_text_1",
+                    "args": {
+                        "weapon": "sin knytn\u00e4ve",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_4",
+                    "args": {
+                        "weapon": "Svart visslande dolk",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_3",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.shield_absorb.shield_absorb_text_2",
+                    "args": {
+                        "damage": "<strong>-2<\/strong>",
+                        "weapon": "Svart visslande dolk",
+                        "absorbed": 23,
+                        "block_item": "Bj\u00f6rnsk\u00f6ld",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.battle_effects_heal_intro",
+                    "args": {
+                        "player": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "battle_effect_text": "uppsamlar sin kraft f\u00f6r att hela sig sj\u00e4lv och alla i sitt lag.",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_heal",
+                    "args": {
+                        "heal": 40,
+                        "player": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break_simple",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ledare",
+                "off_hand_id": 962,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 1,
+                    "damage_done": 27,
+                    "damage_taken": 43,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 1,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 27,
+                    "total_damage_done": 27,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 57,
+                "fightable_id": 1646,
+                "focused_role": "Provokat\u00f6r",
+                "main_hand_id": 50,
+                "battle_tactic": 5,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 173,
+                "battle_tactic_name": "DEFENSIVE_HEAVY",
+                "give_up_percentage": 0.3
+            }
+        },
+        {
+            "order": 7,
+            "text": [
+                {
+                    "key": "battle.start.start_text_30",
+                    "args": {
+                        "weapon": "Svart evighetens flamma",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_4",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.shield_block.shield_block_text_3",
+                    "args": {
+                        "damage": "<strong>3<\/strong>",
+                        "weapon": "Svart evighetens flamma",
+                        "absorbed": 25,
+                        "block_item": "Bj\u00f6rnsk\u00f6ld",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_24",
+                    "args": {
+                        "weapon": "Morgulyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_5",
+                    "args": {
+                        "damage": "<strong>36 <i class=\"fa fa-stars\"><\/i><\/strong>",
+                        "weapon": "Morgulyxa",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "body_hit_area": "benen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.critical_attack_suffix.critical_attack_suffix_text_7",
+                    "args": {
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_3",
+                    "args": {
+                        "weapon": "Besmyckad klyvyxa",
+                        "player_one": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.weapon_block.weapon_block_text_1",
+                    "args": {
+                        "damage": "<strong>32<\/strong>",
+                        "weapon": "Besmyckad klyvyxa",
+                        "block_item": "Svart visslande dolk",
+                        "player_one": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_6",
+                    "args": {
+                        "weapon": "Svart evighetens flamma",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_6",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_2",
+                    "args": {
+                        "damage": "<strong>23<\/strong>",
+                        "weapon": "Svart evighetens flamma",
+                        "armor_name": "Bergets br\u00f6stpl\u00e5t",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "armor_block": 7,
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.racials.absorption",
+                    "args": {
+                        "damage": "<strong>2<\/strong>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_6",
+                    "args": {
+                        "weapon": "sin knytn\u00e4ve",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.miss.miss_text_3",
+                    "args": {
+                        "weapon": "sin knytn\u00e4ve",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_4",
+                    "args": {
+                        "weapon": "Svart visslande dolk",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_4",
+                    "args": {
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_7",
+                    "args": {
+                        "damage": "<strong>21<\/strong>",
+                        "weapon": "Svart visslande dolk",
+                        "armor_name": "Onkhv\u00e4vsm\u00f6ssa",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "armor_block": 3,
+                        "body_hit_area": "huvudet",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.too_much_damage.too_much_damage_text_4",
+                    "args": {
+                        "player": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.battle_effects_heal_intro",
+                    "args": {
+                        "player": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "battle_effect_text": "uppsamlar sin kraft f\u00f6r att hela sig sj\u00e4lv och alla i sitt lag.",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.battle_effects_heal",
+                    "args": {
+                        "heal": 40,
+                        "player": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break_simple",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ledare",
+                "off_hand_id": 962,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 1,
+                    "damage_done": 36,
+                    "damage_taken": 21,
+                    "critical_hits": 1,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 1,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 36,
+                    "total_damage_done": 36,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 36,
+                "fightable_id": 1646,
+                "focused_role": "Provokat\u00f6r",
+                "main_hand_id": 50,
+                "battle_tactic": 5,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 173,
+                "battle_tactic_name": "DEFENSIVE_HEAVY",
+                "give_up_percentage": 0.3
+            }
+        },
+        {
+            "order": 8,
+            "text": [
+                {
+                    "key": "battle.start.start_text_5",
+                    "args": {
+                        "weapon": "Svart evighetens flamma",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.shield_absorb.shield_absorb_text_1",
+                    "args": {
+                        "damage": "<strong>-7<\/strong>",
+                        "weapon": "Svart evighetens flamma",
+                        "absorbed": 18,
+                        "block_item": "Bj\u00f6rnsk\u00f6ld",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_14",
+                    "args": {
+                        "weapon": "Besmyckad klyvyxa",
+                        "player_one": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.weapon_block.weapon_block_text_3",
+                    "args": {
+                        "damage": "<strong>30<\/strong>",
+                        "weapon": "Besmyckad klyvyxa",
+                        "block_item": "Svart visslande dolk",
+                        "player_one": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "player_two": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_5",
+                    "args": {
+                        "weapon": "Svart evighetens flamma",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_5",
+                    "args": {
+                        "damage": "<strong>35<\/strong>",
+                        "weapon": "Svart evighetens flamma",
+                        "armor_name": "Bergets br\u00f6stpl\u00e5t",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "armor_block": 7,
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.racials.absorption",
+                    "args": {
+                        "damage": "<strong>2<\/strong>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_3",
+                    "args": {
+                        "weapon": "Svart visslande dolk",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_1",
+                    "args": {
+                        "damage": "<strong>12<\/strong>",
+                        "weapon": "Svart visslande dolk",
+                        "armor_name": "Bergets handskar",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "armor_block": 5,
+                        "body_hit_area": "armen",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.racials.absorption",
+                    "args": {
+                        "damage": "<strong>2<\/strong>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_7",
+                    "args": {
+                        "weapon": "Svart visslande dolk",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_3",
+                    "args": {
+                        "damage": "<strong>12<\/strong>",
+                        "weapon": "Svart visslande dolk",
+                        "armor_name": "Bergets br\u00f6stpl\u00e5t",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "armor_block": 7,
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.racials.absorption",
+                    "args": {
+                        "damage": "<strong>2<\/strong>",
+                        "player_two": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.too_much_damage.too_much_damage_text_4",
+                    "args": {
+                        "player": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ledare",
+                "off_hand_id": 962,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 0,
+                    "damage_done": 0,
+                    "damage_taken": 0,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 0,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 0,
+                    "total_damage_done": 0,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 36,
+                "fightable_id": 1646,
+                "focused_role": "Provokat\u00f6r",
+                "main_hand_id": 50,
+                "battle_tactic": 5,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 173,
+                "battle_tactic_name": "DEFENSIVE_HEAVY",
+                "give_up_percentage": 0.3
+            }
+        },
+        {
+            "order": 9,
+            "text": [
+                {
+                    "key": "battle.winners_npcs.winners_text_3",
+                    "args": {
+                        "players": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>, <green>M\u00e4staren Mjurnira<\/green> och <green>M\u00e4staren Agh<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.avatar_of_the_game.avatar_of_the_game_4",
+                    "args": {
+                        "player": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.losers.losers_text_4",
+                    "args": {
+                        "players": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>, <green>M\u00e4staren Mjurnira<\/green> och <green>M\u00e4staren Agh<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.loser_simple.loser_simple_text_1",
+                    "args": {
+                        "xp": "<strong>0<\/strong>",
+                        "coins": "<strong>0<\/strong>",
+                        "player": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.loser_simple.loser_simple_text_1",
+                    "args": {
+                        "xp": "<strong>0<\/strong>",
+                        "coins": "<strong>0<\/strong>",
+                        "player": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.loser_simple.loser_simple_text_3",
+                    "args": {
+                        "xp": "<strong>0<\/strong>",
+                        "coins": "<strong>0<\/strong>",
+                        "player": "<green>M\u00e4staren Agh<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.stats.stats_text_1",
+                    "args": {
+                        "name": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "blocks": 2,
+                        "dodges": 0,
+                        "misses": 6,
+                        "damage_done": 170,
+                        "damage_taken": 137,
+                        "critical_hits": 2,
+                        "shield_blocks": 0,
+                        "weapon_blocks": 2,
+                        "partial_misses": 1,
+                        "attacks_against": 8,
+                        "glancing_dodges": 0,
+                        "max_damage_done": 37,
+                        "total_damage_done": 201,
+                        "glancing_shield_blocks": 0,
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.stats.stats_text_1",
+                    "args": {
+                        "name": "<green>M\u00e4staren Mjurnira<\/green>",
+                        "blocks": 9,
+                        "dodges": 0,
+                        "misses": 0,
+                        "damage_done": 166,
+                        "damage_taken": 151,
+                        "critical_hits": 2,
+                        "shield_blocks": 9,
+                        "weapon_blocks": 0,
+                        "partial_misses": 0,
+                        "attacks_against": 16,
+                        "glancing_dodges": 0,
+                        "max_damage_done": 43,
+                        "total_damage_done": 228,
+                        "glancing_shield_blocks": 0,
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.stats.stats_text_1",
+                    "args": {
+                        "name": "<green>M\u00e4staren Agh<\/green>",
+                        "blocks": 0,
+                        "dodges": 0,
+                        "misses": 0,
+                        "damage_done": 73,
+                        "damage_taken": 100,
+                        "critical_hits": 0,
+                        "shield_blocks": 0,
+                        "weapon_blocks": 0,
+                        "partial_misses": 0,
+                        "attacks_against": 4,
+                        "glancing_dodges": 0,
+                        "max_damage_done": 38,
+                        "total_damage_done": 73,
+                        "glancing_shield_blocks": 0,
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.stats.stats_text_1",
+                    "args": {
+                        "name": "<red>Svartalvsj\u00e4gare<\/red>",
+                        "blocks": 3,
+                        "dodges": 7,
+                        "misses": 0,
+                        "damage_done": 388,
+                        "damage_taken": 409,
+                        "critical_hits": 0,
+                        "shield_blocks": 0,
+                        "weapon_blocks": 3,
+                        "partial_misses": 0,
+                        "attacks_against": 27,
+                        "glancing_dodges": 2,
+                        "max_damage_done": 43,
+                        "total_damage_done": 671,
+                        "glancing_shield_blocks": 0,
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ledare",
+                "off_hand_id": 962,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 0,
+                    "damage_done": 0,
+                    "damage_taken": 0,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 0,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 0,
+                    "total_damage_done": 0,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 36,
+                "fightable_id": 1646,
+                "focused_role": "Provokat\u00f6r",
+                "main_hand_id": 50,
+                "battle_tactic": 5,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 173,
+                "battle_tactic_name": "DEFENSIVE_HEAVY",
+                "give_up_percentage": 0.3
+            }
+        }
+    ],
+    "legacy_rounds": null,
+    "extra_audience": false,
+    "live": true,
+    "finished": true,
+    "next_round_at": "2026-09-03T13:14:40.000000Z",
+    "microtime": "0.38894400 1788441288",
+    "seconds_to_next_round": 7,
+    "created_at": "2026-09-03T13:13:17.000000Z",
+    "roles_enabled": true,
+    "one_on_one": false,
+    "monster_ladder_rewards": [],
+    "participants": [
+        {
+            "id": 1209842,
+            "won": false,
+            "slayed": false,
+            "infirmary": false,
+            "team": 1,
+            "xp_gained": 0,
+            "coins_gained": 0,
+            "name_nr": "",
+            "unique_id": "avatar_1646",
+            "role_type": "SUPPORT",
+            "focused_role_type": "TAUNT",
+            "given_up": true,
+            "fighter": {
+                "level": 17,
+                "name": "Rotv\u00e4ltare Br\u00fbshm\u00e9c",
+                "id": 1646,
+                "is_avatar": true,
+                "race": "ork",
+                "captain": true,
+                "unique_id": "avatar_1646",
+                "dead": false
+            }
+        },
+        {
+            "id": 1209843,
+            "won": false,
+            "slayed": false,
+            "infirmary": false,
+            "team": 1,
+            "xp_gained": 0,
+            "coins_gained": 0,
+            "name_nr": "",
+            "unique_id": "avatar_44",
+            "role_type": "DPS",
+            "focused_role_type": "TAUNT",
+            "given_up": true,
+            "fighter": {
+                "level": 18,
+                "name": "M\u00e4staren Mjurnira",
+                "id": 44,
+                "is_avatar": true,
+                "race": "dv\u00e4rg",
+                "captain": false,
+                "unique_id": "avatar_44",
+                "dead": false
+            }
+        },
+        {
+            "id": 1209844,
+            "won": false,
+            "slayed": false,
+            "infirmary": false,
+            "team": 1,
+            "xp_gained": 0,
+            "coins_gained": 0,
+            "name_nr": "",
+            "unique_id": "avatar_29",
+            "role_type": "TAUNT",
+            "focused_role_type": "TAUNT",
+            "given_up": true,
+            "fighter": {
+                "level": 18,
+                "name": "M\u00e4staren Agh",
+                "id": 29,
+                "is_avatar": true,
+                "race": "goblin",
+                "captain": false,
+                "unique_id": "avatar_29",
+                "dead": false
+            }
+        },
+        {
+            "id": 1209845,
+            "won": true,
+            "slayed": false,
+            "infirmary": false,
+            "team": 2,
+            "xp_gained": 0,
+            "coins_gained": 0,
+            "name_nr": "",
+            "unique_id": "npc_243_RyDaGudR8GFBckng",
+            "role_type": null,
+            "focused_role_type": null,
+            "given_up": false,
+            "fighter": {
+                "level": 28,
+                "name": "Svartalvsj\u00e4gare",
+                "id": 243,
+                "is_avatar": false,
+                "race": "alv",
+                "captain": false,
+                "unique_id": "npc_243_RyDaGudR8GFBckng",
+                "dead": false
+            }
+        }
+    ],
+    "team_participants": [],
+    "tactics": {
+        "give_up_percentage": "30%",
+        "give_up_percentage_value": 0.3,
+        "battle_tactic": "Defensiv - tunga attacker",
+        "start_hp": 173,
+        "battle_tactic_value": 5,
+        "focused_role": 1,
+        "battle_role": 2,
+        "planned_consumable": null
+    },
+    "tournament": null,
+    "ranking_points": []
+}

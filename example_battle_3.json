@@ -1,0 +1,1385 @@
+{
+    "id": 506398,
+    "may_see": true,
+    "type": 3,
+    "mode": 0,
+    "mode_display": "Normal",
+    "is_adventure_battle": false,
+    "is_monster_ladder_battle": false,
+    "live_pause": null,
+    "show_battle_info": true,
+    "type_display": "lagspel",
+    "audience_count": 52321,
+    "rounds": [
+        {
+            "order": 0,
+            "text": [
+                {
+                    "key": "battle.start.start_text_4",
+                    "args": {
+                        "weapon": " Skallslaga ",
+                        "player_one": "<red>Brog<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_4",
+                    "args": {
+                        "player_one": "<red>Brog<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_5",
+                    "args": {
+                        "damage": "<strong>32<\/strong>",
+                        "weapon": " Skallslaga ",
+                        "armor_name": "Onkhv\u00e4vsm\u00f6ssa",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Brog<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "armor_block": 3,
+                        "body_hit_area": "huvudet",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.racials.orc_proc",
+                    "args": {
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.ranged.ranged_attack_text_2",
+                    "args": {
+                        "damage": "<strong>2<\/strong>",
+                        "weapon": "Slunga",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "body_hit_area": "huvudet",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.enchant_debuff_stat.enchant_debuff_stat_text_4",
+                    "args": {
+                        "stat": "Undvika anfall",
+                        "value": 5,
+                        "weapon": "Slunga",
+                        "enchant": "Slunga",
+                        "player_one": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.enchant_debuff_weaponskill.enchant_debuff_weaponskill_text_2",
+                    "args": {
+                        "value": 4,
+                        "weapon": "Slunga",
+                        "enchant": "Slunga",
+                        "player_one": "<red>Isana Valjyre<\/red>",
+                        "weaponskill": "yxor, k\u00e4ttingvapen, hammare, stickvapen, stavar och sv\u00e4rd",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_16",
+                    "args": {
+                        "weapon": "Morgulyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_8",
+                    "args": {
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.shield_block.shield_block_text_3",
+                    "args": {
+                        "damage": "<strong>17<\/strong>",
+                        "weapon": "Morgulyxa",
+                        "absorbed": 12,
+                        "block_item": "Stor tr\u00e4sksk\u00f6ld",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.ranged_miss.ranged_miss_text_4",
+                    "args": {
+                        "weapon": "N\/A",
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Brog<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_20",
+                    "args": {
+                        "weapon": "Tr\u00e4skhammare",
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Brog<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_10",
+                    "args": {
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Brog<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.racials.troll_proc",
+                    "args": {
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Brog<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_3",
+                    "args": {
+                        "damage": "<strong>39<\/strong>",
+                        "weapon": "Tr\u00e4skhammare",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Brog<\/red>",
+                        "body_hit_area": "benen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.racials.orc_proc",
+                    "args": {
+                        "player_one": "<red>Brog<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.ranged.ranged_attack_text_3",
+                    "args": {
+                        "damage": "<strong>1<\/strong>",
+                        "weapon": "N\/A",
+                        "player_one": "<red>Isana Valjyre<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "body_hit_area": "benen",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_14",
+                    "args": {
+                        "weapon": "Bevandrad molnhammare",
+                        "player_one": "<red>Isana Valjyre<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_7",
+                    "args": {
+                        "player_one": "<red>Isana Valjyre<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_2",
+                    "args": {
+                        "damage": "<strong>27<\/strong>",
+                        "weapon": "Bevandrad molnhammare",
+                        "armor_name": "Onkhv\u00e4vsm\u00f6ssa",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Isana Valjyre<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "armor_block": 3,
+                        "body_hit_area": "huvudet",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_5",
+                    "args": {
+                        "weapon": "Bevandrad molnhammare",
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_5",
+                    "args": {
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_6",
+                    "args": {
+                        "damage": "<strong>29<\/strong>",
+                        "weapon": "Bevandrad molnhammare",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.racials.absorption",
+                    "args": {
+                        "damage": "<strong>2<\/strong>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ingen",
+                "off_hand_id": 962,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 0,
+                    "damage_done": 2,
+                    "damage_taken": 60,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 2,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 2,
+                    "total_damage_done": 31,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 123,
+                "fightable_id": 1646,
+                "focused_role": "Ingen",
+                "main_hand_id": 50,
+                "battle_tactic": 8,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 183,
+                "battle_tactic_name": "OFFENSIVE_HEAVY",
+                "give_up_percentage": 0.3
+            }
+        },
+        {
+            "order": 1,
+            "text": [
+                {
+                    "key": "battle.start.start_text_23",
+                    "args": {
+                        "weapon": " Skallslaga ",
+                        "player_one": "<red>Brog<\/red>",
+                        "player_two": "<green>Wesker<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_1",
+                    "args": {
+                        "player_one": "<red>Brog<\/red>",
+                        "player_two": "<green>Wesker<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_5",
+                    "args": {
+                        "damage": "<strong>62 <i class=\"fa fa-stars\"><\/i><\/strong>",
+                        "weapon": " Skallslaga ",
+                        "armor_name": "Axelskydd av stansat svartst\u00e5l",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Brog<\/red>",
+                        "player_two": "<green>Wesker<\/green>",
+                        "armor_block": 5,
+                        "body_hit_area": "axlarna",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.critical_attack_suffix.critical_attack_suffix_text_3",
+                    "args": {
+                        "player_one": "<red>Brog<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_20",
+                    "args": {
+                        "weapon": "Morgulyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Brog<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_2",
+                    "args": {
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Brog<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_3",
+                    "args": {
+                        "damage": "<strong>36<\/strong>",
+                        "weapon": "Morgulyxa",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Brog<\/red>",
+                        "body_hit_area": "huvudet",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_8",
+                    "args": {
+                        "weapon": "Tr\u00e4skhammare",
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_9",
+                    "args": {
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.shield_block.shield_block_text_4",
+                    "args": {
+                        "damage": "<strong>24<\/strong>",
+                        "weapon": "Tr\u00e4skhammare",
+                        "absorbed": 12,
+                        "block_item": "Stor tr\u00e4sksk\u00f6ld",
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_9",
+                    "args": {
+                        "weapon": "Bevandrad molnhammare",
+                        "player_one": "<red>Isana Valjyre<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_1",
+                    "args": {
+                        "player_one": "<red>Isana Valjyre<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.weapon_block.weapon_block_text_2",
+                    "args": {
+                        "damage": "<strong>26<\/strong>",
+                        "weapon": "Bevandrad molnhammare",
+                        "block_item": "Bevandrad krigsyxa",
+                        "player_one": "<red>Isana Valjyre<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ingen",
+                "off_hand_id": 962,
+                "round_stats": {
+                    "blocks": 1,
+                    "dodges": 0,
+                    "misses": 0,
+                    "damage_done": 36,
+                    "damage_taken": 0,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 1,
+                    "partial_misses": 0,
+                    "attacks_against": 1,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 36,
+                    "total_damage_done": 36,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 123,
+                "fightable_id": 1646,
+                "focused_role": "Ingen",
+                "main_hand_id": 50,
+                "battle_tactic": 8,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 183,
+                "battle_tactic_name": "OFFENSIVE_HEAVY",
+                "give_up_percentage": 0.3
+            }
+        },
+        {
+            "order": 2,
+            "text": [
+                {
+                    "key": "battle.start.start_text_27",
+                    "args": {
+                        "weapon": " Skallslaga ",
+                        "player_one": "<red>Brog<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_8",
+                    "args": {
+                        "player_one": "<red>Brog<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_6",
+                    "args": {
+                        "damage": "<strong>27<\/strong>",
+                        "weapon": " Skallslaga ",
+                        "armor_name": "Onkhv\u00e4vsjacka",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Brog<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "armor_block": 3,
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_15",
+                    "args": {
+                        "weapon": "Morgulyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_8",
+                    "args": {
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_partial_miss.attack_text_4",
+                    "args": {
+                        "damage": "<strong>10<\/strong>",
+                        "weapon": "Morgulyxa",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "body_hit_area": "axlarna",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.racials.absorption",
+                    "args": {
+                        "damage": "<strong>2<\/strong>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_4",
+                    "args": {
+                        "weapon": "Tr\u00e4skhammare",
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Brog<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_10",
+                    "args": {
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Brog<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_4",
+                    "args": {
+                        "damage": "<strong>35<\/strong>",
+                        "weapon": "Tr\u00e4skhammare",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Brog<\/red>",
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_8",
+                    "args": {
+                        "weapon": "Bevandrad molnhammare",
+                        "player_one": "<red>Isana Valjyre<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_3",
+                    "args": {
+                        "player_one": "<red>Isana Valjyre<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_5",
+                    "args": {
+                        "damage": "<strong>28<\/strong>",
+                        "weapon": "Bevandrad molnhammare",
+                        "armor_name": "Bevandrade tygbyxor",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Isana Valjyre<\/red>",
+                        "player_two": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "armor_block": 2,
+                        "body_hit_area": "benen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_3",
+                    "args": {
+                        "weapon": "Bevandrad molnhammare",
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_9",
+                    "args": {
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_5",
+                    "args": {
+                        "damage": "<strong>26<\/strong>",
+                        "weapon": "Bevandrad molnhammare",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.racials.absorption",
+                    "args": {
+                        "damage": "<strong>2<\/strong>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ingen",
+                "off_hand_id": 962,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 1,
+                    "damage_done": 10,
+                    "damage_taken": 55,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 1,
+                    "attacks_against": 2,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 10,
+                    "total_damage_done": 10,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 68,
+                "fightable_id": 1646,
+                "focused_role": "Ingen",
+                "main_hand_id": 50,
+                "battle_tactic": 8,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 183,
+                "battle_tactic_name": "OFFENSIVE_HEAVY",
+                "give_up_percentage": 0.3
+            }
+        },
+        {
+            "order": 3,
+            "text": [
+                {
+                    "key": "battle.start.start_text_5",
+                    "args": {
+                        "weapon": " Skallslaga ",
+                        "player_one": "<red>Brog<\/red>",
+                        "player_two": "<green>Wesker<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_1",
+                    "args": {
+                        "player_one": "<red>Brog<\/red>",
+                        "player_two": "<green>Wesker<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_1",
+                    "args": {
+                        "damage": "<strong>37<\/strong>",
+                        "weapon": " Skallslaga ",
+                        "armor_name": "Axelskydd av stansat svartst\u00e5l",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Brog<\/red>",
+                        "player_two": "<green>Wesker<\/green>",
+                        "armor_block": 5,
+                        "body_hit_area": "axlarna",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_19",
+                    "args": {
+                        "weapon": "Morgulyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Brog<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_7",
+                    "args": {
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Brog<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_6",
+                    "args": {
+                        "damage": "<strong>32<\/strong>",
+                        "weapon": "Morgulyxa",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Brog<\/red>",
+                        "body_hit_area": "br\u00f6stkorgen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.too_much_damage.too_much_damage_text_4",
+                    "args": {
+                        "player": "<red>Brog<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_10",
+                    "args": {
+                        "weapon": "Tr\u00e4skhammare",
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.shield_block.shield_block_text_1",
+                    "args": {
+                        "damage": "<strong>19<\/strong>",
+                        "weapon": "Tr\u00e4skhammare",
+                        "absorbed": 12,
+                        "block_item": "Stor tr\u00e4sksk\u00f6ld",
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.slow.slow_text_20",
+                    "args": {
+                        "weapon": "Bevandrad molnhammare",
+                        "player_one": "<red>Isana Valjyre<\/red>",
+                        "player_two": "<green>Wesker<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.taunt.taunt_text_8",
+                    "args": {
+                        "player_one": "<red>Isana Valjyre<\/red>",
+                        "player_two": "<green>Wesker<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_with_armor_block.attack_with_armor_block_text_1",
+                    "args": {
+                        "damage": "<strong>25<\/strong>",
+                        "weapon": "Bevandrad molnhammare",
+                        "armor_name": "Axelskydd av stansat svartst\u00e5l",
+                        "block_item": "N\/A",
+                        "player_one": "<red>Isana Valjyre<\/red>",
+                        "player_two": "<green>Wesker<\/green>",
+                        "armor_block": 5,
+                        "body_hit_area": "axlarna",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.second.second_text_6",
+                    "args": {
+                        "weapon": "Bevandrad krigsyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.shield_block.shield_block_text_2",
+                    "args": {
+                        "damage": "<strong>21<\/strong>",
+                        "weapon": "Bevandrad krigsyxa",
+                        "absorbed": 12,
+                        "block_item": "Stor tr\u00e4sksk\u00f6ld",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.item_broken.item_broken_text_1",
+                    "args": {
+                        "player": "Isana Valjyre",
+                        "block_item": "Stor tr\u00e4sksk\u00f6ld",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ingen",
+                "off_hand_id": 962,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 0,
+                    "damage_done": 32,
+                    "damage_taken": 0,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 0,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 32,
+                    "total_damage_done": 65,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 68,
+                "fightable_id": 1646,
+                "focused_role": "Ingen",
+                "main_hand_id": 50,
+                "battle_tactic": 8,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 183,
+                "battle_tactic_name": "OFFENSIVE_HEAVY",
+                "give_up_percentage": 0.3
+            }
+        },
+        {
+            "order": 4,
+            "text": [
+                {
+                    "key": "battle.start.start_text_11",
+                    "args": {
+                        "weapon": "Morgulyxa",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack_partial_miss.attack_text_2",
+                    "args": {
+                        "damage": "<strong>10<\/strong>",
+                        "weapon": "Morgulyxa",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "body_hit_area": "armen",
+                        "dodge_and_parry": "undvika och parera",
+                        "relative_injury": "mycket l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.racials.absorption",
+                    "args": {
+                        "damage": "<strong>2<\/strong>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.start.start_text_22",
+                    "args": {
+                        "weapon": "Tr\u00e4skhammare",
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.attack.attack_text_4",
+                    "args": {
+                        "damage": "<strong>29<\/strong>",
+                        "weapon": "Tr\u00e4skhammare",
+                        "block_item": "N\/A",
+                        "player_one": "<green>Wesker<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "body_hit_area": "armen",
+                        "dodge_and_parry": "undvika",
+                        "relative_injury": "l\u00e4tt",
+                        "block_item_absorb": null,
+                        "block_item_damage": "<strong><\/strong>"
+                    }
+                },
+                {
+                    "key": "battle.racials.absorption",
+                    "args": {
+                        "damage": "<strong>2<\/strong>",
+                        "player_two": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.too_much_damage.too_much_damage_text_1",
+                    "args": {
+                        "player": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.line_break.line_break_text_1",
+                    "args": []
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ingen",
+                "off_hand_id": 962,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 1,
+                    "damage_done": 10,
+                    "damage_taken": 0,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 1,
+                    "attacks_against": 0,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 10,
+                    "total_damage_done": 10,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 68,
+                "fightable_id": 1646,
+                "focused_role": "Ingen",
+                "main_hand_id": 50,
+                "battle_tactic": 8,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 183,
+                "battle_tactic_name": "OFFENSIVE_HEAVY",
+                "give_up_percentage": 0.3
+            }
+        },
+        {
+            "order": 5,
+            "text": [
+                {
+                    "key": "battle.winners.winners_text_1",
+                    "args": {
+                        "players": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green> och <green>Wesker<\/green>",
+                        "player_two": "<red>Isana Valjyre<\/red> och <red>Brog<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.avatar_of_the_game.avatar_of_the_game_4",
+                    "args": {
+                        "player": "<green>Wesker<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.winner_simple.winner_simple_text_4",
+                    "args": {
+                        "xp": "<strong>102<\/strong>",
+                        "coins": "<strong>6<\/strong>",
+                        "player": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.winner_simple.winner_simple_text_3",
+                    "args": {
+                        "xp": "<strong>113<\/strong>",
+                        "coins": "<strong>3<\/strong>",
+                        "player": "<green>Wesker<\/green>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.losers.losers_text_4",
+                    "args": {
+                        "players": "<red>Isana Valjyre<\/red> och <red>Brog<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.loser_simple.loser_simple_text_4",
+                    "args": {
+                        "xp": "<strong>54<\/strong>",
+                        "coins": "<strong>1<\/strong>",
+                        "player": "<red>Isana Valjyre<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.loser_simple.loser_simple_text_1",
+                    "args": {
+                        "xp": "<strong>27<\/strong>",
+                        "coins": "<strong>1<\/strong>",
+                        "player": "<red>Brog<\/red>",
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.break.break_text_1",
+                    "args": []
+                },
+                {
+                    "key": "battle.stats.stats_text_1",
+                    "args": {
+                        "name": "<green>Rotv\u00e4ltare Br\u00fbshm\u00e9c<\/green>",
+                        "blocks": 1,
+                        "dodges": 0,
+                        "misses": 2,
+                        "damage_done": 90,
+                        "damage_taken": 115,
+                        "critical_hits": 0,
+                        "shield_blocks": 0,
+                        "weapon_blocks": 1,
+                        "partial_misses": 2,
+                        "attacks_against": 5,
+                        "glancing_dodges": 0,
+                        "max_damage_done": 36,
+                        "total_damage_done": 152,
+                        "glancing_shield_blocks": 0,
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.stats.stats_text_1",
+                    "args": {
+                        "name": "<green>Wesker<\/green>",
+                        "blocks": 0,
+                        "dodges": 0,
+                        "misses": 0,
+                        "damage_done": 158,
+                        "damage_taken": 124,
+                        "critical_hits": 0,
+                        "shield_blocks": 0,
+                        "weapon_blocks": 0,
+                        "partial_misses": 0,
+                        "attacks_against": 3,
+                        "glancing_dodges": 0,
+                        "max_damage_done": 39,
+                        "total_damage_done": 225,
+                        "glancing_shield_blocks": 0,
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.stats.stats_text_1",
+                    "args": {
+                        "name": "<red>Isana Valjyre<\/red>",
+                        "blocks": 4,
+                        "dodges": 0,
+                        "misses": 0,
+                        "damage_done": 81,
+                        "damage_taken": 106,
+                        "critical_hits": 0,
+                        "shield_blocks": 4,
+                        "weapon_blocks": 0,
+                        "partial_misses": 0,
+                        "attacks_against": 9,
+                        "glancing_dodges": 0,
+                        "max_damage_done": 28,
+                        "total_damage_done": 107,
+                        "glancing_shield_blocks": 0,
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                },
+                {
+                    "key": "battle.stats.stats_text_1",
+                    "args": {
+                        "name": "<red>Brog<\/red>",
+                        "blocks": 0,
+                        "dodges": 0,
+                        "misses": 0,
+                        "damage_done": 158,
+                        "damage_taken": 142,
+                        "critical_hits": 1,
+                        "shield_blocks": 0,
+                        "weapon_blocks": 0,
+                        "partial_misses": 0,
+                        "attacks_against": 4,
+                        "glancing_dodges": 0,
+                        "max_damage_done": 62,
+                        "total_damage_done": 158,
+                        "glancing_shield_blocks": 0,
+                        "dodge_and_parry": "undvika och parera"
+                    }
+                }
+            ],
+            "participant_data": {
+                "shield_id": null,
+                "battle_role": "Ingen",
+                "off_hand_id": 962,
+                "round_stats": {
+                    "blocks": 0,
+                    "dodges": 0,
+                    "misses": 0,
+                    "damage_done": 0,
+                    "damage_taken": 0,
+                    "critical_hits": 0,
+                    "shield_blocks": 0,
+                    "weapon_blocks": 0,
+                    "partial_misses": 0,
+                    "attacks_against": 0,
+                    "glancing_dodges": 0,
+                    "max_damage_done": 0,
+                    "total_damage_done": 0,
+                    "glancing_shield_blocks": 0
+                },
+                "fightable_hp": 68,
+                "fightable_id": 1646,
+                "focused_role": "Ingen",
+                "main_hand_id": 50,
+                "battle_tactic": 8,
+                "fightable_type": "App\\Models\\Avatar",
+                "fightable_max_hp": 183,
+                "battle_tactic_name": "OFFENSIVE_HEAVY",
+                "give_up_percentage": 0.3
+            }
+        }
+    ],
+    "legacy_rounds": null,
+    "extra_audience": false,
+    "live": false,
+    "finished": true,
+    "next_round_at": null,
+    "microtime": "0.89318300 1788444883",
+    "seconds_to_next_round": -1,
+    "created_at": "2026-09-03T14:00:17.000000Z",
+    "roles_enabled": false,
+    "one_on_one": false,
+    "monster_ladder_rewards": [],
+    "participants": [
+        {
+            "id": 1214297,
+            "won": true,
+            "slayed": false,
+            "infirmary": false,
+            "team": 1,
+            "xp_gained": 102,
+            "coins_gained": 6,
+            "name_nr": "",
+            "unique_id": "avatar_1646",
+            "role_type": "NONE",
+            "focused_role_type": "NONE",
+            "given_up": false,
+            "fighter": {
+                "level": 18,
+                "name": "Rotv\u00e4ltare Br\u00fbshm\u00e9c",
+                "id": 1646,
+                "is_avatar": true,
+                "race": "ork",
+                "captain": true,
+                "unique_id": "avatar_1646",
+                "dead": false
+            }
+        },
+        {
+            "id": 1214298,
+            "won": true,
+            "slayed": false,
+            "infirmary": false,
+            "team": 1,
+            "xp_gained": 113,
+            "coins_gained": 3,
+            "name_nr": "",
+            "unique_id": "avatar_1867",
+            "role_type": "NONE",
+            "focused_role_type": "NONE",
+            "given_up": false,
+            "fighter": {
+                "level": 18,
+                "name": "Wesker",
+                "id": 1867,
+                "is_avatar": true,
+                "race": "troll",
+                "captain": false,
+                "unique_id": "avatar_1867",
+                "dead": false
+            }
+        },
+        {
+            "id": 1214299,
+            "won": false,
+            "slayed": false,
+            "infirmary": false,
+            "team": 2,
+            "xp_gained": 54,
+            "coins_gained": 1,
+            "name_nr": "",
+            "unique_id": "avatar_1938",
+            "role_type": "NONE",
+            "focused_role_type": "NONE",
+            "given_up": false,
+            "fighter": {
+                "level": 18,
+                "name": "Isana Valjyre",
+                "id": 1938,
+                "is_avatar": true,
+                "race": "dv\u00e4rg",
+                "captain": false,
+                "unique_id": "avatar_1938",
+                "dead": false
+            }
+        },
+        {
+            "id": 1214300,
+            "won": false,
+            "slayed": false,
+            "infirmary": false,
+            "team": 2,
+            "xp_gained": 27,
+            "coins_gained": 1,
+            "name_nr": "",
+            "unique_id": "avatar_1914",
+            "role_type": "NONE",
+            "focused_role_type": "NONE",
+            "given_up": false,
+            "fighter": {
+                "level": 18,
+                "name": "Brog",
+                "id": 1914,
+                "is_avatar": true,
+                "race": "ork",
+                "captain": true,
+                "unique_id": "avatar_1914",
+                "dead": false
+            }
+        }
+    ],
+    "team_participants": [],
+    "tactics": {
+        "give_up_percentage": "30%",
+        "give_up_percentage_value": 0.3,
+        "battle_tactic": "Offensiv - tunga attacker",
+        "start_hp": 183,
+        "battle_tactic_value": 8,
+        "focused_role": 0,
+        "battle_role": 0,
+        "planned_consumable": null
+    },
+    "tournament": null,
+    "ranking_points": []
+}

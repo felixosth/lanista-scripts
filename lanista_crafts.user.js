@@ -182,14 +182,19 @@
 		const text = Array.from(round.querySelectorAll('.battle-text'))
 			.map((element) => element.innerText.replace(/\s+/g, ' ').trim())
 			.join(' ');
-		const names = Array.from(round.querySelectorAll('green, red'))
-			.map((element) => element.innerText.trim())
-			.filter(Boolean)
-			.filter((name, index, all) => all.indexOf(name) === index);
+		const sideByName = new Map();
+		round.querySelectorAll('green, red').forEach((element) => {
+			const name = element.innerText.trim();
+			if (name && !sideByName.has(name)) {
+				sideByName.set(name, element.tagName.toLowerCase() === 'green' ? 'ally' : 'enemy');
+			}
+		});
+		const names = Array.from(sideByName.keys());
 		const stats = new Map(names.map((name) => [name, {
 			damageDone: 0,
 			damageTaken: 0,
 			maxDamageDone: 0,
+			healingDone: 0,
 			dodges: 0,
 			parries: 0,
 			blocks: 0,
@@ -211,15 +216,32 @@
 			else if (/undvik/i.test(sentence)) incrementStat(stats, lastName, 'dodges');
 			if (/lyckas parera|parera med/i.test(sentence)) incrementStat(stats, lastName, 'parries');
 			if (!/misslyckas/i.test(sentence) && /blockera|absorberas/i.test(sentence)) incrementStat(stats, lastName, 'blocks');
+			const healIndex = sentence.indexOf('helas med');
+			if (healIndex >= 0) {
+				const heal = parseInt(sentence.slice(healIndex + 'helas med'.length), 10);
+				if (!Number.isNaN(heal)) stats.get(lastName).healingDone += heal;
+			}
 		});
 
 		for (const match of text.matchAll(/skad(?:ar|as)(?: sig)?[^.()]{0,100}\((\d+)\s*\)/gi)) {
 			const sentenceStart = text.lastIndexOf('.', match.index) + 1;
-			const sentence = text.slice(sentenceStart, match.index + match[0].length);
-			const mentionedNames = namesIn(sentence);
+			let mentionedNames = namesIn(text.slice(sentenceStart, match.index + match[0].length));
+			// "X skadar sig (n)" only names the victim - it's how the game phrases "X takes
+			// damage" - and the attacker is often introduced a sentence or more earlier in
+			// the same exchange (sometimes with a name-less clause like an armor absorb in
+			// between). When the immediate clause doesn't have both names, widen the search
+			// to the whole round so far and take the two most recently mentioned distinct
+			// names instead of assuming attacker/target share a sentence.
+			let widened = false;
+			if (mentionedNames.length < 2) {
+				mentionedNames = namesIn(text.slice(0, match.index + match[0].length));
+				widened = true;
+			}
 			if (mentionedNames.length < 1) continue;
 			const target = mentionedNames[mentionedNames.length - 1];
-			const attacker = mentionedNames.length > 1 ? mentionedNames[0] : null;
+			const attacker = mentionedNames.length > 1
+				? (widened ? mentionedNames[mentionedNames.length - 2] : mentionedNames[0])
+				: null;
 			const damage = Number(match[1]);
 			stats.get(target).damageTaken += damage;
 			if (attacker && attacker !== target) {
@@ -228,28 +250,97 @@
 			}
 		}
 
-		return names.filter((name) => name !== currentName).map((name) => ({ name, ...stats.get(name) }));
+		return names.map((name) => ({ name, side: sideByName.get(name), isSelf: name === currentName, ...stats.get(name) }));
 	}
 
-	function addParticipantSummaries(round, currentName, damageTakenTotals) {
-		if (round.querySelector('[data-lanista-battle-summaries]')) return;
-		const participants = summarizeRound(round, currentName);
-		if (!participants.length) return;
-		const container = document.createElement('div');
-		container.dataset.lanistaBattleSummaries = 'true';
-		container.className = 'mt-2 space-y-1';
+	// The site colors names via real <green>/<red> tags, but the color rule is Vue
+	// scoped CSS tied to that component's internal data-v-* hash - it only takes effect
+	// inside an element carrying that exact attribute, which isn't something we can
+	// reliably reproduce (invented Tailwind classes like "text-green-700" fare no
+	// better: this page's CSS is purged down to only the utility classes its own
+	// templates use, so a class name we made up can silently match nothing). Instead we
+	// sample the real computed color off a live tag already on the page and apply it as
+	// an inline style, which works regardless of where our own elements live in the DOM.
+	function sideColors() {
+		const sample = (tag) => {
+			const element = document.querySelector(tag);
+			return element ? getComputedStyle(element).color : '';
+		};
+		return { ally: sample('green'), enemy: sample('red') };
+	}
+
+	function buildParticipantPanel(participant, totalDamageTaken, colors) {
+		const panel = document.createElement('div');
+		panel.className = 'rounded border border-border/60 bg-muted/35 px-2 py-1 text-xs';
+
+		const nameElement = document.createElement('span');
+		nameElement.className = 'font-semibold';
+		const color = colors[participant.side];
+		if (color) nameElement.style.color = color;
+		nameElement.textContent = participant.name + (participant.isSelf ? ' (Du)' : '');
+
+		const detailsElement = document.createElement('span');
+		detailsElement.className = 'text-muted-foreground';
+		detailsElement.textContent = ` -${participant.damageTaken} KP (${totalDamageTaken} totalt), gjorde ${participant.damageDone}, max ${participant.maxDamageDone}, läkte ${participant.healingDone}, undvek ${participant.dodges}, parerade ${participant.parries}, blockerade ${participant.blocks}, missade ${participant.misses}`;
+
+		panel.appendChild(nameElement);
+		panel.appendChild(detailsElement);
+		return panel;
+	}
+
+	function renderParticipantSummaries(round, participants, totals) {
+		const signature = JSON.stringify(participants);
+		let container = round.querySelector(':scope > [data-lanista-battle-summaries]');
+		if (container && container.dataset.lanistaBattleSignature === signature) return;
+
+		if (!container) {
+			container = document.createElement('div');
+			container.dataset.lanistaBattleSummaries = 'true';
+			container.className = 'mt-2 space-y-1';
+			round.appendChild(container);
+		} else {
+			container.innerHTML = '';
+		}
+		container.dataset.lanistaBattleSignature = signature;
+
+		const colors = sideColors();
 		participants.forEach((participant) => {
-			const totalDamageTaken = (damageTakenTotals.get(participant.name) || 0) + participant.damageTaken;
-			damageTakenTotals.set(participant.name, totalDamageTaken);
-			const panel = document.createElement('div');
-			panel.className = 'rounded border border-border/60 bg-muted/35 px-2 py-1 text-xs';
-			panel.innerHTML = '<span class="font-semibold"></span><span class="text-muted-foreground"></span>';
-			const [nameElement, detailsElement] = panel.querySelectorAll('span');
-			nameElement.textContent = participant.name;
-			detailsElement.textContent = ` -${participant.damageTaken} KP (${totalDamageTaken} totalt), gjorde ${participant.damageDone}, max ${participant.maxDamageDone}, undvek ${participant.dodges}, parerade ${participant.parries}, blockerade ${participant.blocks}, missade ${participant.misses}`;
-			container.appendChild(panel);
+			const totalDamageTaken = totals.get(participant.name)?.damageTaken || 0;
+			container.appendChild(buildParticipantPanel(participant, totalDamageTaken, colors));
 		});
-		round.appendChild(container);
+	}
+
+	function renderBattleTotals(host, beforeNode, totals) {
+		const entries = Array.from(totals, ([name, stats]) => ({ name, ...stats }));
+		const signature = JSON.stringify(entries);
+		let card = host.querySelector(':scope > [data-lanista-battle-totals]');
+		const inPlace = card && card.nextSibling === beforeNode;
+		if (card && card.dataset.lanistaBattleSignature === signature && inPlace) return;
+
+		// Rendered as its own card (matching the round cards' own classes) and inserted
+		// as a sibling in the rounds list, rather than nested inside round 1's card -
+		// that lets the list's own spacing/padding rules apply to it like any other round
+		// instead of us guessing at margins.
+		if (!card) {
+			card = document.createElement('div');
+			card.dataset.lanistaBattleTotals = 'true';
+			card.className = 'bg-card text-card-foreground flex flex-col gap-0 rounded border py-2 shadow-xl surface-card border-border/70';
+		} else {
+			card.innerHTML = '';
+		}
+		card.dataset.lanistaBattleSignature = signature;
+
+		const body = document.createElement('div');
+		body.className = 'px-2 md:px-4 space-y-1';
+		const heading = document.createElement('p');
+		heading.className = 'mb-1 font-semibold';
+		heading.textContent = 'Totalt för striden';
+		body.appendChild(heading);
+		const colors = sideColors();
+		entries.forEach((participant) => body.appendChild(buildParticipantPanel(participant, participant.damageTaken, colors)));
+		card.appendChild(body);
+
+		if (!inPlace) host.insertBefore(card, beforeNode);
 	}
 
 	async function scanBattlePage() {
@@ -260,11 +351,47 @@
 				.catch(() => '');
 		}
 		const currentName = await currentAvatarPromise;
-		const damageTakenTotals = new Map();
-		document.querySelectorAll('p.font-semibold').forEach((heading) => {
-			if (!/^Runda \d+$/.test(heading.innerText.trim())) return;
-			addParticipantSummaries(heading.parentElement, currentName, damageTakenTotals);
+
+		// Live battles stream rounds in one at a time, so we always recompute every
+		// round from the current DOM state (in round-number order) rather than trusting
+		// a per-round "already summarized" flag - otherwise a round that was only
+		// partially rendered when first seen would get its stats locked in forever, and
+		// the running total would reset to just that round's damage instead of staying
+		// cumulative. Rendering is still skipped per-round when nothing changed, so this
+		// settles down instead of looping once every round is stable.
+		const rounds = Array.from(document.querySelectorAll('p.font-semibold'))
+			.map((heading) => {
+				const match = heading.innerText.trim().match(/^Runda (\d+)$/);
+				return match ? { number: Number(match[1]), container: heading.parentElement } : null;
+			})
+			.filter(Boolean)
+			.sort((left, right) => left.number - right.number);
+
+		const totals = new Map();
+		rounds.forEach(({ container }) => {
+			const participants = summarizeRound(container, currentName);
+			participants.forEach((participant) => {
+				const entry = totals.get(participant.name) || {
+					damageDone: 0, damageTaken: 0, maxDamageDone: 0, healingDone: 0,
+					dodges: 0, parries: 0, blocks: 0, misses: 0, side: participant.side, isSelf: participant.isSelf
+				};
+				entry.damageDone += participant.damageDone;
+				entry.damageTaken += participant.damageTaken;
+				entry.maxDamageDone = Math.max(entry.maxDamageDone, participant.maxDamageDone);
+				entry.healingDone += participant.healingDone;
+				entry.dodges += participant.dodges;
+				entry.parries += participant.parries;
+				entry.blocks += participant.blocks;
+				entry.misses += participant.misses;
+				totals.set(participant.name, entry);
+			});
+			if (participants.length) renderParticipantSummaries(container, participants, totals);
 		});
+
+		if (rounds.length) {
+			const firstCard = rounds[0].container.parentElement;
+			renderBattleTotals(firstCard.parentElement, firstCard, totals);
+		}
 	}
 
 	const pageFeatures = [
