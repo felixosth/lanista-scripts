@@ -2,10 +2,13 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.4.0
+// @version     1.5.0
 //
 // @match       https://lanista.se/game/*
 // @grant       none
+//
+// @downloadURL https://github.com/felixosth/lanista-scripts/raw/refs/heads/main/lanista_crafts.user.js
+// @updateURL   https://github.com/felixosth/lanista-scripts/raw/refs/heads/main/lanista_crafts.user.js
 //
 // @author      -
 // @description Adds material and effect columns to the craft table.
@@ -269,6 +272,21 @@
 		return { ally: sample('green'), enemy: sample('red') };
 	}
 
+	// The end-of-battle block starts with a "Lag N går segrande ur striden!" heading,
+	// which (unlike the per-player reward flavor text right after it, which seems to
+	// vary by performance rather than strictly by win/loss) looks like a fixed,
+	// non-varying template. Rather than trying to match reward-sentence wording, we use
+	// it to find which side's name is mentioned first in that block - the site groups
+	// winners' reward lines before losers' - and treat that as the winning side.
+	function detectWinningSide() {
+		const heading = Array.from(document.querySelectorAll('p.font-semibold'))
+			.find((element) => /går segrande ur striden/i.test(element.innerText));
+		if (!heading) return null;
+		const firstTag = heading.parentElement.querySelector('green, red');
+		if (!firstTag) return null;
+		return firstTag.tagName.toLowerCase() === 'green' ? 'ally' : 'enemy';
+	}
+
 	function buildParticipantPanel(participant, totalDamageTaken, colors) {
 		const panel = document.createElement('div');
 		panel.className = 'rounded border border-border/60 bg-muted/35 px-2 py-1 text-xs';
@@ -277,7 +295,7 @@
 		nameElement.className = 'font-semibold';
 		const color = colors[participant.side];
 		if (color) nameElement.style.color = color;
-		nameElement.textContent = participant.name + (participant.isSelf ? ' (Du)' : '');
+		nameElement.textContent = (participant.isWinner ? '🏆 ' : '') + participant.name + (participant.isSelf ? ' (Du)' : '');
 
 		const detailsElement = document.createElement('span');
 		detailsElement.className = 'text-muted-foreground';
@@ -389,6 +407,10 @@
 		});
 
 		if (rounds.length) {
+			const winningSide = detectWinningSide();
+			if (winningSide) {
+				totals.forEach((entry) => { entry.isWinner = entry.side === winningSide; });
+			}
 			const firstCard = rounds[0].container.parentElement;
 			renderBattleTotals(firstCard.parentElement, firstCard, totals);
 		}
