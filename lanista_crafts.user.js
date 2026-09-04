@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.8.4
+// @version     1.8.5
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -71,6 +71,29 @@
 				const name = stripMarkup(bonus.bonusable_name).replace(/^vapenfärdigheten\s+/i, '');
 				return [value, name].filter(Boolean).join(' ');
 			})
+			.filter(Boolean)
+			.join(', ') || '-';
+	}
+
+	// craft.type_name is the recipe's own subtype (e.g. "sword", "shield", "chain") and comes
+	// straight from /api/crafts, so this needs no extra item fetch and works for any profession
+	// that happens to set it - recipes without a meaningful subtype (e.g. alchemy) simply omit it.
+	function formatType(craft) {
+		if (!craft.type_name) return '-';
+		return craft.type_name.charAt(0).toUpperCase() + craft.type_name.slice(1);
+	}
+
+	function formatLevel(craft) {
+		return craft.required_level != null ? `${craft.required_level}` : '-';
+	}
+
+	// The full item detail's "requirements" array covers both hard requirements ("Kräver att du
+	// har minst 90 i egenskapen Styrka") and soft/recommended ones ("Du bör ha minst 20 i
+	// vapenfärdigheten Sköldar") for whatever stat or weapon skill applies - requirement_text
+	// already spells out the stat name and value, so no per-stat branching is needed here.
+	function formatRequirements(item) {
+		return (item?.requirements || [])
+			.map((requirement) => stripMarkup(requirement.requirement_text))
 			.filter(Boolean)
 			.join(', ') || '-';
 	}
@@ -158,10 +181,11 @@
 	// filtered and this exact <tr> reused for a different craft in the meantime - without
 	// this, the fetch for the row's old craft would land its result into what is now a
 	// different row.
-	async function loadRecipe(craft, row, key, materialsCell, statsCell, effectsCell) {
+	async function loadRecipe(craft, row, key, materialsCell, requirementsCell, statsCell, effectsCell) {
 		materialsCell.textContent = formatMaterials(craft);
 		const item = await getItem(craft);
 		if (row.dataset.lanistaCraftsKey !== key) return;
+		requirementsCell.textContent = formatRequirements(item);
 		statsCell.textContent = formatStats(item);
 		effectsCell.textContent = formatEffects(item);
 	}
@@ -169,6 +193,26 @@
 	async function getCrafts() {
 		if (!craftsPromise) craftsPromise = fetch('/api/crafts').then((response) => response.ok ? response.json() : []);
 		return craftsPromise;
+	}
+
+	const CRAFTS_COLUMNS = [
+		{ key: 'type', label: 'Typ' },
+		{ key: 'level', label: 'Nivå' },
+		{ key: 'materials', label: 'Material' },
+		{ key: 'requirements', label: 'Krav' },
+		{ key: 'stats', label: 'Stats' },
+		{ key: 'effects', label: 'Effekter' }
+	];
+
+	function ensureCell(row, key, index) {
+		let cell = row.querySelector(`[data-lanista-crafts-cell="${key}"]`);
+		if (!cell) {
+			cell = document.createElement('td');
+			cell.dataset.lanistaCraftsCell = key;
+			cell.className = 'p-2 align-middle';
+			row.insertBefore(cell, row.cells[index] || null);
+		}
+		return cell;
 	}
 
 	async function addColumns(table) {
@@ -182,11 +226,24 @@
 		try {
 			const crafts = await getCrafts();
 
-			const priceHeader = Array.from(header.cells).find((cell) => cell.innerText.trim().toLowerCase() === 'pris');
-			const insertAt = priceHeader ? priceHeader.cellIndex + 1 : header.cells.length;
-
+			// Yrken/Pris are hidden (not removed) so Vue keeps patching real DOM nodes it still
+			// owns - splicing them out could desync its internal vnode/DOM index bookkeeping.
+			// The resulting index/hidden-column layout is resolved once and cached on the table's
+			// dataset because a hidden header's innerText reads as empty, so it can't be re-found
+			// by label text on later scans.
 			if (!header.querySelector('[data-lanista-crafts-column]')) {
-				['Material', 'Stats', 'Effekter'].forEach((label, offset) => {
+				const findHeader = (label) => Array.from(header.cells)
+					.find((cell) => cell.innerText.trim().toLowerCase() === label);
+				const priceHeader = findHeader('pris');
+				const yrkenHeader = findHeader('yrken');
+				const insertAt = priceHeader ? priceHeader.cellIndex + 1 : header.cells.length;
+				const hiddenIndexes = [priceHeader, yrkenHeader].filter(Boolean).map((cell) => cell.cellIndex);
+				hiddenIndexes.forEach((index) => { header.cells[index].style.display = 'none'; });
+
+				table.dataset.lanistaCraftsInsertAt = String(insertAt);
+				table.dataset.lanistaCraftsHiddenIndexes = JSON.stringify(hiddenIndexes);
+
+				CRAFTS_COLUMNS.forEach(({ label }, offset) => {
 					const cell = document.createElement('th');
 					cell.textContent = label;
 					cell.dataset.lanistaCraftsColumn = 'true';
@@ -195,8 +252,17 @@
 				});
 			}
 
+			const insertAt = Number(table.dataset.lanistaCraftsInsertAt);
+			const hiddenIndexes = JSON.parse(table.dataset.lanistaCraftsHiddenIndexes || '[]');
+
 			Array.from(table.tBodies).forEach((body) => {
 				Array.from(body.rows).forEach((row) => {
+					// Re-applied every scan (not just once) in case Vue's own re-render resets
+					// the inline style it doesn't know we added.
+					hiddenIndexes.forEach((index) => {
+						if (row.cells[index]) row.cells[index].style.display = 'none';
+					});
+
 					const name = row.cells[0]?.innerText.trim();
 					if (!name) return;
 					// Sorting/filtering re-renders this table by patching each existing <tr>'s
@@ -213,34 +279,19 @@
 
 					const craft = findCraft(crafts, row);
 
-					let materialsCell = row.querySelector('[data-lanista-crafts-cell="materials"]');
-					let statsCell = row.querySelector('[data-lanista-crafts-cell="stats"]');
-					let effectsCell = row.querySelector('[data-lanista-crafts-cell="effects"]');
-					if (!materialsCell) {
-						materialsCell = document.createElement('td');
-						materialsCell.dataset.lanistaCraftsCell = 'materials';
-						materialsCell.className = 'p-2 align-middle';
-						row.insertBefore(materialsCell, row.cells[insertAt] || null);
-					}
-					if (!statsCell) {
-						statsCell = document.createElement('td');
-						statsCell.dataset.lanistaCraftsCell = 'stats';
-						statsCell.className = 'p-2 align-middle';
-						row.insertBefore(statsCell, row.cells[insertAt + 1] || null);
-					}
-					if (!effectsCell) {
-						effectsCell = document.createElement('td');
-						effectsCell.dataset.lanistaCraftsCell = 'effects';
-						effectsCell.className = 'p-2 align-middle';
-						row.insertBefore(effectsCell, row.cells[insertAt + 2] || null);
-					}
+					const [typeCell, levelCell, materialsCell, requirementsCell, statsCell, effectsCell] =
+						CRAFTS_COLUMNS.map(({ key: cellKey }, offset) => ensureCell(row, cellKey, insertAt + offset));
 
+					typeCell.textContent = craft ? formatType(craft) : '-';
+					levelCell.textContent = craft ? formatLevel(craft) : '-';
 					materialsCell.textContent = craft ? '...' : '-';
+					requirementsCell.textContent = craft ? '...' : '-';
 					statsCell.textContent = craft ? '...' : '-';
 					effectsCell.textContent = craft ? '...' : '-';
 					if (craft) {
-						loadRecipe(craft, row, key, materialsCell, statsCell, effectsCell).catch(() => {
+						loadRecipe(craft, row, key, materialsCell, requirementsCell, statsCell, effectsCell).catch(() => {
 							if (row.dataset.lanistaCraftsKey !== key) return;
+							requirementsCell.textContent = '-';
 							statsCell.textContent = '-';
 							effectsCell.textContent = '-';
 						});
