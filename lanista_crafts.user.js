@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.6.0
+// @version     1.6.1
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -194,7 +194,11 @@
 			attacksMade: 0,
 			attacksAgainst: 0,
 			hitsLanded: 0,
+			hitsTaken: 0,
 			crits: 0,
+			evadedByDodge: 0,
+			evadedByParry: 0,
+			evadedByBlock: 0,
 			...extra
 		};
 	}
@@ -278,6 +282,7 @@
 				incrementStat(stats, lastName, 'dodges');
 				if (hasAttackerTarget) {
 					incrementStat(stats, firstName, 'attacksMade');
+					incrementStat(stats, firstName, 'evadedByDodge');
 					incrementStat(stats, lastName, 'attacksAgainst');
 				}
 			}
@@ -285,6 +290,7 @@
 				incrementStat(stats, lastName, 'parries');
 				if (hasAttackerTarget) {
 					incrementStat(stats, firstName, 'attacksMade');
+					incrementStat(stats, firstName, 'evadedByParry');
 					incrementStat(stats, lastName, 'attacksAgainst');
 				}
 			}
@@ -292,6 +298,7 @@
 				incrementStat(stats, lastName, 'blocks');
 				if (hasAttackerTarget) {
 					incrementStat(stats, firstName, 'attacksMade');
+					incrementStat(stats, firstName, 'evadedByBlock');
 					incrementStat(stats, lastName, 'attacksAgainst');
 				}
 			}
@@ -324,6 +331,7 @@
 			const damage = Number(match[1]);
 			stats.get(target).damageTaken += damage;
 			stats.get(target).attacksAgainst++;
+			stats.get(target).hitsTaken++;
 			if (attacker && attacker !== target) {
 				stats.get(attacker).damageDone += damage;
 				stats.get(attacker).maxDamageDone = Math.max(stats.get(attacker).maxDamageDone, damage);
@@ -387,13 +395,23 @@
 		line1.className = 'text-muted-foreground';
 		line1.textContent = ` -${participant.damageTaken} KP (${context.totalDamageTaken} totalt), gjorde ${participant.damageDone} (snitt ${avgDamage}/träff, max ${participant.maxDamageDone}${shareSuffix}), netto ${formatSigned(net)}, läkte ${participant.healingDone}`;
 
+		// Line 2 ("Anfall") and line 3 ("Försvar") deliberately use different denominators
+		// (own attacksMade vs. attacksAgainst) and are labeled accordingly - mixing them in
+		// one unlabeled line reads as "these are all the same rate", which they aren't: line
+		// 2 explains why *this participant's own attacks* failed to land (own fumble vs. the
+		// opponent blocking/parrying/dodging them), line 3 is the mirror for incoming attacks.
 		const line2 = document.createElement('div');
 		line2.className = 'text-muted-foreground';
-		line2.textContent = ` Träffsäkerhet ${formatPercent(participant.hitsLanded, participant.attacksMade)} (${participant.hitsLanded}/${participant.attacksMade}), missade ${formatPercent(participant.misses, participant.attacksMade)}, undvek ${formatPercent(participant.dodges, participant.attacksAgainst)}, parerade ${formatPercent(participant.parries, participant.attacksAgainst)}, blockerade ${formatPercent(participant.blocks, participant.attacksAgainst)}, kritisk ${formatPercent(participant.crits, participant.hitsLanded)} (${participant.crits} st)`;
+		line2.textContent = ` Anfall: träffade ${formatPercent(participant.hitsLanded, participant.attacksMade)} (${participant.hitsLanded}/${participant.attacksMade}), missade ${formatPercent(participant.misses, participant.attacksMade)} (eget fel), blockerades ${formatPercent(participant.evadedByBlock, participant.attacksMade)}, parerades ${formatPercent(participant.evadedByParry, participant.attacksMade)}, undveks ${formatPercent(participant.evadedByDodge, participant.attacksMade)}, kritisk ${formatPercent(participant.crits, participant.hitsLanded)} (${participant.crits} st)`;
+
+		const line3 = document.createElement('div');
+		line3.className = 'text-muted-foreground';
+		line3.textContent = ` Försvar: träffades ${formatPercent(participant.hitsTaken, participant.attacksAgainst)} (${participant.hitsTaken}/${participant.attacksAgainst}), undvek ${formatPercent(participant.dodges, participant.attacksAgainst)}, parerade ${formatPercent(participant.parries, participant.attacksAgainst)}, blockerade ${formatPercent(participant.blocks, participant.attacksAgainst)}`;
 
 		panel.appendChild(nameElement);
 		panel.appendChild(line1);
 		panel.appendChild(line2);
+		panel.appendChild(line3);
 		return panel;
 	}
 
@@ -504,7 +522,11 @@
 				entry.attacksMade += participant.attacksMade;
 				entry.attacksAgainst += participant.attacksAgainst;
 				entry.hitsLanded += participant.hitsLanded;
+				entry.hitsTaken += participant.hitsTaken;
 				entry.crits += participant.crits;
+				entry.evadedByDodge += participant.evadedByDodge;
+				entry.evadedByParry += participant.evadedByParry;
+				entry.evadedByBlock += participant.evadedByBlock;
 				totals.set(participant.name, entry);
 			});
 			if (participants.length) {
