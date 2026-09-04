@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.8.3
+// @version     1.8.4
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -154,9 +154,14 @@
 		});
 	}
 
-	async function loadRecipe(craft, materialsCell, statsCell, effectsCell) {
+	// Guards against a slow fetch resolving after the table has already been re-sorted/
+	// filtered and this exact <tr> reused for a different craft in the meantime - without
+	// this, the fetch for the row's old craft would land its result into what is now a
+	// different row.
+	async function loadRecipe(craft, row, key, materialsCell, statsCell, effectsCell) {
 		materialsCell.textContent = formatMaterials(craft);
 		const item = await getItem(craft);
+		if (row.dataset.lanistaCraftsKey !== key) return;
 		statsCell.textContent = formatStats(item);
 		effectsCell.textContent = formatEffects(item);
 	}
@@ -192,25 +197,50 @@
 
 			Array.from(table.tBodies).forEach((body) => {
 				Array.from(body.rows).forEach((row) => {
-					if (row.querySelector('[data-lanista-crafts-row]')) return;
 					const name = row.cells[0]?.innerText.trim();
 					if (!name) return;
+					// Sorting/filtering re-renders this table by patching each existing <tr>'s
+					// native cell text in place rather than recreating rows, so a <tr> that
+					// already carries our injected cells may now represent a completely
+					// different craft. Re-derive an identity from the same name+profession text
+					// findCraft() itself matches on, and only skip when that identity is
+					// unchanged - otherwise refresh the existing cells instead of leaving them
+					// showing the previous row's data.
+					const profession = row.cells[1]?.innerText.trim() || '';
+					const key = `${name}␟${profession}`;
+					if (row.dataset.lanistaCraftsKey === key) return;
+					row.dataset.lanistaCraftsKey = key;
+
 					const craft = findCraft(crafts, row);
 
-					const materialsCell = document.createElement('td');
-					const statsCell = document.createElement('td');
-					const effectsCell = document.createElement('td');
-					[materialsCell, statsCell, effectsCell].forEach((cell) => {
-						cell.dataset.lanistaCraftsRow = 'true';
-						cell.textContent = craft ? '...' : '-';
-						cell.className = 'p-2 align-middle';
-					});
+					let materialsCell = row.querySelector('[data-lanista-crafts-cell="materials"]');
+					let statsCell = row.querySelector('[data-lanista-crafts-cell="stats"]');
+					let effectsCell = row.querySelector('[data-lanista-crafts-cell="effects"]');
+					if (!materialsCell) {
+						materialsCell = document.createElement('td');
+						materialsCell.dataset.lanistaCraftsCell = 'materials';
+						materialsCell.className = 'p-2 align-middle';
+						row.insertBefore(materialsCell, row.cells[insertAt] || null);
+					}
+					if (!statsCell) {
+						statsCell = document.createElement('td');
+						statsCell.dataset.lanistaCraftsCell = 'stats';
+						statsCell.className = 'p-2 align-middle';
+						row.insertBefore(statsCell, row.cells[insertAt + 1] || null);
+					}
+					if (!effectsCell) {
+						effectsCell = document.createElement('td');
+						effectsCell.dataset.lanistaCraftsCell = 'effects';
+						effectsCell.className = 'p-2 align-middle';
+						row.insertBefore(effectsCell, row.cells[insertAt + 2] || null);
+					}
 
-					row.insertBefore(materialsCell, row.cells[insertAt] || null);
-					row.insertBefore(statsCell, row.cells[insertAt + 1] || null);
-					row.insertBefore(effectsCell, row.cells[insertAt + 2] || null);
+					materialsCell.textContent = craft ? '...' : '-';
+					statsCell.textContent = craft ? '...' : '-';
+					effectsCell.textContent = craft ? '...' : '-';
 					if (craft) {
-						loadRecipe(craft, materialsCell, statsCell, effectsCell).catch(() => {
+						loadRecipe(craft, row, key, materialsCell, statsCell, effectsCell).catch(() => {
+							if (row.dataset.lanistaCraftsKey !== key) return;
 							statsCell.textContent = '-';
 							effectsCell.textContent = '-';
 						});
