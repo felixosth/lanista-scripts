@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.6.3
+// @version     1.7.0
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -199,6 +199,7 @@
 			evadedByDodge: 0,
 			evadedByParry: 0,
 			evadedByBlock: 0,
+			missesAgainst: 0,
 			...extra
 		};
 	}
@@ -229,28 +230,53 @@
 		return counts;
 	}
 
+	// The server embeds literal "<p></p>" scene-break tags between the simultaneous 1v1
+	// exchanges that make up one round in a team battle. HTML doesn't allow a <p> to contain
+	// another <p>, so the browser auto-closes the round's real .battle-text paragraph at the
+	// first embedded one - everything after it (most of a 3v3 round) ends up as plain,
+	// unclassed sibling elements (p/green/red/br/strong/i) that querySelectorAll('.battle-text')
+	// never sees. So instead of that selector, walk the round's direct children (not a deep
+	// query, which would also reach into the elements excluded below) and take everything
+	// that isn't the round heading, the viewer-only per-round stats card (which shares
+	// vocabulary like "blockerade" that would false-match our regexes below), or our own
+	// previously-injected summary panel (which MUST be excluded - a re-scan would otherwise
+	// re-parse our own rendered output as if it were battle narrative).
+	function isNarrativeNode(node) {
+		if (node.nodeType === Node.TEXT_NODE) return node.textContent.trim().length > 0;
+		if (node.nodeType !== Node.ELEMENT_NODE) return false;
+		if (node.matches('.font-semibold')) return false;
+		if (node.matches('.relative.mt-2.flex.rounded')) return false;
+		if (node.hasAttribute('data-lanista-battle-summaries')) return false;
+		return true;
+	}
+
 	function summarizeRound(round, currentName) {
+		// Build the round's full narrative text with the excluded nodes removed first, then
+		// take a single .innerText call on what's left - this lets the browser's own
+		// block/inline spacing rules produce correct text (e.g. "skadar sig lätt (30)" with
+		// the digits tight against the parens, since the game wraps the digits in their own
+		// <strong>). Joining each node's innerText by hand with a fixed separator (an earlier
+		// version of this fix did that) inserts a stray space around every such <strong>,
+		// turning "(30)" into "( 30 )" and silently breaking the damage regex below for every
+		// hit in a round after the first.
+		const clone = round.cloneNode(true);
+		Array.from(clone.childNodes).forEach((node) => { if (!isNarrativeNode(node)) node.remove(); });
+		const text = clone.innerText.replace(/\s+/g, ' ').trim();
+
 		// A crit is rendered as an icon (no text content) next to the damage figure, so it's
-		// invisible to innerText/regex - track which .battle-text element each character of
-		// the joined `text` string came from (and whether that element contains a crit icon)
-		// so a damage match's position can be traced back to it. The icon class is inferred
-		// from this repo's captured battle API JSON (fa-stars), not confirmed against the
-		// live DOM (this script has never called that API) - if crit rate reads 0% on a
-		// battle that clearly had crits, inspect a known-crit round's live DOM and adjust it.
-		const battleTextNodes = Array.from(round.querySelectorAll('.battle-text'));
-		const nodeSpans = [];
-		let text = '';
-		battleTextNodes.forEach((element, index) => {
-			const nodeText = element.innerText.replace(/\s+/g, ' ').trim();
-			const start = text.length;
-			text += nodeText;
-			nodeSpans.push({ start, end: text.length, hasCrit: !!element.querySelector('.fa-stars, [class*="fa-star"]') });
-			if (index < battleTextNodes.length - 1) text += ' ';
-		});
-		const isCritAt = (offset) => {
-			const span = nodeSpans.find((span) => offset >= span.start && offset < span.end)
-				|| nodeSpans.slice().reverse().find((span) => span.end <= offset);
-			return span ? span.hasCrit : false;
+		// invisible to innerText/regex. The digits themselves are always wrapped in their own
+		// <strong>, so correlate each damage-regex match (in left-to-right order) with the
+		// same-order <strong> element holding just a number, rather than trying to reconstruct
+		// character offsets across many small sibling nodes. The icon class is inferred from
+		// this repo's captured battle API JSON (fa-stars), not confirmed against the live DOM
+		// (this script has never called that API) - if crit rate reads 0% on a battle that
+		// clearly had crits, inspect a known-crit round's live DOM and adjust it.
+		const damageStrongNodes = Array.from(round.querySelectorAll('strong'))
+			.filter((element) => /^\d+$/.test(element.textContent.trim()));
+		let damageMatchIndex = 0;
+		const isNextDamageCrit = () => {
+			const node = damageStrongNodes[damageMatchIndex++];
+			return !!node && !!node.querySelector('.fa-stars, [class*="fa-star"]');
 		};
 
 		const sideByName = new Map();
@@ -269,7 +295,12 @@
 			.filter(({ position }) => position >= 0)
 			.sort((left, right) => left.position - right.position)
 			.map(({ name }) => name);
-		sentences.forEach((sentence) => {
+		// Damage shows up in the text in at least two phrasings: "skadar sig ... (30)" and
+		// "... som tar 24 i skada" (seen on a glancing parry/block that still lets some damage
+		// through) - both need to be recognized here and in the extraction loop below, or
+		// sentences using the second phrasing wrongly look like a full, undamaged evasion.
+		const damageFigurePattern = /skad(?:ar|as)(?: sig)?[^.()]{0,100}\(\d+\s*\)|tar \d+ i skada/i;
+		sentences.forEach((sentence, index) => {
 			const mentionedNames = namesIn(sentence);
 			if (!mentionedNames.length) return;
 			const firstName = mentionedNames[0];
@@ -277,17 +308,26 @@
 			const hasAttackerTarget = mentionedNames.length > 1 && firstName !== lastName;
 			// A "glancing" dodge/parry/block still deals reduced damage described in the same
 			// sentence (the game models these as distinct from a full evasion - see
-			// round_stats.glancing_dodges etc in the example battle JSON in this repo). The
-			// damage-regex loop below is the source of truth for anything that actually dealt
-			// damage, so skip these defensive-outcome counters when the sentence also carries
-			// a damage figure - otherwise the same exchange gets counted as both a landed hit
-			// and a full evasion, inflating attacksAgainst/attacksMade past 100%.
-			const hasDamageFigure = /skad(?:ar|as)(?: sig)?[^.()]{0,100}\(\d+\s*\)/i.test(sentence);
-			if (!hasDamageFigure) {
-				if (/misslyckas[^.]*undvik/i.test(sentence)) {
-					incrementStat(stats, firstName, 'misses');
-					if (hasAttackerTarget) incrementStat(stats, firstName, 'attacksMade');
-				} else if (/undvik/i.test(sentence)) {
+			// round_stats.glancing_dodges etc in the example battle JSON in this repo). And a
+			// *failed* dodge/parry attempt ("X försöker undvika men misslyckas", "X klarar inte
+			// att undvika", ...) reads exactly like a successful one to a plain "undvik"/"parera"
+			// match, but is always followed shortly by the resulting hit's damage figure in a
+			// *later* sentence - verified against every such instance (11+) in a real recorded
+			// battle. Rather than enumerate every failure phrasing (there may be more we haven't
+			// seen), treat "a damage figure shows up in this sentence or either of the next two"
+			// as the general signal that this was actually a hit, and skip these
+			// defensive-outcome counters - otherwise the same exchange gets counted as both a
+			// landed hit and a full evasion, inflating attacksAgainst/attacksMade past 100%.
+			const resolvesToHitShortly = [sentence, sentences[index + 1], sentences[index + 2]]
+				.some((candidate) => candidate && damageFigurePattern.test(candidate));
+			// Enchant/consumable flavor text like "Slunga gör att Dvärgen Windstars Undvika
+			// anfall minskar med 5" names the "Undvika anfall" (Dodge) *stat* being debuffed -
+			// not an actual dodge happening - but still matches /undvik/i. "minskar med N" is
+			// this template's distinguishing phrase (a stat decreasing by N), so use it to
+			// exclude these lines from all three defensive-outcome counters.
+			const isStatDebuffFlavor = /minskar med \d+/i.test(sentence);
+			if (!resolvesToHitShortly && !isStatDebuffFlavor) {
+				if (/undvik/i.test(sentence)) {
 					incrementStat(stats, lastName, 'dodges');
 					if (hasAttackerTarget) {
 						incrementStat(stats, firstName, 'attacksMade');
@@ -303,7 +343,7 @@
 						incrementStat(stats, lastName, 'attacksAgainst');
 					}
 				}
-				if (!/misslyckas/i.test(sentence) && /blockera|absorberas/i.test(sentence)) {
+				if (/blockera|absorberas/i.test(sentence)) {
 					incrementStat(stats, lastName, 'blocks');
 					if (hasAttackerTarget) {
 						incrementStat(stats, firstName, 'attacksMade');
@@ -319,7 +359,7 @@
 			}
 		});
 
-		for (const match of text.matchAll(/skad(?:ar|as)(?: sig)?[^.()]{0,100}\((\d+)\s*\)/gi)) {
+		for (const match of text.matchAll(/skad(?:ar|as)(?: sig)?[^.()]{0,100}\((\d+)\s*\)|tar (\d+) i skada/gi)) {
 			const sentenceStart = text.lastIndexOf('.', match.index) + 1;
 			let mentionedNames = namesIn(text.slice(sentenceStart, match.index + match[0].length));
 			// "X skadar sig (n)" only names the victim - it's how the game phrases "X takes
@@ -338,7 +378,11 @@
 			const attacker = mentionedNames.length > 1
 				? (widened ? mentionedNames[mentionedNames.length - 2] : mentionedNames[0])
 				: null;
-			const damage = Number(match[1]);
+			const damage = Number(match[1] ?? match[2]);
+			// Must run once per match, in order, regardless of whether the match ends up
+			// attributed below - it keeps damageMatchIndex aligned with damageStrongNodes,
+			// which is built once for the whole round independent of per-match attribution.
+			const isCrit = isNextDamageCrit();
 			stats.get(target).damageTaken += damage;
 			stats.get(target).attacksAgainst++;
 			stats.get(target).hitsTaken++;
@@ -347,7 +391,7 @@
 				stats.get(attacker).maxDamageDone = Math.max(stats.get(attacker).maxDamageDone, damage);
 				stats.get(attacker).attacksMade++;
 				stats.get(attacker).hitsLanded++;
-				if (isCritAt(match.index + match[0].length - 1)) stats.get(attacker).crits++;
+				if (isCrit) stats.get(attacker).crits++;
 			}
 		}
 
@@ -385,6 +429,29 @@
 		return firstTag.tagName.toLowerCase() === 'green' ? 'ally' : 'enemy';
 	}
 
+	// Once a battle finishes, the site renders one <span class="font-light summary"> per
+	// participant with a fixed-template sentence giving exact, server-computed totals -
+	// verified character-for-character against a real recorded battle's ground-truth API
+	// data. This is far more reliable than summing our own regex-parsed per-round guesses,
+	// so scanBattlePage() uses it to override the totals card when available. It gives no
+	// equivalent for attacksMade/hitsLanded/evadedBy*/healingDone (the game doesn't expose
+	// "why did *my* attacks fail" anywhere), so those still come from narrative parsing.
+	function parseFinalStatsSummary(names) {
+		const pattern = /delade ut (\d+) i skada \(totalt (\d+)[^)]*\), hade en högsta skada på (\d+), tog emot (\d+) skada, blev attackerad (\d+) gånger, undvek (\d+) attacker \(varav \d+ partiella\), parerade (\d+) attacker, blockerade (\d+) attacker \(varav \d+ partiella\), missade (\d+) attacker \(varav \d+ partiella\) och fick in (\d+) perfekta träffar/i;
+		const result = new Map();
+		document.querySelectorAll('span.font-light.summary').forEach((span) => {
+			const nameTag = span.querySelector('green, red');
+			if (!nameTag) return;
+			const name = nameTag.innerText.trim();
+			if (!names.includes(name)) return;
+			const match = pattern.exec(span.innerText.replace(/\s+/g, ' ').trim());
+			if (!match) return;
+			const [, damageDone, , maxDamageDone, damageTaken, attacksAgainst, dodges, parries, blocks, missesAgainst, crits] = match.map(Number);
+			result.set(name, { damageDone, maxDamageDone, damageTaken, attacksAgainst, dodges, parries, blocks, missesAgainst, crits });
+		});
+		return result;
+	}
+
 	function buildParticipantPanel(participant, context, colors) {
 		const panel = document.createElement('div');
 		panel.className = 'rounded border border-border/60 bg-muted/35 px-2 py-1 text-xs';
@@ -416,7 +483,7 @@
 
 		const line3 = document.createElement('div');
 		line3.className = 'text-muted-foreground';
-		line3.textContent = ` Försvar: träffades ${formatPercent(participant.hitsTaken, participant.attacksAgainst)} (${participant.hitsTaken}/${participant.attacksAgainst}), undvek ${formatPercent(participant.dodges, participant.attacksAgainst)}, parerade ${formatPercent(participant.parries, participant.attacksAgainst)}, blockerade ${formatPercent(participant.blocks, participant.attacksAgainst)}`;
+		line3.textContent = ` Försvar: träffades ${formatPercent(participant.hitsTaken, participant.attacksAgainst)} (${participant.hitsTaken}/${participant.attacksAgainst}), attacker missade ${formatPercent(participant.missesAgainst, participant.attacksAgainst)}, undvek ${formatPercent(participant.dodges, participant.attacksAgainst)}, parerade ${formatPercent(participant.parries, participant.attacksAgainst)}, blockerade ${formatPercent(participant.blocks, participant.attacksAgainst)}`;
 
 		panel.appendChild(nameElement);
 		panel.appendChild(line1);
@@ -537,6 +604,7 @@
 				entry.evadedByDodge += participant.evadedByDodge;
 				entry.evadedByParry += participant.evadedByParry;
 				entry.evadedByBlock += participant.evadedByBlock;
+				entry.missesAgainst += participant.missesAgainst;
 				totals.set(participant.name, entry);
 			});
 			if (participants.length) {
@@ -551,6 +619,13 @@
 			if (winningSide) {
 				totals.forEach((entry) => { entry.isWinner = entry.side === winningSide; });
 			}
+			const exactStats = parseFinalStatsSummary(Array.from(totals.keys()));
+			exactStats.forEach((exact, name) => {
+				const entry = totals.get(name);
+				if (!entry) return;
+				Object.assign(entry, exact);
+				entry.hitsTaken = exact.attacksAgainst - exact.dodges - exact.parries - exact.blocks - exact.missesAgainst;
+			});
 			const battleEntries = Array.from(totals.values());
 			const battleTeamDamage = sumBySide(battleEntries, 'damageDone');
 			const battleTeamSize = countBySide(battleEntries);
