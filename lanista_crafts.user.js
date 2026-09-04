@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.7.2
+// @version     1.8.0
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -32,8 +32,11 @@
 	function itemCategory(craft) {
 		if (craft.is_consumable) return 'consumable';
 		if (craft.is_weapon_or_shield) return 'weapon';
-		if (craft.is_armor) return 'armor';
+		// Trinkets are also flagged is_armor (e.g. a neck slot item has both is_armor and
+		// is_trinket set), so the more specific flag must be checked first or every trinket
+		// would get misrouted to the armor endpoint.
 		if (craft.is_trinket) return 'trinket';
+		if (craft.is_armor) return 'armor';
 		return 'material';
 	}
 
@@ -66,6 +69,55 @@
 			.join(', ') || '-';
 	}
 
+	function formatNumberRange(min, max) {
+		return min === max ? `${max}` : `${min}-${max}`;
+	}
+
+	// Weapons and shields share one item shape (base_damage_*, durability, absorption, ...) -
+	// a shield just has base_damage_max 0 and absorption/max_blocks_per_round instead of
+	// damage, so the same formatter naturally reduces to "the shield stats" for those.
+	function formatWeaponStats(item) {
+		const parts = [];
+		if (item.base_damage_max) {
+			parts.push(`Skada ${formatNumberRange(item.base_damage_min, item.base_damage_max)}`);
+			if (item.crit_damage) parts.push(`Krit ${item.crit_damage}`);
+		}
+		if (item.absorption) parts.push(`Absorption ${item.absorption}`);
+		if (item.max_crit_rate) parts.push(`Kritchans ${formatNumberRange(item.min_crit_rate, item.max_crit_rate)}%`);
+		if (item.durability) parts.push(`Hållbarhet ${item.durability}`);
+		if (item.max_blocks_per_round) parts.push(`Block/runda ${item.max_blocks_per_round}`);
+		if (item.is_two_handed) parts.push('2H');
+		else if (item.can_dual_wield) parts.push('Dual');
+		if (item.weight) parts.push(`Vikt ${item.weight}`);
+		if (item.max_enchants) parts.push(`Ench ${item.max_enchants}`);
+		return parts.join(' · ');
+	}
+
+	// Armor and trinkets share the other item shape (base_block, increased_hit_rate, ...)
+	// instead of the weapon/shield shape above.
+	function formatArmorStats(item) {
+		const parts = [];
+		if (item.base_block) {
+			const percent = item.percentage_block ? ` (${item.percentage_block}%)` : '';
+			parts.push(`Block ${item.base_block}${percent}`);
+		}
+		if (item.max_crit_rate) parts.push(`Kritchans ${formatNumberRange(item.min_crit_rate, item.max_crit_rate)}%`);
+		if (item.increased_hit_rate) parts.push(`Träffchans +${item.increased_hit_rate}`);
+		if (item.weight) parts.push(`Vikt ${item.weight}`);
+		if (item.max_enchants) parts.push(`Ench ${item.max_enchants}`);
+		return parts.join(' · ');
+	}
+
+	// The two gear shapes are told apart by which fields the item actually carries rather
+	// than by the craft's is_* flags, so this keeps working for any future gear-like item
+	// type without needing a new branch here.
+	function formatStats(item) {
+		if (!item) return '-';
+		if ('base_damage_min' in item) return formatWeaponStats(item) || '-';
+		if ('base_block' in item) return formatArmorStats(item) || '-';
+		return '-';
+	}
+
 	async function fetchItem(category, id) {
 		for (const endpoint of endpointCandidates(category)) {
 			const response = await fetch(`/api/items/${endpoint}/${id}`).catch(() => null);
@@ -96,9 +148,10 @@
 		});
 	}
 
-	async function loadRecipe(craft, materialsCell, effectsCell) {
+	async function loadRecipe(craft, materialsCell, statsCell, effectsCell) {
 		materialsCell.textContent = formatMaterials(craft);
 		const item = await getItem(craft);
+		statsCell.textContent = formatStats(item);
 		effectsCell.textContent = formatEffects(item);
 	}
 
@@ -113,7 +166,7 @@
 		table.dataset.lanistaCraftsLoading = 'true';
 		const crafts = await getCrafts();
 
-		const headers = ['Material', 'Effekter'];
+		const headers = ['Material', 'Stats', 'Effekter'];
 		const priceHeader = Array.from(header.cells).find((cell) => cell.innerText.trim().toLowerCase() === 'pris');
 		const insertAt = priceHeader ? priceHeader.cellIndex + 1 : header.cells.length;
 
@@ -133,17 +186,20 @@
 				const craft = findCraft(crafts, row);
 
 				const materialsCell = document.createElement('td');
+				const statsCell = document.createElement('td');
 				const effectsCell = document.createElement('td');
-				[materialsCell, effectsCell].forEach((cell) => {
+				[materialsCell, statsCell, effectsCell].forEach((cell) => {
 					cell.dataset.lanistaCraftsRow = 'true';
 					cell.textContent = craft ? '...' : '-';
 					cell.className = 'p-2 align-middle';
 				});
 
 				row.insertBefore(materialsCell, row.cells[insertAt] || null);
-				row.insertBefore(effectsCell, row.cells[insertAt + 1] || null);
+				row.insertBefore(statsCell, row.cells[insertAt + 1] || null);
+				row.insertBefore(effectsCell, row.cells[insertAt + 2] || null);
 				if (craft) {
-					loadRecipe(craft, materialsCell, effectsCell).catch(() => {
+					loadRecipe(craft, materialsCell, statsCell, effectsCell).catch(() => {
+						statsCell.textContent = '-';
 						effectsCell.textContent = '-';
 					});
 				}
