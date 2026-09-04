@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.8.7
+// @version     1.8.8
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -29,12 +29,15 @@
 	let currentAvatarPromise;
 	let scanTimer;
 
+	// Jewelry-type slots (neck, finger, back, amulet, bracelet, ...) are flagged both is_armor
+	// and is_trinket at once, and it isn't knowable up front which of those two words (if
+	// either) the server actually uses for its endpoint segment - so keep them as a distinct
+	// signature rather than collapsing to just one of the two flags, and let endpointCandidates
+	// try both.
 	function itemCategory(craft) {
 		if (craft.is_consumable) return 'consumable';
 		if (craft.is_weapon_or_shield) return 'weapon';
-		// Trinkets are also flagged is_armor (e.g. a neck slot item has both is_armor and
-		// is_trinket set), so the more specific flag must be checked first or every trinket
-		// would get misrouted to the armor endpoint.
+		if (craft.is_trinket && craft.is_armor) return 'trinket+armor';
 		if (craft.is_trinket) return 'trinket';
 		if (craft.is_armor) return 'armor';
 		return 'material';
@@ -43,6 +46,7 @@
 	function endpointCandidates(category) {
 		if (resolvedEndpoints.has(category)) return [resolvedEndpoints.get(category)];
 		if (category === 'consumable') return ['consumables', 'consumable'];
+		if (category === 'trinket+armor') return ['trinket', 'trinkets', 'armor', 'armors'];
 		return [category, `${category}s`];
 	}
 
