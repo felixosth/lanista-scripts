@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.5.0
+// @version     1.6.0
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -181,10 +181,74 @@
 		if (stats.has(name)) stats.get(name)[key]++;
 	}
 
+	function createStatBucket(extra) {
+		return {
+			damageDone: 0,
+			damageTaken: 0,
+			maxDamageDone: 0,
+			healingDone: 0,
+			dodges: 0,
+			parries: 0,
+			blocks: 0,
+			misses: 0,
+			attacksMade: 0,
+			attacksAgainst: 0,
+			hitsLanded: 0,
+			crits: 0,
+			...extra
+		};
+	}
+
+	function formatPercent(numerator, denominator) {
+		if (!denominator) return '–';
+		return `${Math.round((numerator / denominator) * 100)}%`;
+	}
+
+	function formatRatio(numerator, denominator, decimals = 1) {
+		if (!denominator) return '–';
+		return (numerator / denominator).toFixed(decimals);
+	}
+
+	function formatSigned(value) {
+		return value > 0 ? `+${value}` : `${value}`;
+	}
+
+	function sumBySide(entries, key) {
+		const sums = new Map();
+		entries.forEach((entry) => sums.set(entry.side, (sums.get(entry.side) || 0) + entry[key]));
+		return sums;
+	}
+
+	function countBySide(entries) {
+		const counts = new Map();
+		entries.forEach((entry) => counts.set(entry.side, (counts.get(entry.side) || 0) + 1));
+		return counts;
+	}
+
 	function summarizeRound(round, currentName) {
-		const text = Array.from(round.querySelectorAll('.battle-text'))
-			.map((element) => element.innerText.replace(/\s+/g, ' ').trim())
-			.join(' ');
+		// A crit is rendered as an icon (no text content) next to the damage figure, so it's
+		// invisible to innerText/regex - track which .battle-text element each character of
+		// the joined `text` string came from (and whether that element contains a crit icon)
+		// so a damage match's position can be traced back to it. The icon class is inferred
+		// from this repo's captured battle API JSON (fa-stars), not confirmed against the
+		// live DOM (this script has never called that API) - if crit rate reads 0% on a
+		// battle that clearly had crits, inspect a known-crit round's live DOM and adjust it.
+		const battleTextNodes = Array.from(round.querySelectorAll('.battle-text'));
+		const nodeSpans = [];
+		let text = '';
+		battleTextNodes.forEach((element, index) => {
+			const nodeText = element.innerText.replace(/\s+/g, ' ').trim();
+			const start = text.length;
+			text += nodeText;
+			nodeSpans.push({ start, end: text.length, hasCrit: !!element.querySelector('.fa-stars, [class*="fa-star"]') });
+			if (index < battleTextNodes.length - 1) text += ' ';
+		});
+		const isCritAt = (offset) => {
+			const span = nodeSpans.find((span) => offset >= span.start && offset < span.end)
+				|| nodeSpans.slice().reverse().find((span) => span.end <= offset);
+			return span ? span.hasCrit : false;
+		};
+
 		const sideByName = new Map();
 		round.querySelectorAll('green, red').forEach((element) => {
 			const name = element.innerText.trim();
@@ -193,16 +257,7 @@
 			}
 		});
 		const names = Array.from(sideByName.keys());
-		const stats = new Map(names.map((name) => [name, {
-			damageDone: 0,
-			damageTaken: 0,
-			maxDamageDone: 0,
-			healingDone: 0,
-			dodges: 0,
-			parries: 0,
-			blocks: 0,
-			misses: 0
-		}]));
+		const stats = new Map(names.map((name) => [name, createStatBucket()]));
 
 		const sentences = text.split(/\.\s+/);
 		const namesIn = (sentence) => names
@@ -215,10 +270,31 @@
 			if (!mentionedNames.length) return;
 			const firstName = mentionedNames[0];
 			const lastName = mentionedNames[mentionedNames.length - 1];
-			if (/misslyckas[^.]*undvik/i.test(sentence)) incrementStat(stats, firstName, 'misses');
-			else if (/undvik/i.test(sentence)) incrementStat(stats, lastName, 'dodges');
-			if (/lyckas parera|parera med/i.test(sentence)) incrementStat(stats, lastName, 'parries');
-			if (!/misslyckas/i.test(sentence) && /blockera|absorberas/i.test(sentence)) incrementStat(stats, lastName, 'blocks');
+			const hasAttackerTarget = mentionedNames.length > 1 && firstName !== lastName;
+			if (/misslyckas[^.]*undvik/i.test(sentence)) {
+				incrementStat(stats, firstName, 'misses');
+				if (hasAttackerTarget) incrementStat(stats, firstName, 'attacksMade');
+			} else if (/undvik/i.test(sentence)) {
+				incrementStat(stats, lastName, 'dodges');
+				if (hasAttackerTarget) {
+					incrementStat(stats, firstName, 'attacksMade');
+					incrementStat(stats, lastName, 'attacksAgainst');
+				}
+			}
+			if (/lyckas parera|parera med/i.test(sentence)) {
+				incrementStat(stats, lastName, 'parries');
+				if (hasAttackerTarget) {
+					incrementStat(stats, firstName, 'attacksMade');
+					incrementStat(stats, lastName, 'attacksAgainst');
+				}
+			}
+			if (!/misslyckas/i.test(sentence) && /blockera|absorberas/i.test(sentence)) {
+				incrementStat(stats, lastName, 'blocks');
+				if (hasAttackerTarget) {
+					incrementStat(stats, firstName, 'attacksMade');
+					incrementStat(stats, lastName, 'attacksAgainst');
+				}
+			}
 			const healIndex = sentence.indexOf('helas med');
 			if (healIndex >= 0) {
 				const heal = parseInt(sentence.slice(healIndex + 'helas med'.length), 10);
@@ -247,9 +323,13 @@
 				: null;
 			const damage = Number(match[1]);
 			stats.get(target).damageTaken += damage;
+			stats.get(target).attacksAgainst++;
 			if (attacker && attacker !== target) {
 				stats.get(attacker).damageDone += damage;
 				stats.get(attacker).maxDamageDone = Math.max(stats.get(attacker).maxDamageDone, damage);
+				stats.get(attacker).attacksMade++;
+				stats.get(attacker).hitsLanded++;
+				if (isCritAt(match.index + match[0].length - 1)) stats.get(attacker).crits++;
 			}
 		}
 
@@ -287,26 +367,37 @@
 		return firstTag.tagName.toLowerCase() === 'green' ? 'ally' : 'enemy';
 	}
 
-	function buildParticipantPanel(participant, totalDamageTaken, colors) {
+	function buildParticipantPanel(participant, context, colors) {
 		const panel = document.createElement('div');
 		panel.className = 'rounded border border-border/60 bg-muted/35 px-2 py-1 text-xs';
 
-		const nameElement = document.createElement('span');
+		const nameElement = document.createElement('div');
 		nameElement.className = 'font-semibold';
 		const color = colors[participant.side];
 		if (color) nameElement.style.color = color;
 		nameElement.textContent = (participant.isWinner ? '🏆 ' : '') + participant.name + (participant.isSelf ? ' (Du)' : '');
 
-		const detailsElement = document.createElement('span');
-		detailsElement.className = 'text-muted-foreground';
-		detailsElement.textContent = ` -${participant.damageTaken} KP (${totalDamageTaken} totalt), gjorde ${participant.damageDone}, max ${participant.maxDamageDone}, läkte ${participant.healingDone}, undvek ${participant.dodges}, parerade ${participant.parries}, blockerade ${participant.blocks}, missade ${participant.misses}`;
+		const net = participant.damageDone - participant.damageTaken;
+		const avgDamage = formatRatio(participant.damageDone, participant.hitsLanded);
+		const shareSuffix = context.teamSize > 1 && context.teamDamage > 0
+			? `, ${formatPercent(participant.damageDone, context.teamDamage)} av lagets skada`
+			: '';
+
+		const line1 = document.createElement('div');
+		line1.className = 'text-muted-foreground';
+		line1.textContent = ` -${participant.damageTaken} KP (${context.totalDamageTaken} totalt), gjorde ${participant.damageDone} (snitt ${avgDamage}/träff, max ${participant.maxDamageDone}${shareSuffix}), netto ${formatSigned(net)}, läkte ${participant.healingDone}`;
+
+		const line2 = document.createElement('div');
+		line2.className = 'text-muted-foreground';
+		line2.textContent = ` Träffsäkerhet ${formatPercent(participant.hitsLanded, participant.attacksMade)} (${participant.hitsLanded}/${participant.attacksMade}), missade ${formatPercent(participant.misses, participant.attacksMade)}, undvek ${formatPercent(participant.dodges, participant.attacksAgainst)}, parerade ${formatPercent(participant.parries, participant.attacksAgainst)}, blockerade ${formatPercent(participant.blocks, participant.attacksAgainst)}, kritisk ${formatPercent(participant.crits, participant.hitsLanded)} (${participant.crits} st)`;
 
 		panel.appendChild(nameElement);
-		panel.appendChild(detailsElement);
+		panel.appendChild(line1);
+		panel.appendChild(line2);
 		return panel;
 	}
 
-	function renderParticipantSummaries(round, participants, totals) {
+	function renderParticipantSummaries(round, participants, totals, roundTeamDamage, roundTeamSize) {
 		const signature = JSON.stringify(participants);
 		let container = round.querySelector(':scope > [data-lanista-battle-summaries]');
 		if (container && container.dataset.lanistaBattleSignature === signature) return;
@@ -324,11 +415,16 @@
 		const colors = sideColors();
 		participants.forEach((participant) => {
 			const totalDamageTaken = totals.get(participant.name)?.damageTaken || 0;
-			container.appendChild(buildParticipantPanel(participant, totalDamageTaken, colors));
+			const context = {
+				totalDamageTaken,
+				teamDamage: roundTeamDamage.get(participant.side) || 0,
+				teamSize: roundTeamSize.get(participant.side) || 1
+			};
+			container.appendChild(buildParticipantPanel(participant, context, colors));
 		});
 	}
 
-	function renderBattleTotals(host, beforeNode, totals) {
+	function renderBattleTotals(host, beforeNode, totals, battleTeamDamage, battleTeamSize) {
 		const entries = Array.from(totals, ([name, stats]) => ({ name, ...stats }));
 		const signature = JSON.stringify(entries);
 		let card = host.querySelector(':scope > [data-lanista-battle-totals]');
@@ -355,7 +451,14 @@
 		heading.textContent = 'Totalt för striden';
 		body.appendChild(heading);
 		const colors = sideColors();
-		entries.forEach((participant) => body.appendChild(buildParticipantPanel(participant, participant.damageTaken, colors)));
+		entries.forEach((participant) => {
+			const context = {
+				totalDamageTaken: participant.damageTaken,
+				teamDamage: battleTeamDamage.get(participant.side) || 0,
+				teamSize: battleTeamSize.get(participant.side) || 1
+			};
+			body.appendChild(buildParticipantPanel(participant, context, colors));
+		});
 		card.appendChild(body);
 
 		if (!inPlace) host.insertBefore(card, beforeNode);
@@ -389,10 +492,7 @@
 		rounds.forEach(({ container }) => {
 			const participants = summarizeRound(container, currentName);
 			participants.forEach((participant) => {
-				const entry = totals.get(participant.name) || {
-					damageDone: 0, damageTaken: 0, maxDamageDone: 0, healingDone: 0,
-					dodges: 0, parries: 0, blocks: 0, misses: 0, side: participant.side, isSelf: participant.isSelf
-				};
+				const entry = totals.get(participant.name) || createStatBucket({ side: participant.side, isSelf: participant.isSelf });
 				entry.damageDone += participant.damageDone;
 				entry.damageTaken += participant.damageTaken;
 				entry.maxDamageDone = Math.max(entry.maxDamageDone, participant.maxDamageDone);
@@ -401,9 +501,17 @@
 				entry.parries += participant.parries;
 				entry.blocks += participant.blocks;
 				entry.misses += participant.misses;
+				entry.attacksMade += participant.attacksMade;
+				entry.attacksAgainst += participant.attacksAgainst;
+				entry.hitsLanded += participant.hitsLanded;
+				entry.crits += participant.crits;
 				totals.set(participant.name, entry);
 			});
-			if (participants.length) renderParticipantSummaries(container, participants, totals);
+			if (participants.length) {
+				const roundTeamDamage = sumBySide(participants, 'damageDone');
+				const roundTeamSize = countBySide(participants);
+				renderParticipantSummaries(container, participants, totals, roundTeamDamage, roundTeamSize);
+			}
 		});
 
 		if (rounds.length) {
@@ -411,8 +519,11 @@
 			if (winningSide) {
 				totals.forEach((entry) => { entry.isWinner = entry.side === winningSide; });
 			}
+			const battleEntries = Array.from(totals.values());
+			const battleTeamDamage = sumBySide(battleEntries, 'damageDone');
+			const battleTeamSize = countBySide(battleEntries);
 			const firstCard = rounds[0].container.parentElement;
-			renderBattleTotals(firstCard.parentElement, firstCard, totals);
+			renderBattleTotals(firstCard.parentElement, firstCard, totals, battleTeamDamage, battleTeamSize);
 		}
 	}
 
