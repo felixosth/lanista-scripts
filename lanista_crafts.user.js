@@ -18,16 +18,29 @@
 	'use strict';
 
 	const itemCache = new Map();
+	// Different item categories don't follow one shared pluralization convention on the
+	// server (e.g. weapons/shields live at the singular /api/items/weapon/{id}, while
+	// consumables live at the plural /api/items/consumables/{id}) - and other professions
+	// (armor, trinkets, materials) may follow either. Rather than hardcoding guesses that
+	// silently break the effects column for a profession we haven't seen yet, try each
+	// candidate segment in turn and remember whichever one actually works per category.
+	const resolvedEndpoints = new Map();
 	let craftsPromise;
 	let currentAvatarPromise;
 	let scanTimer;
 
-	function itemEndpoint(craft) {
-		if (craft.is_consumable) return 'consumables';
-		if (craft.is_weapon) return 'weapons';
-		if (craft.is_armor) return 'armors';
-		if (craft.is_trinket) return 'trinkets';
-		return 'materials';
+	function itemCategory(craft) {
+		if (craft.is_consumable) return 'consumable';
+		if (craft.is_weapon_or_shield) return 'weapon';
+		if (craft.is_armor) return 'armor';
+		if (craft.is_trinket) return 'trinket';
+		return 'material';
+	}
+
+	function endpointCandidates(category) {
+		if (resolvedEndpoints.has(category)) return [resolvedEndpoints.get(category)];
+		if (category === 'consumable') return ['consumables', 'consumable'];
+		return [category, `${category}s`];
 	}
 
 	function formatMaterials(craft) {
@@ -53,13 +66,23 @@
 			.join(', ') || '-';
 	}
 
+	async function fetchItem(category, id) {
+		for (const endpoint of endpointCandidates(category)) {
+			const response = await fetch(`/api/items/${endpoint}/${id}`).catch(() => null);
+			if (response && response.ok) {
+				resolvedEndpoints.set(category, endpoint);
+				return response.json();
+			}
+		}
+		return null;
+	}
+
 	async function getItem(craft) {
 		if (!craft.id) return null;
-		const endpoint = `/api/items/${itemEndpoint(craft)}/${craft.id}`;
-		if (!itemCache.has(endpoint)) {
-			itemCache.set(endpoint, fetch(endpoint).then((response) => response.ok ? response.json() : null));
-		}
-		return itemCache.get(endpoint);
+		const category = itemCategory(craft);
+		const cacheKey = `${category}/${craft.id}`;
+		if (!itemCache.has(cacheKey)) itemCache.set(cacheKey, fetchItem(category, craft.id));
+		return itemCache.get(cacheKey);
 	}
 
 	function findCraft(crafts, row) {
