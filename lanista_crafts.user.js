@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.8.0
+// @version     1.8.1
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -350,8 +350,16 @@
 		// this repo's captured battle API JSON (fa-stars), not confirmed against the live DOM
 		// (this script has never called that API) - if crit rate reads 0% on a battle that
 		// clearly had crits, inspect a known-crit round's live DOM and adjust it.
+		// Every real damage figure is preceded by an open paren ("...lätt ("); a block/parry
+		// item's own absorption figure ("Svartsköld tar 6 i skada") is preceded by "tar "
+		// instead and must be excluded here too, or it drifts this ordinal correlation out of
+		// sync with the (correctly narrower) extraction regex below.
 		const damageStrongNodes = Array.from(round.querySelectorAll('strong'))
-			.filter((element) => /^\d+$/.test(element.textContent.trim()));
+			.filter((element) => /^\d+$/.test(element.textContent.trim()))
+			.filter((element) => {
+				const prev = element.previousSibling;
+				return prev && prev.nodeType === Node.TEXT_NODE && /\(\s*$/.test(prev.textContent);
+			});
 		let damageMatchIndex = 0;
 		const isNextDamageCrit = () => {
 			const node = damageStrongNodes[damageMatchIndex++];
@@ -374,17 +382,30 @@
 			.filter(({ position }) => position >= 0)
 			.sort((left, right) => left.position - right.position)
 			.map(({ name }) => name);
-		// Damage shows up in the text in at least two phrasings: "skadar sig ... (30)" and
-		// "... som tar 24 i skada" (seen on a glancing parry/block that still lets some damage
-		// through) - both need to be recognized here and in the extraction loop below, or
-		// sentences using the second phrasing wrongly look like a full, undamaged evasion.
-		const damageFigurePattern = /skad(?:ar|as)(?: sig)?[^.()]{0,100}\(\d+\s*\)|tar \d+ i skada/i;
+		// NOTE: "X tar N i skada" (no parens) looks like a second damage phrasing but isn't -
+		// it's the absorption/durability figure of the shield or weapon that just successfully
+		// blocked/parried the attack (confirmed against the API JSON: it's the `damage` field
+		// on shield_block/weapon_block events, e.g. block_item "Svartsköld", separate from
+		// round_stats.damage_done), not damage exchanged between the two fighters. Matching it
+		// here previously double-counted every blocked/parried hit as real damage on top of the
+		// correct block/parry credit - see the parry-detection widening below for the actual
+		// fix to the sentence this was originally meant to handle.
+		const damageFigurePattern = /skad(?:ar|as)(?: sig)?[^.()]{0,100}\(\d+\s*\)/i;
+		// Some outcome sentences ("Denslöe... lyckas Denslöe blockera attacken.") only re-name
+		// the defender, not the attacker introduced a sentence or two earlier - mirrors the
+		// damage loop's own widen fallback below. Approximates the original text's ordering by
+		// concatenating sentences so far (exact offsets aren't needed, only relative order).
+		const resolveAttacker = (target, uptoIndex) => {
+			const seen = namesIn(sentences.slice(0, uptoIndex + 1).join(' ')).filter((name) => name !== target);
+			return seen.length ? seen[seen.length - 1] : null;
+		};
 		sentences.forEach((sentence, index) => {
 			const mentionedNames = namesIn(sentence);
 			if (!mentionedNames.length) return;
 			const firstName = mentionedNames[0];
 			const lastName = mentionedNames[mentionedNames.length - 1];
 			const hasAttackerTarget = mentionedNames.length > 1 && firstName !== lastName;
+			const widenedAttacker = hasAttackerTarget ? firstName : resolveAttacker(lastName, index);
 			// A "glancing" dodge/parry/block still deals reduced damage described in the same
 			// sentence (the game models these as distinct from a full evasion - see
 			// round_stats.glancing_dodges etc in the example battle JSON in this repo). And a
@@ -405,28 +426,37 @@
 			// this template's distinguishing phrase (a stat decreasing by N), so use it to
 			// exclude these lines from all three defensive-outcome counters.
 			const isStatDebuffFlavor = /minskar med \d+/i.test(sentence);
+			// "lyckas [Name] skickligt parera ..." puts the subject/adverb between "lyckas" and
+			// "parera" (unlike blockera, which needs no "lyckas" prefix at all to be unambiguous
+			// on its own) - \blyckas\b is a real word-boundary match so it doesn't fire inside
+			// "misslyckas" (no \w/\W boundary between the "s" and "l" there).
+			const hasSuccessfulParry = /\blyckas\b[^.]*\bparera\b/i.test(sentence) || /parera med/i.test(sentence);
+			const hasSuccessfulBlock = /blockera|absorberas/i.test(sentence);
 			if (!resolvesToHitShortly && !isStatDebuffFlavor) {
-				if (/undvik/i.test(sentence)) {
+				// A sentence like "X försöker undvika attacken men misslyckas, dock lyckas X
+				// parera ..." fails the dodge and succeeds the parry in the same breath - without
+				// this guard it would double-credit one exchange as both outcomes.
+				if (/undvik/i.test(sentence) && !hasSuccessfulParry && !hasSuccessfulBlock) {
 					incrementStat(stats, lastName, 'dodges');
-					if (hasAttackerTarget) {
-						incrementStat(stats, firstName, 'attacksMade');
-						incrementStat(stats, firstName, 'evadedByDodge');
+					if (widenedAttacker) {
+						incrementStat(stats, widenedAttacker, 'attacksMade');
+						incrementStat(stats, widenedAttacker, 'evadedByDodge');
 						incrementStat(stats, lastName, 'attacksAgainst');
 					}
 				}
-				if (/lyckas parera|parera med/i.test(sentence)) {
+				if (hasSuccessfulParry) {
 					incrementStat(stats, lastName, 'parries');
-					if (hasAttackerTarget) {
-						incrementStat(stats, firstName, 'attacksMade');
-						incrementStat(stats, firstName, 'evadedByParry');
+					if (widenedAttacker) {
+						incrementStat(stats, widenedAttacker, 'attacksMade');
+						incrementStat(stats, widenedAttacker, 'evadedByParry');
 						incrementStat(stats, lastName, 'attacksAgainst');
 					}
 				}
-				if (/blockera|absorberas/i.test(sentence)) {
+				if (hasSuccessfulBlock) {
 					incrementStat(stats, lastName, 'blocks');
-					if (hasAttackerTarget) {
-						incrementStat(stats, firstName, 'attacksMade');
-						incrementStat(stats, firstName, 'evadedByBlock');
+					if (widenedAttacker) {
+						incrementStat(stats, widenedAttacker, 'attacksMade');
+						incrementStat(stats, widenedAttacker, 'evadedByBlock');
 						incrementStat(stats, lastName, 'attacksAgainst');
 					}
 				}
@@ -440,9 +470,10 @@
 			// battle's exact end-of-battle "missade N attacker" ground truth for both fighters.
 			if (/fumlar/i.test(sentence)) {
 				incrementStat(stats, firstName, 'misses');
-				if (hasAttackerTarget) {
-					incrementStat(stats, firstName, 'attacksMade');
+				if (widenedAttacker) {
+					incrementStat(stats, widenedAttacker, 'attacksMade');
 					incrementStat(stats, lastName, 'missesAgainst');
+					incrementStat(stats, lastName, 'attacksAgainst');
 				}
 			}
 			const healIndex = sentence.indexOf('helas med');
@@ -452,7 +483,7 @@
 			}
 		});
 
-		for (const match of text.matchAll(/skad(?:ar|as)(?: sig)?[^.()]{0,100}\((\d+)\s*\)|tar (\d+) i skada/gi)) {
+		for (const match of text.matchAll(/skad(?:ar|as)(?: sig)?[^.()]{0,100}\((\d+)\s*\)/gi)) {
 			const sentenceStart = text.lastIndexOf('.', match.index) + 1;
 			let mentionedNames = namesIn(text.slice(sentenceStart, match.index + match[0].length));
 			// "X skadar sig (n)" only names the victim - it's how the game phrases "X takes
@@ -471,7 +502,7 @@
 			const attacker = mentionedNames.length > 1
 				? (widened ? mentionedNames[mentionedNames.length - 2] : mentionedNames[0])
 				: null;
-			const damage = Number(match[1] ?? match[2]);
+			const damage = Number(match[1]);
 			// Must run once per match, in order, regardless of whether the match ends up
 			// attributed below - it keeps damageMatchIndex aligned with damageStrongNodes,
 			// which is built once for the whole round independent of per-match attribution.
