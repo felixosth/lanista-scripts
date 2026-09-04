@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.8.5
+// @version     1.8.6
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -84,16 +84,29 @@
 	}
 
 	function formatLevel(craft) {
-		return craft.required_level != null ? `${craft.required_level}` : '-';
+		const { required_level: min, max_level: max } = craft;
+		if (min == null && max == null) return '-';
+		if (min != null && max != null) return formatNumberRange(min, max);
+		return min != null ? `${min}+` : `≤${max}`;
 	}
 
 	// The full item detail's "requirements" array covers both hard requirements ("Kräver att du
 	// har minst 90 i egenskapen Styrka") and soft/recommended ones ("Du bör ha minst 20 i
-	// vapenfärdigheten Sköldar") for whatever stat or weapon skill applies - requirement_text
-	// already spells out the stat name and value, so no per-stat branching is needed here.
+	// vapenfärdigheten Sköldar") for whatever stat or weapon skill applies. requirement_text is a
+	// full sentence, which reads fine one at a time but gets unreadably long once several stack
+	// up in one cell - pull out just the two <strong> pieces (the value and the stat/skill name)
+	// instead, the same "value + name" shape formatEffects already uses. Level requirements are
+	// skipped here since those are already covered by the Nivå column.
 	function formatRequirements(item) {
 		return (item?.requirements || [])
-			.map((requirement) => stripMarkup(requirement.requirement_text))
+			.filter((requirement) => !/grad/i.test(requirement.requirement_text || ''))
+			.map((requirement) => {
+				const text = requirement.requirement_text || '';
+				const [value, name] = Array.from(text.matchAll(/<strong>(.*?)<\/strong>/g), (match) => stripMarkup(match[1]));
+				if (!value || !name) return stripMarkup(text);
+				const recommended = /\bbör\b/i.test(text);
+				return `${value} ${name}${recommended ? ' (rek)' : ''}`;
+			})
 			.filter(Boolean)
 			.join(', ') || '-';
 	}
