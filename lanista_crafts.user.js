@@ -162,49 +162,58 @@
 
 	async function addColumns(table) {
 		const header = table.tHead && table.tHead.rows[0];
-		if (!header || header.querySelector('[data-lanista-crafts-column]') || table.dataset.lanistaCraftsLoading) return;
-		table.dataset.lanistaCraftsLoading = 'true';
-		const crafts = await getCrafts();
+		// Only guards against re-entering while a scan is already in flight for this table -
+		// it must NOT persist once headers exist, or rows added later (e.g. the user raising
+		// "Rader per sida" past the current page, which appends more <tr>s to this same
+		// <table> without recreating <thead>) would never get their columns filled in.
+		if (!header || table.dataset.lanistaCraftsScanning) return;
+		table.dataset.lanistaCraftsScanning = 'true';
+		try {
+			const crafts = await getCrafts();
 
-		const headers = ['Material', 'Stats', 'Effekter'];
-		const priceHeader = Array.from(header.cells).find((cell) => cell.innerText.trim().toLowerCase() === 'pris');
-		const insertAt = priceHeader ? priceHeader.cellIndex + 1 : header.cells.length;
+			const priceHeader = Array.from(header.cells).find((cell) => cell.innerText.trim().toLowerCase() === 'pris');
+			const insertAt = priceHeader ? priceHeader.cellIndex + 1 : header.cells.length;
 
-		headers.forEach((label, offset) => {
-			const cell = document.createElement('th');
-			cell.textContent = label;
-			cell.dataset.lanistaCraftsColumn = 'true';
-			cell.className = 'text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap';
-			header.insertBefore(cell, header.cells[insertAt + offset] || null);
-		});
-
-		Array.from(table.tBodies).forEach((body) => {
-			Array.from(body.rows).forEach((row) => {
-				if (row.querySelector('[data-lanista-crafts-row]')) return;
-				const name = row.cells[0]?.innerText.trim();
-				if (!name) return;
-				const craft = findCraft(crafts, row);
-
-				const materialsCell = document.createElement('td');
-				const statsCell = document.createElement('td');
-				const effectsCell = document.createElement('td');
-				[materialsCell, statsCell, effectsCell].forEach((cell) => {
-					cell.dataset.lanistaCraftsRow = 'true';
-					cell.textContent = craft ? '...' : '-';
-					cell.className = 'p-2 align-middle';
+			if (!header.querySelector('[data-lanista-crafts-column]')) {
+				['Material', 'Stats', 'Effekter'].forEach((label, offset) => {
+					const cell = document.createElement('th');
+					cell.textContent = label;
+					cell.dataset.lanistaCraftsColumn = 'true';
+					cell.className = 'text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap';
+					header.insertBefore(cell, header.cells[insertAt + offset] || null);
 				});
+			}
 
-				row.insertBefore(materialsCell, row.cells[insertAt] || null);
-				row.insertBefore(statsCell, row.cells[insertAt + 1] || null);
-				row.insertBefore(effectsCell, row.cells[insertAt + 2] || null);
-				if (craft) {
-					loadRecipe(craft, materialsCell, statsCell, effectsCell).catch(() => {
-						statsCell.textContent = '-';
-						effectsCell.textContent = '-';
+			Array.from(table.tBodies).forEach((body) => {
+				Array.from(body.rows).forEach((row) => {
+					if (row.querySelector('[data-lanista-crafts-row]')) return;
+					const name = row.cells[0]?.innerText.trim();
+					if (!name) return;
+					const craft = findCraft(crafts, row);
+
+					const materialsCell = document.createElement('td');
+					const statsCell = document.createElement('td');
+					const effectsCell = document.createElement('td');
+					[materialsCell, statsCell, effectsCell].forEach((cell) => {
+						cell.dataset.lanistaCraftsRow = 'true';
+						cell.textContent = craft ? '...' : '-';
+						cell.className = 'p-2 align-middle';
 					});
-				}
+
+					row.insertBefore(materialsCell, row.cells[insertAt] || null);
+					row.insertBefore(statsCell, row.cells[insertAt + 1] || null);
+					row.insertBefore(effectsCell, row.cells[insertAt + 2] || null);
+					if (craft) {
+						loadRecipe(craft, materialsCell, statsCell, effectsCell).catch(() => {
+							statsCell.textContent = '-';
+							effectsCell.textContent = '-';
+						});
+					}
+				});
 			});
-		});
+		} finally {
+			delete table.dataset.lanistaCraftsScanning;
+		}
 	}
 
 	function csvValue(value) {
