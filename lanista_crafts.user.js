@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.8.6
+// @version     1.8.7
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -486,6 +486,22 @@
 		const stats = new Map(names.map((name) => [name, createStatBucket()]));
 
 		const sentences = text.split(/\.\s+/);
+		// Which fighter's name a sentence happens to mention first is not a reliable "who
+		// attacked first" signal - the game has many phrasing variants for the same event, and
+		// some name the *defender* first as the grammatical subject (e.g. "Denslöe verkar
+		// oförberedd och det tar inte lång tid för Rotvältare Brûshméc att dra nytta av
+		// situationen" - Denslöe named first, but Rotvältare is confirmed the attacker against
+		// the API JSON). What's reliable is the resolved attacker of the round's earliest
+		// combat-outcome event (hit, dodge, parry, block, or miss), by text position - each
+		// branch below that already resolves an attacker records it here alongside its
+		// approximate offset, and after both passes the earliest one wins.
+		const combatEvents = [];
+		let sentenceCursor = 0;
+		const sentenceOffsets = sentences.map((sentence) => {
+			const start = text.indexOf(sentence, sentenceCursor);
+			sentenceCursor = start + sentence.length;
+			return start;
+		});
 		const namesIn = (sentence) => names
 			.map((name) => ({ name, position: sentence.lastIndexOf(name) }))
 			.filter(({ position }) => position >= 0)
@@ -551,6 +567,7 @@
 						incrementStat(stats, widenedAttacker, 'attacksMade');
 						incrementStat(stats, widenedAttacker, 'evadedByDodge');
 						incrementStat(stats, lastName, 'attacksAgainst');
+						combatEvents.push({ offset: sentenceOffsets[index], attacker: widenedAttacker });
 					}
 				}
 				if (hasSuccessfulParry) {
@@ -559,6 +576,7 @@
 						incrementStat(stats, widenedAttacker, 'attacksMade');
 						incrementStat(stats, widenedAttacker, 'evadedByParry');
 						incrementStat(stats, lastName, 'attacksAgainst');
+						combatEvents.push({ offset: sentenceOffsets[index], attacker: widenedAttacker });
 					}
 				}
 				if (hasSuccessfulBlock) {
@@ -567,6 +585,7 @@
 						incrementStat(stats, widenedAttacker, 'attacksMade');
 						incrementStat(stats, widenedAttacker, 'evadedByBlock');
 						incrementStat(stats, lastName, 'attacksAgainst');
+						combatEvents.push({ offset: sentenceOffsets[index], attacker: widenedAttacker });
 					}
 				}
 			}
@@ -583,6 +602,7 @@
 					incrementStat(stats, widenedAttacker, 'attacksMade');
 					incrementStat(stats, lastName, 'missesAgainst');
 					incrementStat(stats, lastName, 'attacksAgainst');
+					combatEvents.push({ offset: sentenceOffsets[index], attacker: widenedAttacker });
 				}
 			}
 			const healIndex = sentence.indexOf('helas med');
@@ -625,10 +645,17 @@
 				stats.get(attacker).attacksMade++;
 				stats.get(attacker).hitsLanded++;
 				if (isCrit) stats.get(attacker).crits++;
+				combatEvents.push({ offset: match.index, attacker });
 			}
 		}
 
-		return names.map((name) => ({ name, side: sideByName.get(name), isSelf: name === currentName, ...stats.get(name) }));
+		combatEvents.sort((left, right) => left.offset - right.offset);
+		const firstAttacker = combatEvents.length ? combatEvents[0].attacker : null;
+
+		return {
+			participants: names.map((name) => ({ name, side: sideByName.get(name), isSelf: name === currentName, ...stats.get(name) })),
+			firstAttacker
+		};
 	}
 
 	// The site colors names via real <green>/<red> tags, but the color rule is Vue
@@ -722,6 +749,14 @@
 		panel.appendChild(line1);
 		panel.appendChild(line2);
 		panel.appendChild(line3);
+
+		// Only set (battle totals card, viewer's own row, duel only - see scanBattlePage).
+		if (context.attackedFirst) {
+			const line4 = document.createElement('div');
+			line4.className = 'text-muted-foreground';
+			line4.textContent = ` Anföll först i ${context.attackedFirst.count} av ${context.attackedFirst.total} ronder`;
+			panel.appendChild(line4);
+		}
 		return panel;
 	}
 
@@ -752,9 +787,9 @@
 		});
 	}
 
-	function renderBattleTotals(host, beforeNode, totals, battleTeamDamage, battleTeamSize) {
+	function renderBattleTotals(host, beforeNode, totals, battleTeamDamage, battleTeamSize, attackedFirst) {
 		const entries = Array.from(totals, ([name, stats]) => ({ name, ...stats }));
-		const signature = JSON.stringify(entries);
+		const signature = JSON.stringify({ entries, attackedFirst });
 		let card = host.querySelector(':scope > [data-lanista-battle-totals]');
 		const inPlace = card && card.nextSibling === beforeNode;
 		if (card && card.dataset.lanistaBattleSignature === signature && inPlace) return;
@@ -783,7 +818,8 @@
 			const context = {
 				totalDamageTaken: participant.damageTaken,
 				teamDamage: battleTeamDamage.get(participant.side) || 0,
-				teamSize: battleTeamSize.get(participant.side) || 1
+				teamSize: battleTeamSize.get(participant.side) || 1,
+				attackedFirst: (attackedFirst && participant.isSelf) ? attackedFirst : null
 			};
 			body.appendChild(buildParticipantPanel(participant, context, colors));
 		});
@@ -817,8 +853,18 @@
 			.sort((left, right) => left.number - right.number);
 
 		const totals = new Map();
+		let roundsCounted = 0;
+		let selfAttackedFirstRounds = 0;
 		rounds.forEach(({ container }) => {
-			const participants = summarizeRound(container, currentName);
+			const { participants, firstAttacker } = summarizeRound(container, currentName);
+			// firstAttacker is the resolved attacker of the round's earliest combat-outcome
+			// event (see summarizeRound) - only meaningful for a 1v1 duel; a team-battle round
+			// narrates several simultaneous pairings at once, so this is tallied unconditionally
+			// but only surfaced when isDuel (below) says it's safe to interpret.
+			if (participants.length) {
+				roundsCounted++;
+				if (firstAttacker === currentName) selfAttackedFirstRounds++;
+			}
 			participants.forEach((participant) => {
 				const entry = totals.get(participant.name) || createStatBucket({ side: participant.side, isSelf: participant.isSelf });
 				entry.damageDone += participant.damageDone;
@@ -862,8 +908,12 @@
 			const battleEntries = Array.from(totals.values());
 			const battleTeamDamage = sumBySide(battleEntries, 'damageDone');
 			const battleTeamSize = countBySide(battleEntries);
+			// "Attacked first" only means something with exactly two fighters in the whole
+			// battle - a team battle has no single "who went first this round" to attribute.
+			const isDuel = totals.size === 2;
+			const attackedFirst = isDuel ? { count: selfAttackedFirstRounds, total: roundsCounted } : null;
 			const firstCard = rounds[0].container.parentElement;
-			renderBattleTotals(firstCard.parentElement, firstCard, totals, battleTeamDamage, battleTeamSize);
+			renderBattleTotals(firstCard.parentElement, firstCard, totals, battleTeamDamage, battleTeamSize, attackedFirst);
 		}
 	}
 
