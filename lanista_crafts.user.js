@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.8.8
+// @version     1.8.9
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -69,14 +69,19 @@
 	}
 
 	function formatEffects(item) {
-		return (item?.bonuses || [])
-			.map((bonus) => {
-				const value = stripMarkup(bonus.bonus_value_display);
-				const name = stripMarkup(bonus.bonusable_name).replace(/^vapenfärdigheten\s+/i, '');
-				return [value, name].filter(Boolean).join(' ');
-			})
-			.filter(Boolean)
-			.join(', ') || '-';
+		if (!item) return '-';
+		const parts = [];
+		// crit_rate is a flat "chans till en perfekt träff" bonus baked directly onto the item
+		// record itself, not into bonuses[] - and it's a different stat from the min/max_crit_rate
+		// range the Stats column already reads for Kritchans - so without this an item's perfect-hit
+		// chance modifier (shown in the site's own "Modifikationer" panel) would silently vanish here.
+		if (item.crit_rate) parts.push(`+${item.crit_rate}% Perfekt träff`);
+		parts.push(...(item.bonuses || []).map((bonus) => {
+			const value = stripMarkup(bonus.bonus_value_display);
+			const name = stripMarkup(bonus.bonusable_name).replace(/^vapenfärdigheten\s+/i, '');
+			return [value, name].filter(Boolean).join(' ');
+		}));
+		return parts.filter(Boolean).join(', ') || '-';
 	}
 
 	// craft.type_name is the recipe's own subtype (e.g. "sword", "shield", "chain") and comes
