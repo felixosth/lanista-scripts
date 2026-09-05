@@ -860,17 +860,6 @@
         let currentModalItemId = null;
         let restoringFromURL = false;
 
-        // Type mapping
-        const typeMap = {
-            weapon: 'is_weapon',
-            armor: 'is_armor',
-            shield: 'is_shield',
-            trinket: 'is_trinket',
-            consumable: 'is_consumable',
-            enchantment: 'is_enchant',
-            material: 'is_material'
-        };
-
         const typeNames = {
             'weapon': 'Vapen',
             'armor': 'Rustning',
@@ -968,9 +957,9 @@
 
         function getItemType(item) {
             if (item.is_weapon) return 'weapon';
+            if (item.is_trinket) return 'trinket';
             if (item.is_armor) return 'armor';
             if (item.is_shield) return 'shield';
-            if (item.is_trinket) return 'trinket';
             if (item.is_consumable) return 'consumable';
             if (item.is_enchant) return 'enchantment';
             if (item.is_material) return 'material';
@@ -1010,7 +999,7 @@
                 }
 
                 // Type
-                if (typeFilter && !item[typeMap[typeFilter]]) {
+                if (typeFilter && item.type !== typeFilter) {
                     return false;
                 }
 
@@ -1287,10 +1276,11 @@
                 }
             }
 
-            // Categorize armor/shield stats
+            // Categorize armor/shield stats (armor uses base_block, shields use absorption)
             if (item.is_armor || item.is_shield) {
-                if (item.base_block !== undefined && item.base_block > 0) {
-                    defenseStats.push(`<div class="stat-item"><div class="stat-label">Blockering</div><div class="stat-value">${item.base_block}</div></div>`);
+                const block = item.base_block || item.absorption;
+                if (block > 0) {
+                    defenseStats.push(`<div class="stat-item"><div class="stat-label">Blockering</div><div class="stat-value">${block}</div></div>`);
                 }
             }
 
