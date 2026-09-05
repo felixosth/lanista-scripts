@@ -374,13 +374,20 @@
         .detail-title {
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start;
         }
 
         .detail-title h1 {
             font-size: 1.6em;
             margin-bottom: 12px;
             line-height: 1.3;
+        }
+
+        .detail-description {
+            margin-top: 12px;
+            color: #555;
+            font-size: 0.9em;
+            line-height: 1.5;
         }
 
         .detail-meta {
@@ -1254,6 +1261,7 @@
                         <div class="detail-title">
                             <h1>${item.name}</h1>
                             ${metaTags}
+                            ${item.description ? `<p class="detail-description">${item.description}</p>` : ''}
                         </div>
                     </div>
 
@@ -1263,13 +1271,6 @@
                             <div class="stat-grid">
                                 ${statsHTML}
                             </div>
-                        </div>
-                    ` : ''}
-
-                    ${item.description ? `
-                        <div class="detail-section">
-                            <h3>Beskrivning</h3>
-                            <p>${item.description}</p>
                         </div>
                     ` : ''}
 
