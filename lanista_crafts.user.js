@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.9.1
+// @version     1.9.2
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -928,6 +928,12 @@
 
 	const RECENT_BATTLES_COUNT = 5;
 	const API_CALL_DELAY_MS = 500;
+	const WIN_RATE_CATEGORIES = [
+		{ key: 'CHANCE', label: 'Slumpdueller' },
+		{ key: 'CHALLENGE', label: 'Utmaningar' },
+		{ key: 'TEAM', label: 'Lagspel' },
+		{ key: 'TOURNAMENT', label: 'Turneringar' }
+	];
 
 	function sleep(ms) {
 		return new Promise((resolve) => setTimeout(resolve, ms));
@@ -1025,13 +1031,20 @@
 	// Battles the avatar hasn't finished yet (or ones too old/odd-shaped to carry a
 	// battle.stats entry) are simply skipped rather than surfaced as errors - a partial result
 	// from N of the requested battles is more useful than failing the whole popup over one.
-	async function fetchRecentBattleStats(avatarId, onProgress) {
+	// Also pulls /api/avatars/{id}/statistics for the avatar's all-time win rates by battle
+	// type - a separate, cheap call folded into the same throttled chain (still 500ms between
+	// every request) rather than fired in parallel with the per-battle fetches below.
+	async function fetchAvatarBattleData(avatarId, onProgress) {
 		const listResponse = await fetch(`/api/avatars/${avatarId}/battles`);
 		if (!listResponse.ok) throw new Error('battles list request failed');
 		const listData = await listResponse.json();
 		const battleIds = (listData.data || []).slice(0, RECENT_BATTLES_COUNT).map((battle) => battle.id);
 
-		const results = [];
+		await sleep(API_CALL_DELAY_MS);
+		const winRatesResponse = await fetch(`/api/avatars/${avatarId}/statistics`).catch(() => null);
+		const winRates = winRatesResponse && winRatesResponse.ok ? await winRatesResponse.json().catch(() => null) : null;
+
+		const battles = [];
 		for (let index = 0; index < battleIds.length; index++) {
 			await sleep(API_CALL_DELAY_MS);
 			onProgress(index + 1, battleIds.length);
@@ -1039,9 +1052,9 @@
 			if (!response || !response.ok) continue;
 			const battle = await response.json().catch(() => null);
 			const stats = battle && findOwnBattleStats(battle, avatarId);
-			if (stats) results.push(stats);
+			if (stats) battles.push(stats);
 		}
-		return results;
+		return { battles, winRates };
 	}
 
 	function aggregateBattleStats(battles) {
@@ -1116,19 +1129,19 @@
 
 		document.body.appendChild(backdrop);
 
-		fetchRecentBattleStats(avatarId, (done, total) => {
+		fetchAvatarBattleData(avatarId, (done, total) => {
 			status.textContent = `Hämtar match ${done} av ${total}...`;
-		}).then((battles) => {
+		}).then(({ battles, winRates }) => {
 			if (!backdrop.isConnected) return;
 			if (battles.length) heading.textContent = `${battles[0].fighterName} - senaste ${battles.length} matcherna`;
-			renderStatsResults(body, status, battles);
+			renderStatsResults(body, status, battles, winRates);
 		}).catch(() => {
 			if (!backdrop.isConnected) return;
 			status.textContent = 'Kunde inte hämta matchdata.';
 		});
 	}
 
-	function renderStatsResults(body, status, battles) {
+	function renderStatsResults(body, status, battles, winRates) {
 		if (!battles.length) {
 			status.textContent = 'Ingen matchdata hittades.';
 			return;
@@ -1154,6 +1167,24 @@
 			summaryLines.appendChild(document.createTextNode(text));
 		});
 		body.appendChild(summaryLines);
+
+		const winRateLines = WIN_RATE_CATEGORIES
+			.map(({ key, label }) => {
+				const entry = winRates && winRates[key];
+				if (!entry) return null;
+				return `${label}: ${formatPercent(entry.wins, entry.total)} (${entry.wins}/${entry.total})`;
+			})
+			.filter(Boolean);
+		if (winRateLines.length) {
+			body.appendChild(document.createElement('hr'));
+			const winRateBlock = document.createElement('div');
+			winRateBlock.className = 'text-muted-foreground text-xs space-y-0.5';
+			winRateLines.forEach((text, index) => {
+				if (index > 0) winRateBlock.appendChild(document.createElement('br'));
+				winRateBlock.appendChild(document.createTextNode(text));
+			});
+			body.appendChild(winRateBlock);
+		}
 
 		const listHeading = document.createElement('p');
 		listHeading.className = 'mt-2 mb-1 font-semibold';
