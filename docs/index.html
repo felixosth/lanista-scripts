@@ -392,16 +392,27 @@
 
         .detail-meta {
             display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
+            gap: 8px;
+            margin-bottom: 4px;
             flex-wrap: wrap;
         }
 
         .meta-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 11px;
+            border-radius: 999px;
+            font-size: 0.78em;
             background: #f0ede8;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 0.9em;
+            color: #666;
+            border: 1px solid #e5ded2;
+        }
+
+        .meta-tag.level {
+            background: #8b7355;
+            color: #fff;
+            border-color: #8b7355;
+            font-weight: 600;
         }
 
         .detail-section {
@@ -1245,12 +1256,13 @@
             }
 
             let metaTags = '';
-            if (level > 0) metaTags += `<div class="meta-tag">Nivå ${level}</div>`;
-            if (item.soulbound) metaTags += `<div class="meta-tag">Själbunden</div>`;
-            if (item.type) metaTags += `<div class="meta-tag">${subtypeNames[item.type_name] || item.type_name || typeNames[item.type] || item.type}</div>`;
+            if (level > 0) metaTags += `<span class="meta-tag level">Nivå ${level}</span>`;
+            if (item.type) metaTags += `<span class="meta-tag">${subtypeNames[item.type_name] || item.type_name || typeNames[item.type] || item.type}</span>`;
+            if (item.soulbound) metaTags += `<span class="meta-tag">Själbunden</span>`;
             if (item.categories && item.categories.length > 0) {
-                metaTags += item.categories.map(c => `<div class="meta-tag">${c.name}</div>`).join('');
+                metaTags += item.categories.map(c => `<span class="meta-tag">${c.name}</span>`).join('');
             }
+            metaTags = metaTags ? `<div class="detail-meta">${metaTags}</div>` : '';
 
             let html = `
                 <div class="detail-view">
