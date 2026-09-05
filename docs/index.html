@@ -449,6 +449,62 @@
             color: #2c2416;
         }
 
+        .craft-level {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .craft-node {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .craft-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 6px 4px 10px;
+            background: #f0ede8;
+            border-radius: 4px;
+            font-size: 0.85em;
+            white-space: nowrap;
+        }
+
+        .craft-chip .name.linked {
+            cursor: pointer;
+        }
+
+        .craft-chip .name.linked:hover {
+            color: #8b7355;
+            text-decoration: underline;
+        }
+
+        .craft-chip .qty {
+            font-weight: 600;
+            color: #8b7355;
+        }
+
+        .craft-chip .toggle {
+            width: 14px;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+            color: #8b7355;
+            font-size: 0.8em;
+            transition: transform 0.15s ease;
+        }
+
+        .craft-chip .toggle.open {
+            transform: rotate(90deg);
+        }
+
+        .craft-children {
+            margin: 6px 0 0 12px;
+            padding-left: 10px;
+            border-left: 2px solid #e0dcd8;
+        }
+
         .comparison-view {
             background: white;
             border-radius: 8px;
@@ -827,6 +883,49 @@
             'shield': 'Sköld'
         };
 
+        // Nested crafting data (material_requirements/item_requirements embedded on other
+        // items) references items by an old, non-unique id scheme, so it can't be trusted
+        // for navigation. These indexes resolve nested item stubs back to the canonical,
+        // unique-id items in allItems (matched by name, disambiguated by other fields),
+        // and collect each canonical item's real recipe (materials, sub-items, profession,
+        // coins, time) wherever it appears embedded in the data.
+        let itemsById = {};
+        let itemsByName = {};
+        let recipesByItemId = {};
+
+        function resolveItem(stub) {
+            if (!stub || !stub.name) return null;
+            const candidates = itemsByName[stub.name];
+            if (!candidates || candidates.length === 0) return null;
+            if (candidates.length === 1) return candidates[0];
+            let best = candidates[0];
+            let bestScore = -1;
+            for (const c of candidates) {
+                let score = 0;
+                if (stub.type_name !== undefined && c.type_name === stub.type_name) score++;
+                if (stub.required_level !== undefined && c.required_level === stub.required_level) score++;
+                if (stub.is_material !== undefined && c.is_material === stub.is_material) score++;
+                if (stub.sell_value !== undefined && c.sell_value === stub.sell_value) score++;
+                if (score > bestScore) { bestScore = score; best = c; }
+            }
+            return best;
+        }
+
+        function indexRecipeStub(stub) {
+            const canonical = resolveItem(stub);
+            if (!canonical || recipesByItemId[canonical.id]) return;
+            recipesByItemId[canonical.id] = stub;
+            (stub.material_requirements || []).forEach(req => { if (req.itemable) indexRecipeStub(req.itemable); });
+            (stub.item_requirements || []).forEach(req => { if (req.itemable) indexRecipeStub(req.itemable); });
+        }
+
+        function buildRecipeIndex() {
+            allItems.forEach(item => {
+                (item.material_requirements || []).forEach(req => { if (req.itemable) indexRecipeStub(req.itemable); });
+                (item.item_requirements || []).forEach(req => { if (req.itemable) indexRecipeStub(req.itemable); });
+            });
+        }
+
         // Load data
         fetch('lanista_items_detailed.json')
             .then(response => response.json())
@@ -835,6 +934,11 @@
                     ...item,
                     type: getItemType(item)
                 }));
+                allItems.forEach(item => {
+                    itemsById[item.id] = item;
+                    (itemsByName[item.name] = itemsByName[item.name] || []).push(item);
+                });
+                buildRecipeIndex();
                 applyFilters();
             })
             .catch(error => {
@@ -1062,6 +1166,13 @@
             }
         }
 
+        function toggleCraftReq(el) {
+            const children = el.closest('.craft-node').querySelector(':scope > .craft-children');
+            const open = children.style.display === 'block';
+            children.style.display = open ? 'none' : 'block';
+            el.classList.toggle('open', !open);
+        }
+
         function showDetail(itemId) {
             const item = allItems.find(i => i.id === itemId);
             if (!item) return;
@@ -1162,55 +1273,71 @@
                         </div>
                     ` : ''}
 
-                    ${!item.is_material && (item.material_requirements && item.material_requirements.length > 0 || item.item_requirements && item.item_requirements.length > 0) ? `
-                        <div class="detail-section">
-                            <h3>Crafting</h3>
-                            ${item.material_requirements && item.material_requirements.length > 0 ? `
-                                <div style="margin-bottom: 15px;">
-                                    <h4 style="font-size: 0.95em; color: #666; margin-bottom: 8px;">Material</h4>
-                                    ${item.material_requirements.map(req => {
-                                        const mat = req.material;
-                                        const itemable = req.itemable;
-                                        const name = mat?.name || itemable?.name || 'Okänt material';
+                    ${(() => {
+                        if (item.is_material) return '';
+                        const recipe = recipesByItemId[item.id];
+                        if (!recipe) return '';
+                        const hasMaterials = recipe.material_requirements && recipe.material_requirements.length > 0;
+                        const hasItems = recipe.item_requirements && recipe.item_requirements.length > 0;
+                        if (!hasMaterials && !hasItems) return '';
 
-                                        // If itemable has its own material_requirements, show nested recipe
-                                        const nestedReqs = itemable?.material_requirements || [];
+                        function renderReqList(reqs) {
+                            const chips = reqs.map(req => {
+                                const matStub = req.material;
+                                const itemStub = req.itemable;
+                                const target = itemStub ? resolveItem(itemStub) : (matStub ? resolveItem(matStub) : null);
+                                const name = matStub?.name || itemStub?.name || 'Okänt';
+                                const subRecipe = target ? recipesByItemId[target.id] : null;
+                                const nestedReqs = [...(subRecipe?.material_requirements || []), ...(subRecipe?.item_requirements || [])];
+                                const hasNested = nestedReqs.length > 0;
 
-                                        return `
-                                            <div style="margin-bottom: 12px; padding: 10px; background: #f9f7f4; border-radius: 4px; border-left: 2px solid #8b7355;">
-                                                <div style="display: flex; justify-content: space-between; cursor: pointer; font-weight: 500;" onclick="showDetail(${itemable?.id || mat?.id})">
-                                                    <span>${name}</span>
-                                                    <span style="font-weight: bold; color: #8b7355;">${req.quantity}</span>
-                                                </div>
-                                                ${nestedReqs.length > 0 ? `
-                                                    <div style="margin-top: 8px; font-size: 0.85em; color: #666; padding-top: 8px; border-top: 1px solid #e0dcd8;">
-                                                        Kräver:
-                                                        ${nestedReqs.map(n => {
-                                                            const nmat = n.material?.name || n.itemable?.name || 'Okänd';
-                                                            return `<div>${n.quantity}x ${nmat}</div>`;
-                                                        }).join('')}
-                                                    </div>
-                                                ` : ''}
-                                            </div>
-                                        `;
-                                    }).join('')}
-                                </div>
-                            ` : ''}
-                            ${item.item_requirements && item.item_requirements.length > 0 ? `
-                                <div>
-                                    <h4 style="font-size: 0.95em; color: #666; margin-bottom: 8px;">Föremål</h4>
-                                    <div class="stat-grid">
-                                        ${item.item_requirements.map(req => `
-                                            <div class="stat-item">
-                                                <div class="stat-label">${req.itemable?.name || 'Okänt föremål'}</div>
-                                                <div class="stat-value">${req.quantity}</div>
-                                            </div>
-                                        `).join('')}
+                                return `
+                                    <div class="craft-node">
+                                        <span class="craft-chip">
+                                            <span class="name${target ? ' linked' : ''}" ${target ? `onclick="showDetail(${target.id})"` : ''}>${name}</span>
+                                            <span class="qty">×${req.quantity}</span>
+                                            ${hasNested ? `<span class="toggle" onclick="toggleCraftReq(this)">▶</span>` : ''}
+                                        </span>
+                                        ${hasNested ? `<div class="craft-children" style="display: none;">${renderReqList(nestedReqs)}</div>` : ''}
                                     </div>
+                                `;
+                            }).join('');
+                            return `<div class="craft-level">${chips}</div>`;
+                        }
+
+                        const professionHTML = (recipe.profession_requirements && recipe.profession_requirements.length > 0) ? `
+                            <div style="margin-bottom: 15px;">
+                                <h4 style="font-size: 0.95em; color: #666; margin-bottom: 8px;">Yrke</h4>
+                                <div class="stat-grid">
+                                    ${recipe.profession_requirements.map(pr => `
+                                        <div class="stat-item">
+                                            <div class="stat-label">${pr.profession?.name || 'Okänt yrke'}</div>
+                                            <div class="stat-value">Nivå ${pr.level}</div>
+                                        </div>
+                                    `).join('')}
                                 </div>
-                            ` : ''}
-                        </div>
-                    ` : ''}
+                            </div>
+                        ` : '';
+
+                        return `
+                            <div class="detail-section">
+                                <h3>Tillverkning</h3>
+                                ${professionHTML}
+                                ${hasMaterials ? `
+                                    <div style="margin-bottom: 15px;">
+                                        <h4 style="font-size: 0.95em; color: #666; margin-bottom: 8px;">Material</h4>
+                                        ${renderReqList(recipe.material_requirements)}
+                                    </div>
+                                ` : ''}
+                                ${hasItems ? `
+                                    <div>
+                                        <h4 style="font-size: 0.95em; color: #666; margin-bottom: 8px;">Föremål</h4>
+                                        ${renderReqList(recipe.item_requirements)}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    })()}
 
 
                     ${item.is_material ? (() => {
@@ -1245,21 +1372,15 @@
 
         function findItemsUsingMaterial(materialId) {
             const usedIn = [];
-
-            // Recursively check if an item uses the material
-            function checkItem(item, targetId) {
-                if (item.material_requirements) {
-                    for (const req of item.material_requirements) {
-                        if (req.material?.id === targetId) return true;
-                        if (req.itemable && checkItem(req.itemable, targetId)) return true;
-                    }
-                }
-                return false;
-            }
-
-            for (const item of allItems) {
-                if (checkItem(item, materialId) && !usedIn.find(i => i.id === item.id)) {
-                    usedIn.push(item);
+            for (const idKey in recipesByItemId) {
+                const recipe = recipesByItemId[idKey];
+                const usesIt = (recipe.material_requirements || []).some(req => {
+                    const target = req.material ? resolveItem(req.material) : null;
+                    return target && target.id === materialId;
+                });
+                if (usesIt) {
+                    const craftedItem = itemsById[idKey];
+                    if (craftedItem) usedIn.push(craftedItem);
                 }
             }
             return usedIn;
