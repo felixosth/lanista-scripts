@@ -581,10 +581,37 @@
             background: #f9f7f4;
         }
 
+        .comparison-table th:first-child,
+        .comparison-table td:first-child {
+            position: sticky;
+            left: 0;
+            background: inherit;
+            z-index: 1;
+        }
+
+        .comparison-table thead th:first-child {
+            background: #2c2416;
+        }
+
+        .comparison-table tbody tr:hover td:first-child {
+            background: #f9f7f4;
+        }
+
+        .comparison-section-row td {
+            font-weight: 600;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #8b7355;
+            background: #f9f7f4;
+            padding: 10px 15px;
+        }
+
         .comparison-item-cell {
             display: flex;
             align-items: center;
             gap: 10px;
+            cursor: pointer;
         }
 
         .comparison-item-image {
@@ -1564,33 +1591,45 @@
 
             const items = selectedItems.map(id => allItems.find(i => i.id === id)).filter(Boolean);
             const comparisonContent = document.getElementById('comparisonContent');
+            const level = item => { const l = getItemLevel(item); return l === '' ? null : l; };
 
-            // Get all unique stat keys
-            const statKeys = new Set();
-            items.forEach(item => {
-                if (item.is_weapon) {
-                    ['base_damage_min', 'base_damage_max', 'crit_rate', 'durability', 'weight'].forEach(k => {
-                        if (item[k] !== undefined) statKeys.add(k);
-                    });
-                } else if (item.is_shield) {
-                    ['base_block', 'weight'].forEach(k => {
-                        if (item[k] !== undefined) statKeys.add(k);
-                    });
-                }
-                statKeys.add('required_level');
-                statKeys.add('sell_value');
-            });
+            // Same stat shapes and labels as the detail modal's Statistik section, so a
+            // stat means the same thing in both places. Each row is skipped entirely if no
+            // compared item has a value for it.
+            const rows = [
+                { label: 'Typ', display: item => subtypeNames[item.type_name] || item.type_name || typeNames[item.type] || null },
+                { label: 'Nivå', display: level, numeric: level },
+                { label: 'Skada', display: item => item.base_damage_max ? formatRange(item.base_damage_min, item.base_damage_max) : null, numeric: item => item.base_damage_max || null },
+                { label: 'Skadepotential', display: item => item.damage_potential || null, numeric: item => item.damage_potential || null },
+                { label: 'Kritisk skada', display: item => item.crit_damage || null },
+                { label: 'Kritchans', display: item => item.max_crit_rate ? `${formatRange(item.min_crit_rate, item.max_crit_rate)}%` : null, numeric: item => item.max_crit_rate || null },
+                { label: 'Perfekt träff', display: item => item.crit_rate ? `+${item.crit_rate}%` : null, numeric: item => item.crit_rate || null },
+                { label: 'Blockering', display: item => {
+                    const block = item.base_block || item.absorption;
+                    if (!block) return null;
+                    return block + (item.percentage_block ? ` (${item.percentage_block}%)` : '');
+                }, numeric: item => item.base_block || item.absorption || null },
+                { label: 'Block/runda', display: item => item.is_shield ? (item.max_blocks_per_round || null) : null, numeric: item => item.is_shield ? (item.max_blocks_per_round || null) : null },
+                { label: 'Träffchans', display: item => item.increased_hit_rate ? `+${item.increased_hit_rate}` : null, numeric: item => item.increased_hit_rate || null },
+                { label: 'Hållbarhet', display: item => item.durability || null, numeric: item => item.durability || null },
+                { label: 'Förtrollningsplatser', display: item => item.max_enchants || null, numeric: item => item.max_enchants || null },
+                { label: 'Vikt', display: item => item.weight || null, numeric: item => item.weight || null, higherIsBetter: false },
+                { label: 'Värde', display: getSellValue, numeric: getSellValue }
+            ];
 
-            const statLabels = {
-                'base_damage_min': 'Skada min',
-                'base_damage_max': 'Skada max',
-                'crit_rate': 'Kritisk träff %',
-                'base_block': 'Blockering',
-                'durability': 'Hållbarhet',
-                'weight': 'Vikt',
-                'required_level': 'Nivå',
-                'sell_value': 'Försäljningsvärde'
-            };
+            function renderRow(label, values, higherIsBetter = true) {
+                const numericValues = values.map(v => v.numeric).filter(n => typeof n === 'number' && !isNaN(n));
+                const best = numericValues.length > 1
+                    ? (higherIsBetter ? Math.max(...numericValues) : Math.min(...numericValues))
+                    : null;
+                let rowHtml = `<tr><td><strong>${label}</strong></td>`;
+                values.forEach(v => {
+                    const isBest = best !== null && v.numeric === best;
+                    const shown = v.display === null || v.display === undefined || v.display === '' ? '-' : v.display;
+                    rowHtml += `<td><span class="comparison-value ${isBest ? 'best' : ''}">${shown}</span></td>`;
+                });
+                return rowHtml + `</tr>`;
+            }
 
             let html = `
                 <div class="comparison-view">
@@ -1598,8 +1637,8 @@
                         <thead>
                             <tr>
                                 <th style="width: 200px;">Egenskaper</th>
-                                ${items.map((item, i) => `
-                                    <th>
+                                ${items.map(item => `
+                                    <th onclick="showDetail(${item.id})">
                                         <div class="comparison-item-cell">
                                             ${item.asset?.url ? `<div class="comparison-item-image"><img src="${item.asset.url}" alt="${item.name}"></div>` : ''}
                                             <div>${item.name}</div>
@@ -1611,25 +1650,31 @@
                         <tbody>
             `;
 
-            Array.from(statKeys).sort().forEach(statKey => {
-                const values = items.map(item => {
-                    if (statKey === 'crit_rate') {
-                        return item[statKey] !== undefined ? parseFloat((item[statKey] * 100).toFixed(1)) : null;
-                    }
-                    return item[statKey];
-                });
-
-                const numericValues = values.filter(v => v !== null && typeof v === 'number');
-                const maxValue = numericValues.length > 0 ? Math.max(...numericValues) : null;
-
-                html += `<tr><td><strong>${statLabels[statKey] || statKey}</strong></td>`;
-                values.forEach(val => {
-                    const isBest = val === maxValue && maxValue !== null;
-                    const displayVal = val === null || val === undefined ? '-' : val;
-                    html += `<td><span class="comparison-value ${isBest ? 'best' : ''}">${displayVal}</span></td>`;
-                });
-                html += `</tr>`;
+            rows.forEach(row => {
+                const values = items.map(item => ({ display: row.display(item), numeric: row.numeric ? row.numeric(item) : null }));
+                const hasAnyValue = values.some(v => v.display !== null && v.display !== undefined && v.display !== '');
+                if (hasAnyValue) html += renderRow(row.label, values, row.higherIsBetter !== false);
             });
+
+            // Bonuses and enchant modifiers vary per item, so gather every unique stat name
+            // across the compared items and give each its own row.
+            const bonusRows = new Map();
+            items.forEach(item => {
+                [...(item.bonuses || []).map(b => [b.bonusable_name, b.bonus_value_display]),
+                 ...(item.enchant_modifiers || []).map(m => [m.enchantable_name, m.enchant_value_display])]
+                    .forEach(([name, display]) => {
+                        if (!bonusRows.has(name)) bonusRows.set(name, new Map());
+                        bonusRows.get(name).set(item.id, { display, numeric: parseFloat(display) });
+                    });
+            });
+
+            if (bonusRows.size > 0) {
+                html += `<tr class="comparison-section-row"><td colspan="${items.length + 1}">Bonusar</td></tr>`;
+                bonusRows.forEach((byItemId, name) => {
+                    const values = items.map(item => byItemId.get(item.id) || { display: null, numeric: null });
+                    html += renderRow(name, values);
+                });
+            }
 
             html += `
                         </tbody>
