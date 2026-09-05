@@ -783,8 +783,8 @@
                 </div>
 
                 <div class="view-toggle">
-                    <button class="active" onclick="switchView('grid')">Rutnät</button>
-                    <button onclick="switchView('table')">Tabell</button>
+                    <button class="active" data-mode="grid" onclick="switchView('grid')">Rutnät</button>
+                    <button data-mode="table" onclick="switchView('table')">Tabell</button>
                 </div>
             </div>
 
@@ -857,6 +857,8 @@
         let currentDisplayMode = 'grid';
         const ITEMS_PER_PAGE = 50;
         let currentPage = 1;
+        let currentModalItemId = null;
+        let restoringFromURL = false;
 
         // Type mapping
         const typeMap = {
@@ -957,7 +959,7 @@
                     (itemsByName[item.name] = itemsByName[item.name] || []).push(item);
                 });
                 buildRecipeIndex();
-                applyFilters();
+                loadStateFromURL();
             })
             .catch(error => {
                 console.error('Fel vid inläsning av data:', error);
@@ -1038,10 +1040,75 @@
                 }
             });
 
-            currentPage = 1;
+            if (!restoringFromURL) currentPage = 1;
             updateCountInfo();
             renderItems();
+            updateURL();
         }
+
+        function updateURL(push) {
+            if (restoringFromURL) return;
+
+            const params = new URLSearchParams();
+            const search = document.getElementById('searchInput').value;
+            const type = document.getElementById('typeFilter').value;
+            const minLevel = document.getElementById('minLevelFilter').value;
+            const maxLevel = document.getElementById('maxLevelFilter').value;
+            const sort = document.getElementById('sortFilter').value;
+
+            if (search) params.set('q', search);
+            if (type) params.set('type', type);
+            if (minLevel) params.set('min', minLevel);
+            if (maxLevel) params.set('max', maxLevel);
+            if (sort && sort !== 'name') params.set('sort', sort);
+            if (currentDisplayMode !== 'grid') params.set('view', currentDisplayMode);
+            if (currentPage > 1) params.set('page', currentPage);
+            if (currentModalItemId) params.set('item', currentModalItemId);
+
+            const qs = params.toString();
+            const newUrl = window.location.pathname + (qs ? '?' + qs : '');
+            const currentUrl = window.location.pathname + window.location.search;
+            if (newUrl === currentUrl) return;
+
+            if (push) {
+                history.pushState(null, '', newUrl);
+            } else {
+                history.replaceState(null, '', newUrl);
+            }
+        }
+
+        function loadStateFromURL() {
+            restoringFromURL = true;
+
+            const params = new URLSearchParams(window.location.search);
+            document.getElementById('searchInput').value = params.get('q') || '';
+            document.getElementById('typeFilter').value = params.get('type') || '';
+            document.getElementById('minLevelFilter').value = params.get('min') || '';
+            document.getElementById('maxLevelFilter').value = params.get('max') || '';
+            document.getElementById('sortFilter').value = params.get('sort') || 'name';
+
+            currentDisplayMode = params.get('view') === 'table' ? 'table' : 'grid';
+            document.getElementById('gridContainer').style.display = currentDisplayMode === 'grid' ? 'grid' : 'none';
+            document.getElementById('tableContainer').style.display = currentDisplayMode === 'grid' ? 'none' : 'block';
+            document.querySelectorAll('.view-toggle button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === currentDisplayMode);
+            });
+
+            currentPage = parseInt(params.get('page')) || 1;
+
+            applyFilters();
+
+            const itemId = parseInt(params.get('item'));
+            if (itemId) {
+                showDetail(itemId);
+            } else {
+                closeModal();
+            }
+
+            restoringFromURL = false;
+        }
+
+        window.addEventListener('popstate', loadStateFromURL);
 
         function updateCountInfo() {
             const count = filteredItems.length;
@@ -1150,6 +1217,7 @@
         function goToPage(page) {
             currentPage = page;
             renderItems();
+            updateURL();
             window.scrollTo(0, 0);
         }
 
@@ -1381,6 +1449,9 @@
             document.getElementById('modalTitle').textContent = item.name;
             document.getElementById('modalBody').innerHTML = html;
             document.getElementById('itemModal').classList.add('active');
+
+            currentModalItemId = itemId;
+            updateURL(true);
         }
 
         function findItemsUsingMaterial(materialId) {
@@ -1402,6 +1473,8 @@
 
         function closeModal() {
             document.getElementById('itemModal').classList.remove('active');
+            currentModalItemId = null;
+            updateURL();
         }
 
         document.getElementById('itemModal').addEventListener('click', function(e) {
@@ -1514,11 +1587,11 @@
             }
 
             document.querySelectorAll('.view-toggle button').forEach(btn => {
-                btn.classList.remove('active');
+                btn.classList.toggle('active', btn.dataset.mode === mode);
             });
-            event.target.classList.add('active');
 
             renderItems();
+            updateURL();
         }
 
         function clearSelection() {
