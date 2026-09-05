@@ -27,19 +27,19 @@
         header {
             background: #2c2416;
             color: white;
-            padding: 30px 0;
-            margin-bottom: 30px;
+            padding: 12px 0;
+            margin-bottom: 20px;
         }
 
         header h1 {
             text-align: center;
-            font-size: 2.5em;
-            margin-bottom: 10px;
+            font-size: 1.5em;
+            margin-bottom: 4px;
         }
 
         header p {
             text-align: center;
-            font-size: 1em;
+            font-size: 0.85em;
             opacity: 0.9;
         }
 
@@ -248,12 +248,30 @@
             font-size: 0.85em;
             color: #8b7355;
             margin-top: auto;
+            margin-bottom: 10px;
         }
 
         .item-stat-row {
             display: flex;
             justify-content: space-between;
             margin: 3px 0;
+        }
+
+        .compare-btn {
+            width: 100%;
+            padding: 8px;
+            background: #ddd;
+            color: #333;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .compare-btn:hover {
+            background: #ccc;
         }
 
         .items-table {
@@ -322,7 +340,7 @@
         .detail-view {
             background: white;
             border-radius: 8px;
-            padding: 30px;
+            padding: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-bottom: 20px;
         }
@@ -330,13 +348,15 @@
         .detail-header {
             display: grid;
             grid-template-columns: 200px 1fr;
-            gap: 30px;
+            gap: 25px;
             margin-bottom: 30px;
+            align-items: flex-start;
         }
 
         .detail-image {
             width: 200px;
             height: 200px;
+            flex-shrink: 0;
             background: #f0ede8;
             border-radius: 8px;
             display: flex;
@@ -358,8 +378,9 @@
         }
 
         .detail-title h1 {
-            font-size: 2em;
-            margin-bottom: 10px;
+            font-size: 1.6em;
+            margin-bottom: 12px;
+            line-height: 1.3;
         }
 
         .detail-meta {
@@ -386,6 +407,21 @@
             color: #2c2416;
             border-bottom: 2px solid #e8dcc8;
             padding-bottom: 10px;
+        }
+
+        .stat-section {
+            margin-bottom: 20px;
+        }
+
+        .stat-section h4 {
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #8b7355;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
         }
 
         .stat-grid {
@@ -521,11 +557,11 @@
         .modal-content {
             background: white;
             border-radius: 8px;
-            max-width: 900px;
+            max-width: 95vw;
             width: 100%;
-            margin-top: 40px;
+            margin-top: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-height: calc(100vh - 100px);
+            max-height: calc(100vh - 60px);
             overflow-y: auto;
         }
 
@@ -565,7 +601,13 @@
         }
 
         .modal-body {
-            padding: 30px;
+            padding: 20px;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px 8px;
+            font-size: 0.9em;
         }
 
         .pagination {
@@ -616,8 +658,8 @@
 <body>
     <header>
         <div class="container">
-            <h1>Lanista Item Browser</h1>
-            <p>Sök bland 1 739 föremål - jämför och utforska</p>
+            <h1>Lanista grejer</h1>
+            <p>Sök, jämför och utforska</p>
         </div>
     </header>
 
@@ -739,7 +781,7 @@
         let selectedItems = [];
         let currentView = 'list';
         let currentDisplayMode = 'grid';
-        const ITEMS_PER_PAGE = 24;
+        const ITEMS_PER_PAGE = 50;
         let currentPage = 1;
 
         // Type mapping
@@ -761,6 +803,28 @@
             'consumable': 'Förbrukningsvara',
             'enchantment': 'Förtrollning',
             'material': 'Material'
+        };
+
+        const subtypeNames = {
+            'sword': 'Svärd',
+            'axe': 'Yxor',
+            'mace': 'Hammare',
+            'stave': 'Stavar',
+            'spear': 'Stickvapen',
+            'chain': 'Kättingvapen',
+            'head': 'Huvud',
+            'shoulders': 'Axlar',
+            'chest': 'Harnesk',
+            'hands': 'Händer',
+            'legs': 'Ben',
+            'feet': 'Fötter',
+            'back': 'Mantel',
+            'neck': 'Halsband',
+            'finger': 'Ring',
+            'amulet': 'Amulett',
+            'bracelet': 'Armband',
+            'trinket': 'Ornament',
+            'shield': 'Sköld'
         };
 
         // Load data
@@ -790,9 +854,9 @@
         }
 
         function getItemLevel(item) {
-            if (item.required_level !== null) return item.required_level;
-            if (item.itemable?.required_level !== null) return item.itemable.required_level;
-            return 0;
+            if (item.required_level !== null && item.required_level !== undefined) return item.required_level;
+            if (item.itemable?.required_level !== null && item.itemable?.required_level !== undefined) return item.itemable.required_level;
+            return '';
         }
 
         function getSellValue(item) {
@@ -806,9 +870,19 @@
             const maxLevel = parseInt(document.getElementById('maxLevelFilter').value) || 999;
 
             filteredItems = allItems.filter(item => {
-                // Search
-                if (searchText && !item.name.toLowerCase().includes(searchText)) {
-                    return false;
+                // Search - split by spaces, ALL must match (AND logic)
+                if (searchText) {
+                    const searchTerms = searchText.trim().split(/\s+/);
+                    const searchableText = [
+                        item.name.toLowerCase(),
+                        typeNames[item.type]?.toLowerCase() || '',
+                        (subtypeNames[item.type_name] || item.type_name || '')?.toLowerCase()
+                    ].join(' ');
+
+                    const allMatch = searchTerms.every(term => searchableText.includes(term));
+                    if (!allMatch) {
+                        return false;
+                    }
                 }
 
                 // Type
@@ -867,26 +941,22 @@
 
             const container = document.getElementById('gridContainer');
             container.innerHTML = pageItems.map(item => `
-                <div class="item-card ${selectedItems.includes(item.id) ? 'selected' : ''}" onclick="selectItemCard(event, ${item.id})">
-                    <div class="item-image" onclick="event.stopPropagation(); showDetail(${item.id})">
+                <div class="item-card ${selectedItems.includes(item.id) ? 'selected' : ''}" onclick="showDetail(${item.id})">
+                    <div class="item-image">
                         ${item.asset?.url ? `<img src="${item.asset.url}" alt="${item.name}">` : ''}
                     </div>
-                    <div class="item-info" onclick="event.stopPropagation(); selectItem(event, ${item.id})">
+                    <div class="item-info">
                         <div class="item-name">${item.name}</div>
-                        <div class="item-type">${typeNames[item.type] || item.type}</div>
+                        <div class="item-type">${subtypeNames[item.type_name] || item.type_name || typeNames[item.type] || item.type}</div>
                         <div class="item-stats">
                             ${getItemStatsHTML(item)}
                         </div>
+                        <button class="compare-btn" onclick="event.stopPropagation(); selectItem(event, ${item.id})">+ Jämför</button>
                     </div>
                 </div>
             `).join('');
 
             renderPagination();
-        }
-
-        function selectItemCard(event, itemId) {
-            event.stopPropagation();
-            selectItem(event, itemId);
         }
 
         function renderTableView() {
@@ -896,17 +966,17 @@
 
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = pageItems.map(item => `
-                <tr class="${selectedItems.includes(item.id) ? 'selected' : ''}" onclick="selectItem(event, ${item.id})">
+                <tr class="${selectedItems.includes(item.id) ? 'selected' : ''}" onclick="showDetail(${item.id})">
                     <td>
                         <div class="item-row-name">
                             ${item.asset?.url ? `<div class="item-row-image"><img src="${item.asset.url}" alt="${item.name}"></div>` : ''}
                             <span>${item.name}</span>
                         </div>
                     </td>
-                    <td>${typeNames[item.type] || item.type}</td>
+                    <td>${subtypeNames[item.type_name] || item.type_name || typeNames[item.type] || item.type}</td>
                     <td>${getItemLevel(item)}</td>
                     <td>${getSellValue(item).toLocaleString('sv-SE')}</td>
-                    <td style="text-align: center;"><button onclick="event.stopPropagation(); showDetail(${item.id})">Visa</button></td>
+                    <td style="text-align: center;"><button class="compare-btn" onclick="event.stopPropagation(); selectItem(event, ${item.id})">+ Jämför</button></td>
                 </tr>
             `).join('');
 
@@ -916,19 +986,15 @@
         function getItemStatsHTML(item) {
             let html = '';
             const level = getItemLevel(item);
+            const value = getSellValue(item);
+
             if (level > 0) {
                 html += `<div class="item-stat-row"><span>Nivå:</span><strong>${level}</strong></div>`;
             }
-            const value = getSellValue(item);
             if (value > 0) {
                 html += `<div class="item-stat-row"><span>Värde:</span><strong>${value}</strong></div>`;
             }
-            if (item.is_weapon && item.base_damage_min) {
-                html += `<div class="item-stat-row"><span>Skada:</span><strong>${item.base_damage_min}-${item.base_damage_max}</strong></div>`;
-            }
-            if (item.is_shield && item.base_block) {
-                html += `<div class="item-stat-row"><span>Block:</span><strong>${item.base_block}</strong></div>`;
-            }
+
             return html;
         }
 
@@ -970,12 +1036,7 @@
             if (selectedItems.includes(itemId)) {
                 selectedItems = selectedItems.filter(id => id !== itemId);
             } else {
-                if (selectedItems.length < 4) {
-                    selectedItems.push(itemId);
-                } else {
-                    alert('Du kan välja maximalt 4 föremål för jämförelse');
-                    return;
-                }
+                selectedItems.push(itemId);
             }
             updateComparisonBar();
             renderItems();
@@ -1009,25 +1070,66 @@
             const value = getSellValue(item);
 
             let statsHTML = '';
+
+            // Group stats by category for better readability
+            const combatStats = [];
+            const defenseStats = [];
+            const otherStats = [];
+            const bonusStats = [];
+
+            // Categorize weapon stats
             if (item.is_weapon) {
-                statsHTML = `
-                    ${item.base_damage_min !== undefined ? `<div class="stat-item"><div class="stat-label">Skada min</div><div class="stat-value">${item.base_damage_min}</div></div>` : ''}
-                    ${item.base_damage_max !== undefined ? `<div class="stat-item"><div class="stat-label">Skada max</div><div class="stat-value">${item.base_damage_max}</div></div>` : ''}
-                    ${item.crit_rate !== undefined ? `<div class="stat-item"><div class="stat-label">Kritisk träff</div><div class="stat-value">${(item.crit_rate * 100).toFixed(1)}%</div></div>` : ''}
-                    ${item.durability !== undefined ? `<div class="stat-item"><div class="stat-label">Hållbarhet</div><div class="stat-value">${item.durability}</div></div>` : ''}
-                    ${item.weight !== undefined ? `<div class="stat-item"><div class="stat-label">Vikt</div><div class="stat-value">${item.weight}</div></div>` : ''}
-                `;
-            } else if (item.is_shield) {
-                statsHTML = `
-                    ${item.base_block !== undefined ? `<div class="stat-item"><div class="stat-label">Blockering</div><div class="stat-value">${item.base_block}</div></div>` : ''}
-                    ${item.weight !== undefined ? `<div class="stat-item"><div class="stat-label">Vikt</div><div class="stat-value">${item.weight}</div></div>` : ''}
-                `;
+                if (item.base_damage_min !== undefined) {
+                    combatStats.push(`<div class="stat-item"><div class="stat-label">Skada</div><div class="stat-value">${item.base_damage_min}-${item.base_damage_max}</div></div>`);
+                }
+                if (item.crit_rate !== undefined) {
+                    combatStats.push(`<div class="stat-item"><div class="stat-label">Kritisk träff</div><div class="stat-value">${(item.crit_rate * 100).toFixed(1)}%</div></div>`);
+                }
+                if (item.durability !== undefined) {
+                    otherStats.push(`<div class="stat-item"><div class="stat-label">Hållbarhet</div><div class="stat-value">${item.durability}</div></div>`);
+                }
+            }
+
+            // Categorize armor/shield stats
+            if (item.is_armor || item.is_shield) {
+                if (item.base_block !== undefined && item.base_block > 0) {
+                    defenseStats.push(`<div class="stat-item"><div class="stat-label">Blockering</div><div class="stat-value">${item.base_block}</div></div>`);
+                }
+            }
+
+            // Weight applies to all
+            if (item.weight !== undefined && item.weight > 0) {
+                otherStats.push(`<div class="stat-item"><div class="stat-label">Vikt</div><div class="stat-value">${item.weight}</div></div>`);
+            }
+
+            // Bonuses
+            if (item.bonuses && item.bonuses.length > 0) {
+                item.bonuses.forEach(bonus => {
+                    bonusStats.push(`<div class="stat-item"><div class="stat-label">${bonus.bonusable_name}</div><div class="stat-value">${bonus.bonus_value_display}</div></div>`);
+                });
+            }
+
+            // Build HTML with sections
+            if (combatStats.length > 0) {
+                statsHTML += `<div class="stat-section"><h4>Offensiv</h4><div class="stat-grid">${combatStats.join('')}</div></div>`;
+            }
+            if (defenseStats.length > 0) {
+                statsHTML += `<div class="stat-section"><h4>Försvar</h4><div class="stat-grid">${defenseStats.join('')}</div></div>`;
+            }
+            if (bonusStats.length > 0) {
+                statsHTML += `<div class="stat-section"><h4>Bonusar</h4><div class="stat-grid">${bonusStats.join('')}</div></div>`;
+            }
+            if (otherStats.length > 0 || level > 0 || value > 0) {
+                let basicStats = otherStats.slice();
+                if (level > 0) basicStats.push(`<div class="stat-item"><div class="stat-label">Nivå</div><div class="stat-value">${level}</div></div>`);
+                if (value > 0) basicStats.push(`<div class="stat-item"><div class="stat-label">Värde</div><div class="stat-value">${value}</div></div>`);
+                statsHTML += `<div class="stat-section"><h4>Övrigt</h4><div class="stat-grid">${basicStats.join('')}</div></div>`;
             }
 
             let metaTags = '';
             if (level > 0) metaTags += `<div class="meta-tag">Nivå ${level}</div>`;
             if (item.soulbound) metaTags += `<div class="meta-tag">Själbunden</div>`;
-            if (item.type) metaTags += `<div class="meta-tag">${typeNames[item.type] || item.type}</div>`;
+            if (item.type) metaTags += `<div class="meta-tag">${subtypeNames[item.type_name] || item.type_name || typeNames[item.type] || item.type}</div>`;
             if (item.categories && item.categories.length > 0) {
                 metaTags += item.categories.map(c => `<div class="meta-tag">${c.name}</div>`).join('');
             }
@@ -1044,6 +1146,15 @@
                         </div>
                     </div>
 
+                    ${statsHTML ? `
+                        <div class="detail-section">
+                            <h3>Statistik</h3>
+                            <div class="stat-grid">
+                                ${statsHTML}
+                            </div>
+                        </div>
+                    ` : ''}
+
                     ${item.description ? `
                         <div class="detail-section">
                             <h3>Beskrivning</h3>
@@ -1051,48 +1162,77 @@
                         </div>
                     ` : ''}
 
-                    ${statsHTML ? `
+                    ${!item.is_material && (item.material_requirements && item.material_requirements.length > 0 || item.item_requirements && item.item_requirements.length > 0) ? `
                         <div class="detail-section">
-                            <h3>Statistik</h3>
-                            <div class="stat-grid">
-                                ${statsHTML}
-                                ${value > 0 ? `<div class="stat-item"><div class="stat-label">Försäljningsvärde</div><div class="stat-value">${value}</div></div>` : ''}
-                            </div>
+                            <h3>Crafting</h3>
+                            ${item.material_requirements && item.material_requirements.length > 0 ? `
+                                <div style="margin-bottom: 15px;">
+                                    <h4 style="font-size: 0.95em; color: #666; margin-bottom: 8px;">Material</h4>
+                                    ${item.material_requirements.map(req => {
+                                        const mat = req.material;
+                                        const itemable = req.itemable;
+                                        const name = mat?.name || itemable?.name || 'Okänt material';
+
+                                        // If itemable has its own material_requirements, show nested recipe
+                                        const nestedReqs = itemable?.material_requirements || [];
+
+                                        return `
+                                            <div style="margin-bottom: 12px; padding: 10px; background: #f9f7f4; border-radius: 4px; border-left: 2px solid #8b7355;">
+                                                <div style="display: flex; justify-content: space-between; cursor: pointer; font-weight: 500;" onclick="showDetail(${itemable?.id || mat?.id})">
+                                                    <span>${name}</span>
+                                                    <span style="font-weight: bold; color: #8b7355;">${req.quantity}</span>
+                                                </div>
+                                                ${nestedReqs.length > 0 ? `
+                                                    <div style="margin-top: 8px; font-size: 0.85em; color: #666; padding-top: 8px; border-top: 1px solid #e0dcd8;">
+                                                        Kräver:
+                                                        ${nestedReqs.map(n => {
+                                                            const nmat = n.material?.name || n.itemable?.name || 'Okänd';
+                                                            return `<div>${n.quantity}x ${nmat}</div>`;
+                                                        }).join('')}
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            ` : ''}
+                            ${item.item_requirements && item.item_requirements.length > 0 ? `
+                                <div>
+                                    <h4 style="font-size: 0.95em; color: #666; margin-bottom: 8px;">Föremål</h4>
+                                    <div class="stat-grid">
+                                        ${item.item_requirements.map(req => `
+                                            <div class="stat-item">
+                                                <div class="stat-label">${req.itemable?.name || 'Okänt föremål'}</div>
+                                                <div class="stat-value">${req.quantity}</div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
                         </div>
                     ` : ''}
+
+
+                    ${item.is_material ? (() => {
+                        const usedIn = findItemsUsingMaterial(item.id);
+                        return usedIn.length > 0 ? `
+                            <div class="detail-section">
+                                <h3>Använd i</h3>
+                                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                    ${usedIn.map(used => `
+                                        <div style="padding: 6px 12px; background: #f0ede8; border-radius: 4px; cursor: pointer; font-size: 0.9em;" onclick="showDetail(${used.id})">
+                                            ${used.name}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : '';
+                    })() : ''}
 
                     ${item.merchants && item.merchants.length > 0 ? `
                         <div class="detail-section">
                             <h3>Säljes av</h3>
                             <p>${item.merchants.map(m => m.name).join(', ')}</p>
-                        </div>
-                    ` : ''}
-
-                    ${item.material_requirements && item.material_requirements.length > 0 ? `
-                        <div class="detail-section">
-                            <h3>Materialresurser</h3>
-                            <div class="stat-grid">
-                                ${item.material_requirements.map(req => `
-                                    <div class="stat-item">
-                                        <div class="stat-label">${req.material?.name || 'Okänt material'}</div>
-                                        <div class="stat-value">${req.quantity}</div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    ` : ''}
-
-                    ${item.item_requirements && item.item_requirements.length > 0 ? `
-                        <div class="detail-section">
-                            <h3>Föremålskrav</h3>
-                            <div class="stat-grid">
-                                ${item.item_requirements.map(req => `
-                                    <div class="stat-item">
-                                        <div class="stat-label">${req.itemable?.name || 'Okänt föremål'}</div>
-                                        <div class="stat-value">${req.quantity}</div>
-                                    </div>
-                                `).join('')}
-                            </div>
                         </div>
                     ` : ''}
                 </div>
@@ -1103,12 +1243,40 @@
             document.getElementById('itemModal').classList.add('active');
         }
 
+        function findItemsUsingMaterial(materialId) {
+            const usedIn = [];
+
+            // Recursively check if an item uses the material
+            function checkItem(item, targetId) {
+                if (item.material_requirements) {
+                    for (const req of item.material_requirements) {
+                        if (req.material?.id === targetId) return true;
+                        if (req.itemable && checkItem(req.itemable, targetId)) return true;
+                    }
+                }
+                return false;
+            }
+
+            for (const item of allItems) {
+                if (checkItem(item, materialId) && !usedIn.find(i => i.id === item.id)) {
+                    usedIn.push(item);
+                }
+            }
+            return usedIn;
+        }
+
         function closeModal() {
             document.getElementById('itemModal').classList.remove('active');
         }
 
         document.getElementById('itemModal').addEventListener('click', function(e) {
             if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
                 closeModal();
             }
         });
