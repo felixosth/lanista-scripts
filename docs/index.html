@@ -467,6 +467,26 @@
             color: #2c2416;
         }
 
+        .requirement-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .requirement-list li {
+            padding: 8px 12px;
+            background: #f9f7f4;
+            border-radius: 4px;
+            border-left: 3px solid #8b7355;
+            font-size: 0.9em;
+            color: #444;
+        }
+
+        .requirement-list strong {
+            color: #2c2416;
+        }
+
         .craft-level {
             display: flex;
             flex-wrap: wrap;
@@ -1276,6 +1296,11 @@
                 }
             }
 
+            // Enchant slots apply to weapons and shields
+            if (item.max_enchants) {
+                otherStats.push(`<div class="stat-item"><div class="stat-label">Förtrollningsplatser</div><div class="stat-value">${item.max_enchants}</div></div>`);
+            }
+
             // Categorize armor/shield stats (armor uses base_block, shields use absorption)
             if (item.is_armor || item.is_shield) {
                 const block = item.base_block || item.absorption;
@@ -1323,6 +1348,7 @@
             let metaTags = '';
             if (level > 0) metaTags += `<span class="meta-tag level">Nivå ${level}</span>`;
             if (item.type) metaTags += `<span class="meta-tag">${subtypeNames[item.type_name] || item.type_name || typeNames[item.type] || item.type}</span>`;
+            if (item.is_two_handed) metaTags += `<span class="meta-tag">Tvåhandsvapen</span>`;
             if (item.soulbound) metaTags += `<span class="meta-tag">Själbunden</span>`;
             if (item.categories && item.categories.length > 0) {
                 metaTags += item.categories.map(c => `<span class="meta-tag">${c.name}</span>`).join('');
@@ -1348,6 +1374,15 @@
                             <div class="stat-grid">
                                 ${statsHTML}
                             </div>
+                        </div>
+                    ` : ''}
+
+                    ${item.requirements && item.requirements.length > 0 ? `
+                        <div class="detail-section">
+                            <h3>Krav</h3>
+                            <ul class="requirement-list">
+                                ${item.requirements.map(req => `<li>${req.requirement_text}</li>`).join('')}
+                            </ul>
                         </div>
                     ` : ''}
 
