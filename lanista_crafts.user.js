@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.8.9
+// @version     1.10.1
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -926,6 +926,460 @@
 		}
 	}
 
+	const RECENT_BATTLES_COUNT = 5;
+	const API_CALL_DELAY_MS = 100;
+	const WIN_RATE_CATEGORIES = [
+		{ key: 'CHANCE', label: 'Slumpdueller' },
+		{ key: 'CHALLENGE', label: 'Utmaningar' },
+		{ key: 'TEAM', label: 'Lagspel' },
+		{ key: 'TOURNAMENT', label: 'Turneringar' }
+	];
+
+	function sleep(ms) {
+		return new Promise((resolve) => setTimeout(resolve, ms));
+	}
+
+	// The eye icon everywhere on the site (member lists, battle team headers, ...) is a
+	// standalone hover-tooltip component with no click behavior of its own (confirmed live:
+	// hovering it fires GET /api/avatars/{id}/gear/preview and shows race+weapons in a
+	// v-popper tooltip) - it's always the element immediately before the avatar's own <a
+	// href="/game/avatar/{id}">. Once our own button is inserted right after that wrapper, the
+	// wrapper's nextElementSibling becomes our button instead of the link on subsequent scans,
+	// so this also accepts our own button as proof the wrapper was already correctly resolved -
+	// otherwise a rescan would climb past it looking for the (no longer adjacent) link and could
+	// latch onto an unrelated ancestor's sibling instead.
+	function findEyeIconWrapper(icon) {
+		let element = icon;
+		while (element && element.parentElement) {
+			const next = element.nextElementSibling;
+			if (next && next.matches) {
+				if (next.matches('a[href^="/game/avatar/"]')) return element;
+				if (next.dataset && next.dataset.lanistaStatsButton) return element;
+			}
+			element = element.parentElement;
+		}
+		return null;
+	}
+
+	function avatarIdFromHref(href) {
+		const match = /\/game\/avatar\/(\d+)/.exec(href || '');
+		return match ? match[1] : null;
+	}
+
+	// Mirrors the <green>/<red> wrapping the site's own battle text uses for the two sides
+	// (see summarizeRound above) - battle.stats.stats_text_1's own "name" arg uses the same
+	// convention, so this needs to match the plain fighter name from the participants list.
+	function stripSideTags(value) {
+		return (value || '').replace(/<\/?(?:green|red)>/g, '').trim();
+	}
+
+	// Pure narration/flavor categories - a round's opening scene-setter, a "getting ready" line
+	// before the round's second beat, a racial proc, an item breaking, a round divider, or the
+	// battle's closing winner/loser/stats block - never the round's actual first action, even
+	// when (like "start") they happen to carry a player_one of their own.
+	const NON_COMBAT_ROUND_CATEGORIES = new Set(['start', 'line_break', 'slow', 'racials', 'item_broken', 'second', 'break', 'winner', 'loser', 'stats']);
+
+	// Only meaningful for a 1v1 (a team battle round narrates several simultaneous pairings at
+	// once, so there's no single "who went first"). round.text preserves chronological order and
+	// - confirmed live across several categories (attack_with_armor_block*, ranged*, weapon_block,
+	// dodge, miss, ...) - "player_one" is always the attacker in a genuine combat-resolution
+	// event, so the round's first non-flavor entry names who acted first. A ranged/thrown weapon
+	// can resolve before the round's own "start" line (confirmed live: seen as round.text[0],
+	// ahead of "start"), so this scans for the first qualifying entry rather than trusting
+	// round.text[0] or the "start" entry specifically. Same fighter went first in every round of
+	// both real battles this was checked against, but a status effect (see the "slow" category)
+	// could plausibly flip initiative mid-battle, so this is computed per round rather than
+	// assumed constant for the whole battle.
+	function computeAttackedFirst(battle, fighterName) {
+		if ((battle.participants || []).length !== 2) return null;
+		let total = 0;
+		let count = 0;
+		(battle.rounds || []).forEach((round) => {
+			const firstCombatEntry = (round.text || []).find((entry) => {
+				const category = entry.key.split('.')[1];
+				return !NON_COMBAT_ROUND_CATEGORIES.has(category) && entry.args && entry.args.player_one;
+			});
+			if (!firstCombatEntry) return;
+			total++;
+			if (stripSideTags(firstCombatEntry.args.player_one) === fighterName) count++;
+		});
+		return total ? { count, total } : null;
+	}
+
+	// /api/battles/{id}'s per-round "participant_data" (used by scanBattlePage above) is scoped
+	// to whichever avatar is currently logged in, not to whoever's battle list it was reached
+	// through - confirmed live by fetching a battle the logged-in avatar wasn't part of at all,
+	// where participant_data was simply absent from every round. The one place the same response
+	// gives exact, server-computed totals for an arbitrary participant is the
+	// "battle.stats.stats_text_1" text entry the game emits once per fighter in the battle's
+	// final round - present for duels, team battles and monster hunts alike (confirmed against
+	// one live example of each), and unlike round_stats it isn't tied to the viewer's session.
+	function findOwnBattleStats(battle, avatarId) {
+		const participant = (battle.participants || []).find((entry) => entry.unique_id === `avatar_${avatarId}`);
+		if (!participant) return null;
+		const statsArgs = [];
+		(battle.rounds || []).forEach((round) => (round.text || []).forEach((entry) => {
+			if (entry.key === 'battle.stats.stats_text_1') statsArgs.push(entry.args);
+		}));
+		const own = statsArgs.find((args) => stripSideTags(args.name) === participant.fighter.name);
+		if (!own) return null;
+		const enemyNames = new Set((battle.participants || [])
+			.filter((entry) => entry.team !== participant.team)
+			.map((entry) => entry.fighter.name));
+
+		// battle.stats has no "attacks made"/"hits landed" field for this avatar's own offense -
+		// attacks_against/dodges/blocks/misses on its own entry are defensive (incoming attacks
+		// against this avatar; confirmed live: critical_hits can exceed attacks_against - dodges -
+		// blocks - misses for the same entry, which would be impossible if critical_hits also
+		// counted incoming crits rather than the avatar's own landed ones). The closest available
+		// proxy for a crit-rate denominator is how many of the enemy side's incoming attacks
+		// actually landed, summed from the enemy participants' own stats entries - exact for a 1v1
+		// (the large majority of recent matches: duels, ranked duels, chance duels), but in a team
+		// battle or multi-avatar monster hunt it's the whole team's landed hits rather than just
+		// this avatar's, so the resulting crit rate reads low for anyone who didn't land every hit
+		// themselves.
+		const hitsLandedByOwnSide = statsArgs
+			.filter((args) => enemyNames.has(stripSideTags(args.name)))
+			.reduce((total, args) => total + Math.max(0, args.attacks_against - args.dodges - args.blocks - args.misses), 0);
+
+		return {
+			id: battle.id,
+			createdAt: battle.created_at,
+			typeDisplay: battle.type_display,
+			won: participant.won,
+			fighterName: participant.fighter.name,
+			opponents: Array.from(enemyNames),
+			damageDone: own.damage_done,
+			maxDamageDone: own.max_damage_done,
+			damageTaken: own.damage_taken,
+			criticalHits: own.critical_hits,
+			hitsLandedByOwnSide,
+			attacksAgainst: own.attacks_against,
+			dodges: own.dodges,
+			blocks: own.blocks,
+			misses: own.misses,
+			attackedFirst: computeAttackedFirst(battle, participant.fighter.name)
+		};
+	}
+
+	function createBattleState(avatarId) {
+		return {
+			avatarId,
+			fetchedAny: false,
+			// The battles list is Laravel-paginated (confirmed live: 15 per page, with a
+			// links.next URL when more exist) - id_queue holds ids already pulled from a fetched
+			// list page but not yet turned into battle-detail results, so "visa fler" can serve
+			// its first couple of clicks straight out of what page 1 already returned, with zero
+			// extra list requests, before ever needing to fetch page 2.
+			idQueue: [],
+			nextListUrl: `/api/avatars/${avatarId}/battles`,
+			listExhausted: false,
+			battles: [],
+			winRates: null,
+			winRatesFetched: false
+		};
+	}
+
+	// Every single API call this popup makes - the battles list (each page), the statistics
+	// call, and every individual battle fetch - funnels through here, so 500ms between calls is
+	// enforced across the popup's whole lifetime (including later "visa fler" clicks), not just
+	// within one batch.
+	async function throttledFetch(state, url) {
+		if (state.fetchedAny) await sleep(API_CALL_DELAY_MS);
+		state.fetchedAny = true;
+		return fetch(url).catch(() => null);
+	}
+
+	async function ensureWinRates(state) {
+		if (state.winRatesFetched) return;
+		state.winRatesFetched = true;
+		const response = await throttledFetch(state, `/api/avatars/${state.avatarId}/statistics`);
+		state.winRates = response && response.ok ? await response.json().catch(() => null) : null;
+	}
+
+	async function ensureQueuedBattleIds(state, count) {
+		while (state.idQueue.length < count && !state.listExhausted) {
+			if (!state.nextListUrl) {
+				state.listExhausted = true;
+				break;
+			}
+			const response = await throttledFetch(state, state.nextListUrl);
+			state.nextListUrl = null;
+			if (!response || !response.ok) {
+				state.listExhausted = true;
+				break;
+			}
+			const data = await response.json().catch(() => null);
+			if (!data) {
+				state.listExhausted = true;
+				break;
+			}
+			state.idQueue.push(...(data.data || []).map((battle) => battle.id));
+			state.nextListUrl = (data.links && data.links.next) || null;
+		}
+	}
+
+	function hasMoreBattles(state) {
+		return state.idQueue.length > 0 || !state.listExhausted;
+	}
+
+	// Battles the avatar hasn't finished yet (or ones too old/odd-shaped to carry a
+	// battle.stats entry) are simply skipped rather than surfaced as errors - a partial result
+	// from N of the requested battles is more useful than failing the whole batch over one.
+	async function loadMoreBattles(state, onProgress) {
+		await ensureQueuedBattleIds(state, RECENT_BATTLES_COUNT);
+		const ids = state.idQueue.splice(0, RECENT_BATTLES_COUNT);
+		for (let index = 0; index < ids.length; index++) {
+			onProgress(index + 1, ids.length);
+			const response = await throttledFetch(state, `/api/battles/${ids[index]}`);
+			if (!response || !response.ok) continue;
+			const battle = await response.json().catch(() => null);
+			const stats = battle && findOwnBattleStats(battle, state.avatarId);
+			if (stats) state.battles.push(stats);
+		}
+	}
+
+	function aggregateBattleStats(battles) {
+		const sum = (key) => battles.reduce((total, battle) => total + battle[key], 0);
+		const decided = battles.filter((battle) => battle.won === true || battle.won === false);
+		const wins = decided.filter((battle) => battle.won === true).length;
+		// Only 1v1s carry an attackedFirst (see computeAttackedFirst) - a team battle/monster
+		// hunt mixed into the same batch of matches just doesn't contribute rounds either way.
+		const duels = battles.filter((battle) => battle.attackedFirst);
+		return {
+			count: battles.length,
+			maxDamageDone: Math.max(...battles.map((battle) => battle.maxDamageDone)),
+			totalDamageDone: sum('damageDone'),
+			totalDamageTaken: sum('damageTaken'),
+			totalCriticalHits: sum('criticalHits'),
+			totalHitsLandedByOwnSide: sum('hitsLandedByOwnSide'),
+			totalAttacksAgainst: sum('attacksAgainst'),
+			totalDodges: sum('dodges'),
+			totalBlocks: sum('blocks'),
+			totalAttackedFirstCount: duels.reduce((total, battle) => total + battle.attackedFirst.count, 0),
+			totalAttackedFirstRounds: duels.reduce((total, battle) => total + battle.attackedFirst.total, 0),
+			avgDamageDone: sum('damageDone') / battles.length,
+			wins,
+			decided: decided.length
+		};
+	}
+
+	function formatBattleDate(iso) {
+		if (!iso) return '-';
+		const date = new Date(iso);
+		if (Number.isNaN(date.getTime())) return '-';
+		return `${date.toLocaleDateString('sv-SE')} ${date.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}`;
+	}
+
+	function closeStatsPopup(backdrop) {
+		backdrop.remove();
+		document.removeEventListener('keydown', backdrop.lanistaKeyHandler);
+	}
+
+	function openStatsPopup(avatarId, fallbackName) {
+		const backdrop = document.createElement('div');
+		backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+
+		const modal = document.createElement('div');
+		modal.className = 'bg-card text-card-foreground rounded border shadow-xl border-border/70';
+		modal.style.cssText = 'max-width:440px;width:100%;max-height:80vh;overflow-y:auto;position:relative;';
+		backdrop.appendChild(modal);
+
+		const closeButton = document.createElement('button');
+		closeButton.type = 'button';
+		closeButton.textContent = '✕';
+		closeButton.style.cssText = 'position:absolute;top:8px;right:8px;cursor:pointer;background:none;border:none;font-size:14px;line-height:1;padding:4px;';
+		closeButton.addEventListener('click', () => closeStatsPopup(backdrop));
+		modal.appendChild(closeButton);
+
+		const body = document.createElement('div');
+		body.className = 'px-2 md:px-4 py-2 space-y-1';
+		modal.appendChild(body);
+
+		const heading = document.createElement('p');
+		heading.className = 'mb-1 font-semibold';
+		heading.textContent = fallbackName ? `${fallbackName} - senaste matcherna` : 'Senaste matcherna';
+		body.appendChild(heading);
+
+		// Everything below the heading gets cleared and rebuilt on every load (initial and each
+		// "visa fler" click) except while a "visa fler" fetch is in flight, where the button
+		// itself becomes the only thing that changes - see loadMore below - so the already-shown
+		// summary/list don't flicker away and back while more matches load in.
+		const resultsContainer = document.createElement('div');
+		body.appendChild(resultsContainer);
+
+		backdrop.lanistaKeyHandler = (event) => {
+			if (event.key === 'Escape') closeStatsPopup(backdrop);
+		};
+		document.addEventListener('keydown', backdrop.lanistaKeyHandler);
+		backdrop.addEventListener('click', (event) => {
+			if (event.target === backdrop) closeStatsPopup(backdrop);
+		});
+
+		document.body.appendChild(backdrop);
+
+		const state = createBattleState(avatarId);
+
+		function showStatus(text) {
+			resultsContainer.innerHTML = '';
+			const status = document.createElement('div');
+			status.className = 'text-muted-foreground text-xs';
+			status.textContent = text;
+			resultsContainer.appendChild(status);
+		}
+
+		function loadMore(triggerButton) {
+			const isFirstLoad = !state.battles.length;
+			if (isFirstLoad) showStatus('Hämtar matcher...');
+			else if (triggerButton) {
+				triggerButton.disabled = true;
+				triggerButton.textContent = 'Hämtar fler matcher...';
+			}
+			ensureWinRates(state)
+				.then(() => loadMoreBattles(state, (done, total) => {
+					const progressText = `Hämtar match ${done} av ${total}...`;
+					if (isFirstLoad) showStatus(progressText);
+					else if (triggerButton) triggerButton.textContent = progressText;
+				}))
+				.then(() => {
+					if (!backdrop.isConnected) return;
+					if (state.battles.length) heading.textContent = `${state.battles[0].fighterName} - senaste ${state.battles.length} matcherna`;
+					renderStatsResults(resultsContainer, state, loadMore);
+				})
+				.catch((error) => {
+					console.error('lanista stats error', error);
+					if (!backdrop.isConnected) return;
+					if (isFirstLoad) showStatus('Kunde inte hämta matchdata.');
+					else if (triggerButton) {
+						triggerButton.disabled = false;
+						triggerButton.textContent = 'Visa fler (misslyckades, försök igen)';
+					}
+				});
+		}
+
+		loadMore();
+	}
+
+	function renderStatsResults(body, state, loadMore) {
+		const battles = state.battles;
+		body.innerHTML = '';
+		if (!battles.length) {
+			const empty = document.createElement('div');
+			empty.className = 'text-muted-foreground text-xs';
+			empty.textContent = 'Ingen matchdata hittades.';
+			body.appendChild(empty);
+			return;
+		}
+
+		const summary = aggregateBattleStats(battles);
+		const summaryLines = document.createElement('div');
+		summaryLines.className = 'text-muted-foreground text-xs space-y-0.5';
+		[
+			`Högsta skada i en attack: ${summary.maxDamageDone}`,
+			`Snittskada per match: ${summary.avgDamageDone.toFixed(1)}`,
+			`Undvek: ${formatPercent(summary.totalDodges, summary.totalAttacksAgainst)} (${summary.totalDodges}/${summary.totalAttacksAgainst})`,
+			`Blockerade: ${formatPercent(summary.totalBlocks, summary.totalAttacksAgainst)} (${summary.totalBlocks}/${summary.totalAttacksAgainst})`,
+			`Kritiska träffar: ${formatPercent(summary.totalCriticalHits, summary.totalHitsLandedByOwnSide)} (${summary.totalCriticalHits}/${summary.totalHitsLandedByOwnSide})`,
+			summary.decided ? `Vinstprocent: ${formatPercent(summary.wins, summary.decided)} (${summary.wins}/${summary.decided})` : null,
+			summary.totalAttackedFirstRounds ? `Anföll först: ${formatPercent(summary.totalAttackedFirstCount, summary.totalAttackedFirstRounds)} (${summary.totalAttackedFirstCount}/${summary.totalAttackedFirstRounds})` : null,
+			// Less interesting on their own (a duel with 2 rounds vs. 10 rounds makes these hard to
+			// compare match to match) - kept last so the rate-based stats above get read first.
+			`Total skada utdelad: ${summary.totalDamageDone}`,
+			`Total skada mottagen: ${summary.totalDamageTaken}`
+		].filter(Boolean).forEach((text, index) => {
+			if (index > 0) summaryLines.appendChild(document.createElement('br'));
+			summaryLines.appendChild(document.createTextNode(text));
+		});
+		body.appendChild(summaryLines);
+
+		const winRateLines = WIN_RATE_CATEGORIES
+			.map(({ key, label }) => {
+				const entry = state.winRates && state.winRates[key];
+				if (!entry) return null;
+				return `${label}: ${formatPercent(entry.wins, entry.total)} (${entry.wins}/${entry.total})`;
+			})
+			.filter(Boolean);
+		if (winRateLines.length) {
+			body.appendChild(document.createElement('hr'));
+			const winRateBlock = document.createElement('div');
+			winRateBlock.className = 'text-muted-foreground text-xs space-y-0.5';
+			winRateLines.forEach((text, index) => {
+				if (index > 0) winRateBlock.appendChild(document.createElement('br'));
+				winRateBlock.appendChild(document.createTextNode(text));
+			});
+			body.appendChild(winRateBlock);
+		}
+
+		const listHeading = document.createElement('p');
+		listHeading.className = 'mt-2 mb-1 font-semibold';
+		listHeading.textContent = 'Matcher';
+		body.appendChild(listHeading);
+
+		const list = document.createElement('div');
+		list.className = 'space-y-1';
+		battles.forEach((battle) => {
+			const row = document.createElement('a');
+			row.href = `/game/arena/battles/${battle.id}`;
+			row.target = '_blank';
+			row.rel = 'noopener';
+			row.className = 'block rounded border border-border/60 bg-muted/35 px-2 py-1 text-xs hover:underline';
+			const result = battle.won === true ? 'Vinst' : battle.won === false ? 'Förlust' : '-';
+			const vs = battle.opponents.length ? ` mot ${battle.opponents.join(', ')}` : '';
+			const attackedFirst = battle.attackedFirst
+				? ` · Anföll först ${battle.attackedFirst.count}/${battle.attackedFirst.total} ronder`
+				: '';
+			row.textContent = `${formatBattleDate(battle.createdAt)} · ${battle.typeDisplay}${vs} · ${result} · Skada ${battle.damageDone} (max ${battle.maxDamageDone}), mottog ${battle.damageTaken}${attackedFirst}`;
+			list.appendChild(row);
+		});
+		body.appendChild(list);
+
+		if (hasMoreBattles(state)) {
+			const loadMoreButton = document.createElement('button');
+			loadMoreButton.type = 'button';
+			loadMoreButton.textContent = 'Visa fler';
+			loadMoreButton.className = 'mt-2 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md border bg-background px-3 py-1 text-xs font-medium shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground';
+			loadMoreButton.addEventListener('click', () => loadMore(loadMoreButton));
+			body.appendChild(loadMoreButton);
+		}
+	}
+
+	function createStatsTriggerButton(avatarId, avatarName) {
+		const button = document.createElement('span');
+		button.textContent = '📊';
+		button.title = 'Senaste matcher';
+		button.dataset.lanistaStatsButton = 'true';
+		button.style.cssText = 'display:inline-block;margin-right:4px;cursor:pointer;';
+		button.addEventListener('click', (event) => {
+			event.preventDefault();
+			event.stopPropagation();
+			if (button.dataset.lanistaStatsLoading) return;
+			button.dataset.lanistaStatsLoading = 'true';
+			button.style.opacity = '0.5';
+			openStatsPopup(avatarId, avatarName);
+			setTimeout(() => {
+				delete button.dataset.lanistaStatsLoading;
+				button.style.opacity = '';
+			}, API_CALL_DELAY_MS);
+		});
+		return button;
+	}
+
+	// Runs unconditionally on every page (not gated to a specific path like the other
+	// features below) since the eye-icon + avatar-link pattern this hooks into shows up all
+	// over the site - guild member lists, battle team headers, arena rankings, etc.
+	function scanAvatarInspectButtons() {
+		document.querySelectorAll('i.fa-eye').forEach((icon) => {
+			const wrapper = findEyeIconWrapper(icon);
+			if (!wrapper) return;
+			const next = wrapper.nextElementSibling;
+			if (!next || (next.dataset && next.dataset.lanistaStatsButton)) return;
+			const avatarId = avatarIdFromHref(next.getAttribute('href'));
+			if (!avatarId) return;
+			const avatarName = next.textContent.trim().replace(/\s*\([^)]*\)\s*$/, '');
+			wrapper.parentNode.insertBefore(createStatsTriggerButton(avatarId, avatarName), next);
+		});
+	}
+
 	const pageFeatures = [
 		{
 			paths: ['/game/market/craft/available'],
@@ -938,6 +1392,7 @@
 	];
 
 	function runPageFeatures() {
+		scanAvatarInspectButtons();
 		pageFeatures
 			.filter((feature) => feature.paths.some((path) => location.pathname.startsWith(path)))
 			.forEach((feature) => feature.run());
