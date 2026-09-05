@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.9.0
+// @version     1.9.1
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -984,20 +984,37 @@
 		}));
 		const own = statsArgs.find((args) => stripSideTags(args.name) === participant.fighter.name);
 		if (!own) return null;
-		const opponents = (battle.participants || [])
+		const enemyNames = new Set((battle.participants || [])
 			.filter((entry) => entry.team !== participant.team)
-			.map((entry) => entry.fighter.name);
+			.map((entry) => entry.fighter.name));
+
+		// battle.stats has no "attacks made"/"hits landed" field for this avatar's own offense -
+		// attacks_against/dodges/blocks/misses on its own entry are defensive (incoming attacks
+		// against this avatar; confirmed live: critical_hits can exceed attacks_against - dodges -
+		// blocks - misses for the same entry, which would be impossible if critical_hits also
+		// counted incoming crits rather than the avatar's own landed ones). The closest available
+		// proxy for a crit-rate denominator is how many of the enemy side's incoming attacks
+		// actually landed, summed from the enemy participants' own stats entries - exact for a 1v1
+		// (the large majority of recent matches: duels, ranked duels, chance duels), but in a team
+		// battle or multi-avatar monster hunt it's the whole team's landed hits rather than just
+		// this avatar's, so the resulting crit rate reads low for anyone who didn't land every hit
+		// themselves.
+		const hitsLandedByOwnSide = statsArgs
+			.filter((args) => enemyNames.has(stripSideTags(args.name)))
+			.reduce((total, args) => total + Math.max(0, args.attacks_against - args.dodges - args.blocks - args.misses), 0);
+
 		return {
 			id: battle.id,
 			createdAt: battle.created_at,
 			typeDisplay: battle.type_display,
 			won: participant.won,
 			fighterName: participant.fighter.name,
-			opponents,
+			opponents: Array.from(enemyNames),
 			damageDone: own.damage_done,
 			maxDamageDone: own.max_damage_done,
 			damageTaken: own.damage_taken,
 			criticalHits: own.critical_hits,
+			hitsLandedByOwnSide,
 			attacksAgainst: own.attacks_against,
 			dodges: own.dodges,
 			blocks: own.blocks,
@@ -1037,6 +1054,10 @@
 			totalDamageDone: sum('damageDone'),
 			totalDamageTaken: sum('damageTaken'),
 			totalCriticalHits: sum('criticalHits'),
+			totalHitsLandedByOwnSide: sum('hitsLandedByOwnSide'),
+			totalAttacksAgainst: sum('attacksAgainst'),
+			totalDodges: sum('dodges'),
+			totalBlocks: sum('blocks'),
 			avgDamageDone: sum('damageDone') / battles.length,
 			wins,
 			decided: decided.length
@@ -1117,15 +1138,19 @@
 		const summary = aggregateBattleStats(battles);
 		const summaryLines = document.createElement('div');
 		summaryLines.className = 'text-muted-foreground text-xs space-y-0.5';
-		summaryLines.appendChild(document.createTextNode(`Högsta skada i en attack: ${summary.maxDamageDone}`));
 		[
+			`Högsta skada i en attack: ${summary.maxDamageDone}`,
 			`Snittskada per match: ${summary.avgDamageDone.toFixed(1)}`,
+			`Undveks: ${formatPercent(summary.totalDodges, summary.totalAttacksAgainst)} (${summary.totalDodges}/${summary.totalAttacksAgainst})`,
+			`Blockerade: ${formatPercent(summary.totalBlocks, summary.totalAttacksAgainst)} (${summary.totalBlocks}/${summary.totalAttacksAgainst})`,
+			`Kritiska träffar: ${formatPercent(summary.totalCriticalHits, summary.totalHitsLandedByOwnSide)} (${summary.totalCriticalHits}/${summary.totalHitsLandedByOwnSide})`,
+			summary.decided ? `Vinstprocent: ${formatPercent(summary.wins, summary.decided)} (${summary.wins}/${summary.decided})` : null,
+			// Less interesting on their own (a duel with 2 rounds vs. 10 rounds makes these hard to
+			// compare match to match) - kept last so the rate-based stats above get read first.
 			`Total skada utdelad: ${summary.totalDamageDone}`,
-			`Total skada mottagen: ${summary.totalDamageTaken}`,
-			`Kritiska träffar: ${summary.totalCriticalHits}`,
-			summary.decided ? `Vinstprocent: ${formatPercent(summary.wins, summary.decided)} (${summary.wins}/${summary.decided})` : null
-		].filter(Boolean).forEach((text) => {
-			summaryLines.appendChild(document.createElement('br'));
+			`Total skada mottagen: ${summary.totalDamageTaken}`
+		].filter(Boolean).forEach((text, index) => {
+			if (index > 0) summaryLines.appendChild(document.createElement('br'));
 			summaryLines.appendChild(document.createTextNode(text));
 		});
 		body.appendChild(summaryLines);
