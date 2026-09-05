@@ -1396,6 +1396,7 @@
                     if (craftedItem) usedIn.push(craftedItem);
                 }
             }
+            usedIn.sort((a, b) => a.name.localeCompare(b.name, 'sv'));
             return usedIn;
         }
 
