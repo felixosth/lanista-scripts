@@ -982,9 +982,20 @@
             return null;
         }
 
+        function hasRecipeData(stub) {
+            return !!((stub.material_requirements && stub.material_requirements.length) || (stub.item_requirements && stub.item_requirements.length));
+        }
+
         function indexRecipeStub(stub) {
             const canonical = resolveItem(stub);
-            if (!canonical || recipesByItemId[canonical.id]) return;
+            if (!canonical) return;
+            const existing = recipesByItemId[canonical.id];
+            // The same item can turn up both as a bare item_requirements reference and,
+            // elsewhere, as a fully-embedded recipe (material_requirements/profession/etc.) -
+            // and which one is encountered first depends on array order, not usefulness.
+            // Never let a bare stub displace a real recipe, but do let a real recipe replace
+            // an earlier bare stub.
+            if (existing && (hasRecipeData(existing) || !hasRecipeData(stub))) return;
             recipesByItemId[canonical.id] = stub;
             (stub.material_requirements || []).forEach(req => { const it = itemableOf(req); if (it) indexRecipeStub(it); });
             (stub.item_requirements || []).forEach(req => { const it = itemableOf(req); if (it) indexRecipeStub(it); });
