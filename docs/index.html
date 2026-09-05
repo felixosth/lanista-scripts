@@ -1357,7 +1357,7 @@
                         const usedIn = findItemsUsingMaterial(item.id);
                         return usedIn.length > 0 ? `
                             <div class="detail-section">
-                                <h3>Använd i</h3>
+                                <h3>Används i</h3>
                                 <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                                     ${usedIn.map(used => `
                                         <div style="padding: 6px 12px; background: #f0ede8; border-radius: 4px; cursor: pointer; font-size: 0.9em;" onclick="showDetail(${used.id})">
