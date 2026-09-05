@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.9.4
+// @version     1.10.0
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -1062,33 +1062,81 @@
 		};
 	}
 
+	function createBattleState(avatarId) {
+		return {
+			avatarId,
+			fetchedAny: false,
+			// The battles list is Laravel-paginated (confirmed live: 15 per page, with a
+			// links.next URL when more exist) - id_queue holds ids already pulled from a fetched
+			// list page but not yet turned into battle-detail results, so "visa fler" can serve
+			// its first couple of clicks straight out of what page 1 already returned, with zero
+			// extra list requests, before ever needing to fetch page 2.
+			idQueue: [],
+			nextListUrl: `/api/avatars/${avatarId}/battles`,
+			listExhausted: false,
+			battles: [],
+			winRates: null,
+			winRatesFetched: false
+		};
+	}
+
+	// Every single API call this popup makes - the battles list (each page), the statistics
+	// call, and every individual battle fetch - funnels through here, so 500ms between calls is
+	// enforced across the popup's whole lifetime (including later "visa fler" clicks), not just
+	// within one batch.
+	async function throttledFetch(state, url) {
+		if (state.fetchedAny) await sleep(API_CALL_DELAY_MS);
+		state.fetchedAny = true;
+		return fetch(url).catch(() => null);
+	}
+
+	async function ensureWinRates(state) {
+		if (state.winRatesFetched) return;
+		state.winRatesFetched = true;
+		const response = await throttledFetch(state, `/api/avatars/${state.avatarId}/statistics`);
+		state.winRates = response && response.ok ? await response.json().catch(() => null) : null;
+	}
+
+	async function ensureQueuedBattleIds(state, count) {
+		while (state.idQueue.length < count && !state.listExhausted) {
+			if (!state.nextListUrl) {
+				state.listExhausted = true;
+				break;
+			}
+			const response = await throttledFetch(state, state.nextListUrl);
+			state.nextListUrl = null;
+			if (!response || !response.ok) {
+				state.listExhausted = true;
+				break;
+			}
+			const data = await response.json().catch(() => null);
+			if (!data) {
+				state.listExhausted = true;
+				break;
+			}
+			state.idQueue.push(...(data.data || []).map((battle) => battle.id));
+			state.nextListUrl = (data.links && data.links.next) || null;
+		}
+	}
+
+	function hasMoreBattles(state) {
+		return state.idQueue.length > 0 || !state.listExhausted;
+	}
+
 	// Battles the avatar hasn't finished yet (or ones too old/odd-shaped to carry a
 	// battle.stats entry) are simply skipped rather than surfaced as errors - a partial result
-	// from N of the requested battles is more useful than failing the whole popup over one.
-	// Also pulls /api/avatars/{id}/statistics for the avatar's all-time win rates by battle
-	// type - a separate, cheap call folded into the same throttled chain (still 500ms between
-	// every request) rather than fired in parallel with the per-battle fetches below.
-	async function fetchAvatarBattleData(avatarId, onProgress) {
-		const listResponse = await fetch(`/api/avatars/${avatarId}/battles`);
-		if (!listResponse.ok) throw new Error('battles list request failed');
-		const listData = await listResponse.json();
-		const battleIds = (listData.data || []).slice(0, RECENT_BATTLES_COUNT).map((battle) => battle.id);
-
-		await sleep(API_CALL_DELAY_MS);
-		const winRatesResponse = await fetch(`/api/avatars/${avatarId}/statistics`).catch(() => null);
-		const winRates = winRatesResponse && winRatesResponse.ok ? await winRatesResponse.json().catch(() => null) : null;
-
-		const battles = [];
-		for (let index = 0; index < battleIds.length; index++) {
-			await sleep(API_CALL_DELAY_MS);
-			onProgress(index + 1, battleIds.length);
-			const response = await fetch(`/api/battles/${battleIds[index]}`).catch(() => null);
+	// from N of the requested battles is more useful than failing the whole batch over one.
+	async function loadMoreBattles(state, onProgress) {
+		await ensureQueuedBattleIds(state, RECENT_BATTLES_COUNT);
+		const ids = state.idQueue.splice(0, RECENT_BATTLES_COUNT);
+		for (let index = 0; index < ids.length; index++) {
+			onProgress(index + 1, ids.length);
+			const response = await throttledFetch(state, `/api/battles/${ids[index]}`);
 			if (!response || !response.ok) continue;
 			const battle = await response.json().catch(() => null);
-			const stats = battle && findOwnBattleStats(battle, avatarId);
-			if (stats) battles.push(stats);
+			const stats = battle && findOwnBattleStats(battle, state.avatarId);
+			if (stats) state.battles.push(stats);
 		}
-		return { battles, winRates };
 	}
 
 	function aggregateBattleStats(battles) {
@@ -1153,10 +1201,12 @@
 		heading.textContent = fallbackName ? `${fallbackName} - senaste matcherna` : 'Senaste matcherna';
 		body.appendChild(heading);
 
-		const status = document.createElement('div');
-		status.className = 'text-muted-foreground text-xs';
-		status.textContent = 'Hämtar matcher...';
-		body.appendChild(status);
+		// Everything below the heading gets cleared and rebuilt on every load (initial and each
+		// "visa fler" click) except while a "visa fler" fetch is in flight, where the button
+		// itself becomes the only thing that changes - see loadMore below - so the already-shown
+		// summary/list don't flicker away and back while more matches load in.
+		const resultsContainer = document.createElement('div');
+		body.appendChild(resultsContainer);
 
 		backdrop.lanistaKeyHandler = (event) => {
 			if (event.key === 'Escape') closeStatsPopup(backdrop);
@@ -1168,24 +1218,58 @@
 
 		document.body.appendChild(backdrop);
 
-		fetchAvatarBattleData(avatarId, (done, total) => {
-			status.textContent = `Hämtar match ${done} av ${total}...`;
-		}).then(({ battles, winRates }) => {
-			if (!backdrop.isConnected) return;
-			if (battles.length) heading.textContent = `${battles[0].fighterName} - senaste ${battles.length} matcherna`;
-			renderStatsResults(body, status, battles, winRates);
-		}).catch(() => {
-			if (!backdrop.isConnected) return;
-			status.textContent = 'Kunde inte hämta matchdata.';
-		});
+		const state = createBattleState(avatarId);
+
+		function showStatus(text) {
+			resultsContainer.innerHTML = '';
+			const status = document.createElement('div');
+			status.className = 'text-muted-foreground text-xs';
+			status.textContent = text;
+			resultsContainer.appendChild(status);
+		}
+
+		function loadMore(triggerButton) {
+			const isFirstLoad = !state.battles.length;
+			if (isFirstLoad) showStatus('Hämtar matcher...');
+			else if (triggerButton) {
+				triggerButton.disabled = true;
+				triggerButton.textContent = 'Hämtar fler matcher...';
+			}
+			ensureWinRates(state)
+				.then(() => loadMoreBattles(state, (done, total) => {
+					const progressText = `Hämtar match ${done} av ${total}...`;
+					if (isFirstLoad) showStatus(progressText);
+					else if (triggerButton) triggerButton.textContent = progressText;
+				}))
+				.then(() => {
+					if (!backdrop.isConnected) return;
+					if (state.battles.length) heading.textContent = `${state.battles[0].fighterName} - senaste ${state.battles.length} matcherna`;
+					renderStatsResults(resultsContainer, state, loadMore);
+				})
+				.catch((error) => {
+					console.error('lanista stats error', error);
+					if (!backdrop.isConnected) return;
+					if (isFirstLoad) showStatus('Kunde inte hämta matchdata.');
+					else if (triggerButton) {
+						triggerButton.disabled = false;
+						triggerButton.textContent = 'Visa fler (misslyckades, försök igen)';
+					}
+				});
+		}
+
+		loadMore();
 	}
 
-	function renderStatsResults(body, status, battles, winRates) {
+	function renderStatsResults(body, state, loadMore) {
+		const battles = state.battles;
+		body.innerHTML = '';
 		if (!battles.length) {
-			status.textContent = 'Ingen matchdata hittades.';
+			const empty = document.createElement('div');
+			empty.className = 'text-muted-foreground text-xs';
+			empty.textContent = 'Ingen matchdata hittades.';
+			body.appendChild(empty);
 			return;
 		}
-		status.remove();
 
 		const summary = aggregateBattleStats(battles);
 		const summaryLines = document.createElement('div');
@@ -1210,7 +1294,7 @@
 
 		const winRateLines = WIN_RATE_CATEGORIES
 			.map(({ key, label }) => {
-				const entry = winRates && winRates[key];
+				const entry = state.winRates && state.winRates[key];
 				if (!entry) return null;
 				return `${label}: ${formatPercent(entry.wins, entry.total)} (${entry.wins}/${entry.total})`;
 			})
@@ -1248,6 +1332,15 @@
 			list.appendChild(row);
 		});
 		body.appendChild(list);
+
+		if (hasMoreBattles(state)) {
+			const loadMoreButton = document.createElement('button');
+			loadMoreButton.type = 'button';
+			loadMoreButton.textContent = 'Visa fler';
+			loadMoreButton.className = 'mt-2 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md border bg-background px-3 py-1 text-xs font-medium shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground';
+			loadMoreButton.addEventListener('click', () => loadMore(loadMoreButton));
+			body.appendChild(loadMoreButton);
+		}
 	}
 
 	function createStatsTriggerButton(avatarId, avatarName) {
