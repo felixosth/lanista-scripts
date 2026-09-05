@@ -1536,8 +1536,8 @@
                     })()}
 
 
-                    ${item.is_material ? (() => {
-                        const usedIn = findItemsUsingMaterial(item.id);
+                    ${(() => {
+                        const usedIn = findItemsUsingIngredient(item.id);
                         return usedIn.length > 0 ? `
                             <div class="detail-section">
                                 <h3>Används i</h3>
@@ -1550,7 +1550,7 @@
                                 </div>
                             </div>
                         ` : '';
-                    })() : ''}
+                    })()}
 
                     ${item.merchants && item.merchants.length > 0 ? `
                         <div class="detail-section">
@@ -1569,17 +1569,21 @@
             updateURL(true);
         }
 
-        function findItemsUsingMaterial(materialId) {
+        function findItemsUsingIngredient(ingredientId) {
             const usedIn = [];
             for (const idKey in recipesByItemId) {
                 const recipe = recipesByItemId[idKey];
                 const usesIt = (recipe.material_requirements || []).some(req => {
                     const target = req.material ? resolveItem(req.material) : null;
-                    return target && target.id === materialId;
+                    return target && target.id === ingredientId;
+                }) || (recipe.item_requirements || []).some(req => {
+                    const stub = itemableOf(req);
+                    const target = stub ? resolveItem(stub) : null;
+                    return target && target.id === ingredientId;
                 });
                 if (usesIt) {
                     const craftedItem = itemsById[idKey];
-                    if (craftedItem) usedIn.push(craftedItem);
+                    if (craftedItem && craftedItem.id !== ingredientId) usedIn.push(craftedItem);
                 }
             }
             usedIn.sort((a, b) => a.name.localeCompare(b.name, 'sv'));
