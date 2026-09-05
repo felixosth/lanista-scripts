@@ -483,6 +483,11 @@
             color: #444;
         }
 
+        .requirement-list li.recommended {
+            border-left-color: #c9bfa8;
+            color: #777;
+        }
+
         .requirement-list strong {
             color: #2c2416;
         }
@@ -996,6 +1001,10 @@
             return item.sell_value || 0;
         }
 
+        function formatRange(min, max) {
+            return min === max ? `${max}` : `${min}-${max}`;
+        }
+
         function applyFilters() {
             const searchText = document.getElementById('searchInput').value.toLowerCase();
             const typeFilter = document.getElementById('typeFilter').value;
@@ -1283,16 +1292,28 @@
             const otherStats = [];
             const bonusStats = [];
 
-            // Categorize weapon stats
-            if (item.is_weapon) {
-                if (item.base_damage_min !== undefined) {
-                    combatStats.push(`<div class="stat-item"><div class="stat-label">Skada</div><div class="stat-value">${item.base_damage_min}-${item.base_damage_max}</div></div>`);
+            // Categorize weapon stats (crit_damage/crit_rate/durability apply to shields too,
+            // since shields share the weapon item shape - base_damage_max is 0 for them)
+            if (item.is_weapon || item.is_shield) {
+                if (item.base_damage_max) {
+                    combatStats.push(`<div class="stat-item"><div class="stat-label">Skada</div><div class="stat-value">${formatRange(item.base_damage_min, item.base_damage_max)}</div></div>`);
+                    if (item.crit_damage) {
+                        combatStats.push(`<div class="stat-item"><div class="stat-label">Kritisk skada</div><div class="stat-value">${item.crit_damage}</div></div>`);
+                    }
                 }
-                if (item.crit_rate !== undefined) {
-                    combatStats.push(`<div class="stat-item"><div class="stat-label">Kritisk träff</div><div class="stat-value">${(item.crit_rate * 100).toFixed(1)}%</div></div>`);
+                if (item.max_crit_rate) {
+                    combatStats.push(`<div class="stat-item"><div class="stat-label">Kritchans</div><div class="stat-value">${formatRange(item.min_crit_rate, item.max_crit_rate)}%</div></div>`);
                 }
-                if (item.durability !== undefined) {
+                if (item.durability) {
                     otherStats.push(`<div class="stat-item"><div class="stat-label">Hållbarhet</div><div class="stat-value">${item.durability}</div></div>`);
+                }
+                if (item.max_blocks_per_round) {
+                    defenseStats.push(`<div class="stat-item"><div class="stat-label">Block/runda</div><div class="stat-value">${item.max_blocks_per_round}</div></div>`);
+                }
+                // crit_rate is a flat perfect-hit-chance bonus baked onto the item itself,
+                // distinct from the min/max_crit_rate range shown as Kritchans above
+                if (item.crit_rate) {
+                    bonusStats.push(`<div class="stat-item"><div class="stat-label">Perfekt träff</div><div class="stat-value">+${item.crit_rate}%</div></div>`);
                 }
             }
 
@@ -1305,7 +1326,15 @@
             if (item.is_armor || item.is_shield) {
                 const block = item.base_block || item.absorption;
                 if (block > 0) {
-                    defenseStats.push(`<div class="stat-item"><div class="stat-label">Blockering</div><div class="stat-value">${block}</div></div>`);
+                    const percent = item.percentage_block ? ` (${item.percentage_block}%)` : '';
+                    defenseStats.push(`<div class="stat-item"><div class="stat-label">Blockering</div><div class="stat-value">${block}${percent}</div></div>`);
+                }
+                // Shields already got Kritchans above (they share the weapon item shape)
+                if (item.is_armor && item.max_crit_rate) {
+                    combatStats.push(`<div class="stat-item"><div class="stat-label">Kritchans</div><div class="stat-value">${formatRange(item.min_crit_rate, item.max_crit_rate)}%</div></div>`);
+                }
+                if (item.increased_hit_rate) {
+                    defenseStats.push(`<div class="stat-item"><div class="stat-label">Träffchans</div><div class="stat-value">+${item.increased_hit_rate}</div></div>`);
                 }
             }
 
@@ -1381,7 +1410,10 @@
                         <div class="detail-section">
                             <h3>Krav</h3>
                             <ul class="requirement-list">
-                                ${item.requirements.map(req => `<li>${req.requirement_text}</li>`).join('')}
+                                ${item.requirements.map(req => {
+                                    const recommended = /\bbör\b/i.test(req.requirement_text || '');
+                                    return `<li class="${recommended ? 'recommended' : ''}">${req.requirement_text}</li>`;
+                                }).join('')}
                             </ul>
                         </div>
                     ` : ''}
