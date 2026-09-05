@@ -972,18 +972,28 @@
             return best;
         }
 
+        // material_requirements nests the referenced item under req.itemable, but
+        // item_requirements spreads that item's own fields (including "name") directly
+        // onto the requirement object instead - so req.itemable is only ever populated
+        // for the former shape, and this normalizes both to "the referenced item, if any".
+        function itemableOf(req) {
+            if (req.itemable) return req.itemable;
+            if (!req.material && req.name) return req;
+            return null;
+        }
+
         function indexRecipeStub(stub) {
             const canonical = resolveItem(stub);
             if (!canonical || recipesByItemId[canonical.id]) return;
             recipesByItemId[canonical.id] = stub;
-            (stub.material_requirements || []).forEach(req => { if (req.itemable) indexRecipeStub(req.itemable); });
-            (stub.item_requirements || []).forEach(req => { if (req.itemable) indexRecipeStub(req.itemable); });
+            (stub.material_requirements || []).forEach(req => { const it = itemableOf(req); if (it) indexRecipeStub(it); });
+            (stub.item_requirements || []).forEach(req => { const it = itemableOf(req); if (it) indexRecipeStub(it); });
         }
 
         function buildRecipeIndex() {
             allItems.forEach(item => {
-                (item.material_requirements || []).forEach(req => { if (req.itemable) indexRecipeStub(req.itemable); });
-                (item.item_requirements || []).forEach(req => { if (req.itemable) indexRecipeStub(req.itemable); });
+                (item.material_requirements || []).forEach(req => { const it = itemableOf(req); if (it) indexRecipeStub(it); });
+                (item.item_requirements || []).forEach(req => { const it = itemableOf(req); if (it) indexRecipeStub(it); });
             });
         }
 
@@ -1459,7 +1469,7 @@
                         function renderReqList(reqs) {
                             const chips = reqs.map(req => {
                                 const matStub = req.material;
-                                const itemStub = req.itemable;
+                                const itemStub = itemableOf(req);
                                 const target = itemStub ? resolveItem(itemStub) : (matStub ? resolveItem(matStub) : null);
                                 const name = matStub?.name || itemStub?.name || 'Okänt';
                                 const subRecipe = target ? recipesByItemId[target.id] : null;
