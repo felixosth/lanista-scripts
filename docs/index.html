@@ -867,7 +867,7 @@
             shield: 'is_shield',
             trinket: 'is_trinket',
             consumable: 'is_consumable',
-            enchantment: 'is_enchantment',
+            enchantment: 'is_enchant',
             material: 'is_material'
         };
 
@@ -972,7 +972,7 @@
             if (item.is_shield) return 'shield';
             if (item.is_trinket) return 'trinket';
             if (item.is_consumable) return 'consumable';
-            if (item.is_enchantment) return 'enchantment';
+            if (item.is_enchant) return 'enchantment';
             if (item.is_material) return 'material';
             return 'unknown';
         }
@@ -1303,6 +1303,13 @@
             if (item.bonuses && item.bonuses.length > 0) {
                 item.bonuses.forEach(bonus => {
                     bonusStats.push(`<div class="stat-item"><div class="stat-label">${bonus.bonusable_name}</div><div class="stat-value">${bonus.bonus_value_display}</div></div>`);
+                });
+            }
+
+            // Enchantment modifiers
+            if (item.enchant_modifiers && item.enchant_modifiers.length > 0) {
+                item.enchant_modifiers.forEach(mod => {
+                    bonusStats.push(`<div class="stat-item"><div class="stat-label">${mod.enchantable_name}</div><div class="stat-value">${mod.enchant_value_display}</div></div>`);
                 });
             }
 
