@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.11.0
+// @version     1.11.1
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -1391,40 +1391,36 @@
 		return (toMs - fromMs) / MS_PER_DAY;
 	}
 
-	// The rate a deposit itself earns while locked, derived straight from the two numbers the
-	// API already gives for it (amount -> amount_at_withdrawal over the lock period) - confirmed
-	// against a real recorded set of deposits: reconstructing withdrawal_amount for still-locked
-	// deposits from created_at using this rate, compounded daily, lands within rounding of the
-	// live value every time.
+	// The bank's deposit dropdown itself lists these as fixed rates per lock length ("En dag
+	// (1.50% ränta)", "Två dagar (2.00% ränta)", "Fyra dagar (2.50% ränta)", "En vecka (3.00%
+	// ränta)", "Två veckor (3.50% ränta)", "En månad (4.00% ränta)") - confirmed live: for every
+	// deposit in a real account, amount * (1 + this rate) ^ lockDays, floored, lands exactly on
+	// the API's own amount_at_withdrawal. Solving for the rate from those two (already-rounded-
+	// to-whole-silvermynt) numbers instead - the earlier approach here - gives a close but subtly
+	// wrong value for short lock lengths (2.41%/day instead of 2.50% for a 4-day lock, say), and
+	// that error then compounds across a multi-week projection instead of staying a rounding blip.
+	const FIXED_DAILY_RATES = { 1: 0.015, 2: 0.02, 4: 0.025, 7: 0.03, 14: 0.035, 30: 0.04 };
+
+	// Confirmed live only for 1-day locks (the only ones old enough to have matured in the
+	// account this was checked against): every matured, unclaimed one kept compounding afterwards
+	// at very close to this same rate, which for a 1-day lock is identical to its own locked-in
+	// rate - so this data can't actually distinguish "matured deposits drop to a shared idle rate"
+	// from "each deposit just keeps compounding at its own original rate forever". Assumes the
+	// former (the more conservative estimate, and the more common pattern for this kind of
+	// mechanic - it gives a reason to withdraw and re-lock rather than leave money idle at its
+	// best rate permanently) until a matured 2+ day deposit is available to check.
+	const BANK_IDLE_RATE = FIXED_DAILY_RATES[1];
+
+	// The rate a deposit earns while locked. Prefers the fixed table above (exact); falls back to
+	// solving it from the deposit's own numbers only for a lock length outside the known tiers
+	// (a future game update, or some other one-off) rather than silently returning 0.
 	function depositOwnRate(deposit) {
 		const created = Date.parse(deposit.created_at);
 		const maturity = Date.parse(deposit.earliest_withdrawal_date);
-		const lockDays = daysBetween(created, maturity);
+		const lockDays = Math.round(daysBetween(created, maturity));
+		if (FIXED_DAILY_RATES[lockDays] !== undefined) return FIXED_DAILY_RATES[lockDays];
 		if (!(lockDays > 0) || !(deposit.amount > 0)) return 0;
 		return Math.pow(deposit.amount_at_withdrawal / deposit.amount, 1 / lockDays) - 1;
-	}
-
-	// A matured deposit left unclaimed keeps earning past its own lock-derived rate - confirmed
-	// against a real recorded set of 1-day-lock deposits: every one of them, days after maturing,
-	// had grown far more than its own ~1%/day rate would predict, and consistently close to
-	// ~1.5-1.8%/day regardless of which of them it was - implying one shared post-maturity rate
-	// rather than each deposit continuing at its own. The API never exposes that rate directly, so
-	// back it out from whichever of the avatar's own deposits have already matured (using the
-	// median so one just-matured, rounding-noisy deposit can't skew it), falling back to the
-	// average locked-in rate across deposits when none have matured yet.
-	function estimateBaseRate(deposits, now) {
-		const observed = deposits
-			.map((deposit) => {
-				const maturity = Date.parse(deposit.earliest_withdrawal_date);
-				const elapsed = daysBetween(maturity, now);
-				if (elapsed < 0.5 || !(deposit.amount_at_withdrawal > 0)) return null;
-				return Math.pow(deposit.withdrawal_amount / deposit.amount_at_withdrawal, 1 / elapsed) - 1;
-			})
-			.filter((rate) => rate !== null)
-			.sort((a, b) => a - b);
-		if (observed.length) return observed[Math.floor(observed.length / 2)];
-		const ownRates = deposits.map(depositOwnRate).filter((rate) => rate > 0);
-		return ownRates.length ? ownRates.reduce((sum, rate) => sum + rate, 0) / ownRates.length : 0;
 	}
 
 	// Reconstructs one deposit's value at any point in time: flat before it existed, compounding
@@ -1524,43 +1520,68 @@
 		return insättningCell ? insättningCell.cellIndex + 1 : header.cells.length;
 	}
 
-	function ensureBankInterestColumn(table, deposits) {
+	// Ränta is the deposit's own fixed rate (what the game itself calls "ränta" in the
+	// deposit-creation dropdown) - Tillväxt is the accumulated interest earned so far, which is
+	// a different question (how much has this actually grown by) that shouldn't be conflated
+	// into one column. A matured deposit's *current* rate is BANK_IDLE_RATE, not the rate it
+	// locked in at creation (see BANK_IDLE_RATE) - showing the original lock rate for something
+	// that's no longer earning it would be misleading about what it's earning right now.
+	const BANK_COLUMNS = [
+		{ key: 'rate', label: 'Ränta' },
+		{ key: 'growth', label: 'Tillväxt' }
+	];
+
+	function ensureBankCell(row, key, index) {
+		let cell = row.querySelector(`[data-lanista-bank-cell="${key}"]`);
+		if (!cell) {
+			cell = document.createElement('td');
+			cell.dataset.lanistaBankCell = key;
+			cell.className = 'p-2 align-middle';
+			row.insertBefore(cell, row.cells[index] || null);
+		}
+		return cell;
+	}
+
+	function ensureBankColumns(table, deposits) {
 		const header = table.tHead && table.tHead.rows[0];
 		if (!header) return;
 		if (!header.querySelector('[data-lanista-bank-column]')) {
 			const insertIndex = findInsertIndex(header);
 			table.dataset.lanistaBankInsertAt = String(insertIndex);
-			const headerCell = document.createElement('th');
-			headerCell.textContent = 'Ränta';
-			headerCell.dataset.lanistaBankColumn = 'true';
-			headerCell.className = 'text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap';
-			header.insertBefore(headerCell, header.cells[insertIndex] || null);
+			BANK_COLUMNS.forEach(({ key, label }, offset) => {
+				const headerCell = document.createElement('th');
+				headerCell.textContent = label;
+				headerCell.dataset.lanistaBankColumn = key;
+				headerCell.className = 'text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap';
+				header.insertBefore(headerCell, header.cells[insertIndex + offset] || null);
+			});
 		}
 		const insertIndex = Number(table.dataset.lanistaBankInsertAt);
 
 		Array.from(table.tBodies).forEach((body) => {
 			Array.from(body.rows).forEach((row, index) => {
 				const deposit = findDepositForRow(deposits, row, index);
-				let cell = row.querySelector('[data-lanista-bank-cell]');
-				if (!cell) {
-					cell = document.createElement('td');
-					cell.dataset.lanistaBankCell = 'true';
-					cell.className = 'p-2 align-middle';
-					row.insertBefore(cell, row.cells[insertIndex] || null);
-				}
+				const [rateCell, growthCell] = BANK_COLUMNS
+					.map(({ key }, offset) => ensureBankCell(row, key, insertIndex + offset));
+
 				if (!deposit) {
-					cell.textContent = '-';
-					cell.removeAttribute('title');
+					rateCell.textContent = '-';
+					growthCell.textContent = '-';
+					growthCell.removeAttribute('title');
 					return;
 				}
+
+				const rate = deposit.may_withdraw ? BANK_IDLE_RATE : depositOwnRate(deposit);
+				rateCell.textContent = `${(rate * 100).toFixed(2)}%`;
+
 				const interest = deposit.withdrawal_amount - deposit.amount;
 				const percent = deposit.amount ? (deposit.withdrawal_amount / deposit.amount - 1) * 100 : 0;
-				cell.textContent = `+${formatMoney(interest)} (${percent.toFixed(1)}%)`;
+				growthCell.textContent = `+${formatMoney(interest)} (${percent.toFixed(1)}%)`;
 				if (!deposit.may_withdraw) {
 					const atMaturity = deposit.amount_at_withdrawal - deposit.amount;
-					cell.title = `Vid upplåsning: +${formatMoney(atMaturity)}`;
+					growthCell.title = `Vid upplåsning: +${formatMoney(atMaturity)}`;
 				} else {
-					cell.removeAttribute('title');
+					growthCell.removeAttribute('title');
 				}
 			});
 		});
@@ -1675,7 +1696,7 @@
 			return;
 		}
 
-		const baseRate = estimateBaseRate(deposits, now);
+		const baseRate = BANK_IDLE_RATE;
 		const earliest = Math.min(...deposits.map((deposit) => Date.parse(deposit.created_at)));
 		const maxMaturity = Math.max(...deposits.map((deposit) => Date.parse(deposit.earliest_withdrawal_date)));
 		const horizon = Math.max(now + BANK_PROJECTION_DAYS * MS_PER_DAY, maxMaturity + 2 * MS_PER_DAY);
@@ -1759,7 +1780,7 @@
 			if (!table) return;
 			const card = ensureBankChartCard(table);
 			if (card) renderBankChart(card, deposits);
-			ensureBankInterestColumn(table, deposits);
+			ensureBankColumns(table, deposits);
 		} finally {
 			bankScanning = false;
 		}
