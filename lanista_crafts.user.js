@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.11.1
+// @version     1.11.2
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -1521,11 +1521,15 @@
 	}
 
 	// Ränta is the deposit's own fixed rate (what the game itself calls "ränta" in the
-	// deposit-creation dropdown) - Tillväxt is the accumulated interest earned so far, which is
-	// a different question (how much has this actually grown by) that shouldn't be conflated
-	// into one column. A matured deposit's *current* rate is BANK_IDLE_RATE, not the rate it
-	// locked in at creation (see BANK_IDLE_RATE) - showing the original lock rate for something
-	// that's no longer earning it would be misleading about what it's earning right now.
+	// deposit-creation dropdown, and what produces Värde Vid Uttagsdatum from Insättning) -
+	// Tillväxt is the accumulated interest earned so far, a different question that shouldn't be
+	// conflated into one column. This always shows the rate it locked in at creation, even after
+	// maturity - a previous version switched to BANK_IDLE_RATE once matured (reasoning that's
+	// what it's *currently* earning), but that made the row visibly self-contradictory: a matured
+	// 4-day deposit still showing "2.50%" in Värde Vid Uttagsdatum right next to "1.50%" in Ränta
+	// (reported live - a 200/50 sm 2-day/4-day deposit each showed 1.50% post-maturity despite
+	// Värde Vid Uttagsdatum only being reachable at 2.00%/2.50%). BANK_IDLE_RATE is still used for
+	// the chart's own post-maturity growth projection, just not surfaced in this column.
 	const BANK_COLUMNS = [
 		{ key: 'rate', label: 'Ränta' },
 		{ key: 'growth', label: 'Tillväxt' }
@@ -1571,8 +1575,7 @@
 					return;
 				}
 
-				const rate = deposit.may_withdraw ? BANK_IDLE_RATE : depositOwnRate(deposit);
-				rateCell.textContent = `${(rate * 100).toFixed(2)}%`;
+				rateCell.textContent = `${(depositOwnRate(deposit) * 100).toFixed(2)}%`;
 
 				const interest = deposit.withdrawal_amount - deposit.amount;
 				const percent = deposit.amount ? (deposit.withdrawal_amount / deposit.amount - 1) * 100 : 0;
