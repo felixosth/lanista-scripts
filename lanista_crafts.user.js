@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.10.1
+// @version     1.11.1
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -1380,6 +1380,412 @@
 		});
 	}
 
+	const MS_PER_DAY = 86400000;
+	const BANK_PROJECTION_DAYS = 14;
+	const BANK_CHART_SAMPLES = 60;
+	const BANK_DEPOSITS_CACHE_TTL_MS = 20000;
+	let bankDepositsCache = null;
+	let bankScanning = false;
+
+	function daysBetween(fromMs, toMs) {
+		return (toMs - fromMs) / MS_PER_DAY;
+	}
+
+	// The bank's deposit dropdown itself lists these as fixed rates per lock length ("En dag
+	// (1.50% ränta)", "Två dagar (2.00% ränta)", "Fyra dagar (2.50% ränta)", "En vecka (3.00%
+	// ränta)", "Två veckor (3.50% ränta)", "En månad (4.00% ränta)") - confirmed live: for every
+	// deposit in a real account, amount * (1 + this rate) ^ lockDays, floored, lands exactly on
+	// the API's own amount_at_withdrawal. Solving for the rate from those two (already-rounded-
+	// to-whole-silvermynt) numbers instead - the earlier approach here - gives a close but subtly
+	// wrong value for short lock lengths (2.41%/day instead of 2.50% for a 4-day lock, say), and
+	// that error then compounds across a multi-week projection instead of staying a rounding blip.
+	const FIXED_DAILY_RATES = { 1: 0.015, 2: 0.02, 4: 0.025, 7: 0.03, 14: 0.035, 30: 0.04 };
+
+	// Confirmed live only for 1-day locks (the only ones old enough to have matured in the
+	// account this was checked against): every matured, unclaimed one kept compounding afterwards
+	// at very close to this same rate, which for a 1-day lock is identical to its own locked-in
+	// rate - so this data can't actually distinguish "matured deposits drop to a shared idle rate"
+	// from "each deposit just keeps compounding at its own original rate forever". Assumes the
+	// former (the more conservative estimate, and the more common pattern for this kind of
+	// mechanic - it gives a reason to withdraw and re-lock rather than leave money idle at its
+	// best rate permanently) until a matured 2+ day deposit is available to check.
+	const BANK_IDLE_RATE = FIXED_DAILY_RATES[1];
+
+	// The rate a deposit earns while locked. Prefers the fixed table above (exact); falls back to
+	// solving it from the deposit's own numbers only for a lock length outside the known tiers
+	// (a future game update, or some other one-off) rather than silently returning 0.
+	function depositOwnRate(deposit) {
+		const created = Date.parse(deposit.created_at);
+		const maturity = Date.parse(deposit.earliest_withdrawal_date);
+		const lockDays = Math.round(daysBetween(created, maturity));
+		if (FIXED_DAILY_RATES[lockDays] !== undefined) return FIXED_DAILY_RATES[lockDays];
+		if (!(lockDays > 0) || !(deposit.amount > 0)) return 0;
+		return Math.pow(deposit.amount_at_withdrawal / deposit.amount, 1 / lockDays) - 1;
+	}
+
+	// Reconstructs one deposit's value at any point in time: flat before it existed, compounding
+	// at its own rate while locked, then compounding at the shared post-maturity rate afterwards -
+	// used both to redraw its past growth and to project it forward, assuming it's never touched.
+	function depositValueAt(deposit, baseRate, t) {
+		const created = Date.parse(deposit.created_at);
+		if (t <= created) return deposit.amount;
+		const maturity = Date.parse(deposit.earliest_withdrawal_date);
+		if (t <= maturity) {
+			return deposit.amount * Math.pow(1 + depositOwnRate(deposit), daysBetween(created, t));
+		}
+		return deposit.amount_at_withdrawal * Math.pow(1 + baseRate, daysBetween(maturity, t));
+	}
+
+	// "sm" (silvermynt) is the bank's own currency label, confirmed live in the deposits table
+	// itself ("160 sm") - matching it here keeps these numbers reading the same as the site's own.
+	function formatMoney(value) {
+		return `${Math.round(value).toLocaleString('sv-SE')} sm`;
+	}
+
+	function formatChartDate(t) {
+		return new Date(t).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
+	}
+
+	// Tailwind's build for this site only emits utility classes its own templates actually use
+	// (see the note on sideColors above), but bg-card/text-card-foreground/text-muted-foreground/
+	// border-border are already relied on elsewhere in this file for real rendered panels, so
+	// they're safe to reuse here. A throwaway, invisible probe element picks up their resolved
+	// color without needing a live tag of the right type on the page (unlike sideColors, nothing
+	// bank-page-specific already carries these colors).
+	function sampleThemeColor(className, property) {
+		const probe = document.createElement('div');
+		probe.className = className;
+		probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;';
+		document.body.appendChild(probe);
+		const value = getComputedStyle(probe)[property];
+		probe.remove();
+		return value;
+	}
+
+	function getBankColors() {
+		return {
+			card: sampleThemeColor('bg-card', 'backgroundColor'),
+			foreground: sampleThemeColor('text-card-foreground', 'color'),
+			muted: sampleThemeColor('text-muted-foreground', 'color'),
+			border: sampleThemeColor('border border-border/70', 'borderColor'),
+			// The site's own line charts (see /game/avatar/me/statistics/trends) draw in this
+			// warm amber rather than a generic accent blue - confirmed live (bg-primary/
+			// text-primary both resolve to it) - so the bank chart uses the same color instead
+			// of an invented one that would clash with the site's sepia/parchment theme.
+			primary: sampleThemeColor('text-primary', 'color')
+		};
+	}
+
+	async function getDeposits() {
+		const now = Date.now();
+		if (!bankDepositsCache || now - bankDepositsCache.time > BANK_DEPOSITS_CACHE_TTL_MS) {
+			bankDepositsCache = {
+				time: now,
+				promise: fetch('/api/bank/deposits').then((response) => response.ok ? response.json() : []).catch(() => [])
+			};
+		}
+		return bankDepositsCache.promise;
+	}
+
+	// The deposits table has no sorting/filtering (unlike the crafts table), so rows should stay
+	// in the same order the API returns them - but matching is still verified against the row's
+	// own text rather than trusted blindly, so a layout assumption that turns out wrong just skips
+	// the row instead of labeling it with someone else's numbers.
+	function findDepositForRow(deposits, row, index) {
+		const text = row.innerText;
+		const matches = deposits.filter((deposit) => text.includes(String(deposit.amount)));
+		if (matches.length === 1) return matches[0];
+		const byIndex = deposits[index];
+		if (byIndex && text.includes(String(byIndex.amount))) return byIndex;
+		return null;
+	}
+
+	// Identifies the deposits table without assuming its exact column layout - looks for a table
+	// with at least one row whose text contains one of the live deposit amounts.
+	function findDepositsTable(deposits) {
+		return Array.from(document.querySelectorAll('table')).find((table) => {
+			const rows = Array.from(table.tBodies[0]?.rows || []);
+			return rows.some((row) => deposits.some((deposit) => row.innerText.includes(String(deposit.amount))));
+		});
+	}
+
+	// Confirmed live: the table reads Datum | Insättning | Nuvarande Värde | Värde Vid
+	// Uttagsdatum | Uttagsdatum | (Ta ut button, no header text) - inserting right after
+	// Insättning puts the new column next to the principal it's computed from, rather than
+	// trailing the withdraw-button column. Falls back to appending at the end if that header
+	// text isn't found (site copy changed, or a differently-laid-out table).
+	function findInsertIndex(header) {
+		const insättningCell = Array.from(header.cells)
+			.find((cell) => cell.innerText.trim().toLowerCase() === 'insättning');
+		return insättningCell ? insättningCell.cellIndex + 1 : header.cells.length;
+	}
+
+	// Ränta is the deposit's own fixed rate (what the game itself calls "ränta" in the
+	// deposit-creation dropdown) - Tillväxt is the accumulated interest earned so far, which is
+	// a different question (how much has this actually grown by) that shouldn't be conflated
+	// into one column. A matured deposit's *current* rate is BANK_IDLE_RATE, not the rate it
+	// locked in at creation (see BANK_IDLE_RATE) - showing the original lock rate for something
+	// that's no longer earning it would be misleading about what it's earning right now.
+	const BANK_COLUMNS = [
+		{ key: 'rate', label: 'Ränta' },
+		{ key: 'growth', label: 'Tillväxt' }
+	];
+
+	function ensureBankCell(row, key, index) {
+		let cell = row.querySelector(`[data-lanista-bank-cell="${key}"]`);
+		if (!cell) {
+			cell = document.createElement('td');
+			cell.dataset.lanistaBankCell = key;
+			cell.className = 'p-2 align-middle';
+			row.insertBefore(cell, row.cells[index] || null);
+		}
+		return cell;
+	}
+
+	function ensureBankColumns(table, deposits) {
+		const header = table.tHead && table.tHead.rows[0];
+		if (!header) return;
+		if (!header.querySelector('[data-lanista-bank-column]')) {
+			const insertIndex = findInsertIndex(header);
+			table.dataset.lanistaBankInsertAt = String(insertIndex);
+			BANK_COLUMNS.forEach(({ key, label }, offset) => {
+				const headerCell = document.createElement('th');
+				headerCell.textContent = label;
+				headerCell.dataset.lanistaBankColumn = key;
+				headerCell.className = 'text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap';
+				header.insertBefore(headerCell, header.cells[insertIndex + offset] || null);
+			});
+		}
+		const insertIndex = Number(table.dataset.lanistaBankInsertAt);
+
+		Array.from(table.tBodies).forEach((body) => {
+			Array.from(body.rows).forEach((row, index) => {
+				const deposit = findDepositForRow(deposits, row, index);
+				const [rateCell, growthCell] = BANK_COLUMNS
+					.map(({ key }, offset) => ensureBankCell(row, key, insertIndex + offset));
+
+				if (!deposit) {
+					rateCell.textContent = '-';
+					growthCell.textContent = '-';
+					growthCell.removeAttribute('title');
+					return;
+				}
+
+				const rate = deposit.may_withdraw ? BANK_IDLE_RATE : depositOwnRate(deposit);
+				rateCell.textContent = `${(rate * 100).toFixed(2)}%`;
+
+				const interest = deposit.withdrawal_amount - deposit.amount;
+				const percent = deposit.amount ? (deposit.withdrawal_amount / deposit.amount - 1) * 100 : 0;
+				growthCell.textContent = `+${formatMoney(interest)} (${percent.toFixed(1)}%)`;
+				if (!deposit.may_withdraw) {
+					const atMaturity = deposit.amount_at_withdrawal - deposit.amount;
+					growthCell.title = `Vid upplåsning: +${formatMoney(atMaturity)}`;
+				} else {
+					growthCell.removeAttribute('title');
+				}
+			});
+		});
+	}
+
+	// Builds the line-chart SVG and returns the scales alongside it, so pointer interaction can
+	// reuse the exact same coordinate mapping instead of risking a second, slightly different copy.
+	function buildBankChartSvg(past, future, now, colors) {
+		const allPoints = [...past, ...future];
+		const values = allPoints.map((point) => point.value);
+		const width = 760;
+		const height = 240;
+		const padding = { left: 56, right: 12, top: 12, bottom: 24 };
+		const xMin = past[0].t;
+		const xMax = future[future.length - 1].t;
+		const yMin = Math.min(...values) * 0.985;
+		const yMax = Math.max(...values) * 1.02;
+		const innerWidth = width - padding.left - padding.right;
+		const innerHeight = height - padding.top - padding.bottom;
+
+		const xScale = (t) => padding.left + ((t - xMin) / (xMax - xMin || 1)) * innerWidth;
+		const yScale = (v) => padding.top + (1 - (v - yMin) / (yMax - yMin || 1)) * innerHeight;
+
+		const toPath = (points) => points.map((point, index) =>
+			`${index === 0 ? 'M' : 'L'}${xScale(point.t).toFixed(1)},${yScale(point.value).toFixed(1)}`).join(' ');
+
+		const gridLines = [0, 1, 2, 3].map((step) => {
+			const value = yMin + ((yMax - yMin) * step) / 3;
+			const y = yScale(value).toFixed(1);
+			return `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" stroke="${colors.border}" stroke-width="1" stroke-dasharray="2,3" />` +
+				`<text x="${padding.left - 6}" y="${y}" text-anchor="end" dominant-baseline="middle" font-size="10" fill="${colors.muted}">${formatMoney(value)}</text>`;
+		}).join('');
+
+		const nowX = xScale(now).toFixed(1);
+		const dateLabels = [
+			{ t: xMin, anchor: 'start' },
+			{ t: now, anchor: 'middle' },
+			{ t: xMax, anchor: 'end' }
+		].map(({ t, anchor }) =>
+			`<text x="${xScale(t).toFixed(1)}" y="${height - 6}" text-anchor="${anchor}" font-size="10" fill="${colors.muted}">${formatChartDate(t)}</text>`
+		).join('');
+
+		const svg = `
+			<svg viewBox="0 0 ${width} ${height}" style="display:block;width:100%;height:auto;" data-lanista-bank-svg="true">
+				${gridLines}
+				<line x1="${nowX}" y1="${padding.top}" x2="${nowX}" y2="${height - padding.bottom}" stroke="${colors.muted}" stroke-width="1" stroke-dasharray="3,3" />
+				<text x="${nowX}" y="${padding.top - 2}" text-anchor="middle" font-size="10" fill="${colors.muted}">Idag</text>
+				<path d="${toPath(past)}" fill="none" stroke="${colors.primary}" stroke-width="2" />
+				<path d="${toPath(future)}" fill="none" stroke="${colors.primary}" stroke-width="2" stroke-dasharray="5,4" stroke-opacity="0.55" />
+				<circle cx="${nowX}" cy="${yScale(past[past.length - 1].value).toFixed(1)}" r="3" fill="${colors.primary}" />
+				${dateLabels}
+				<line data-lanista-bank-crosshair="true" x1="0" y1="${padding.top}" x2="0" y2="${height - padding.bottom}" stroke="${colors.muted}" stroke-width="1" visibility="hidden" />
+				<circle data-lanista-bank-dot="true" r="3.5" fill="${colors.primary}" visibility="hidden" />
+				<rect data-lanista-bank-overlay="true" x="${padding.left}" y="${padding.top}" width="${innerWidth}" height="${innerHeight}" fill="transparent" />
+			</svg>`;
+
+		return { svg, xScale, yScale, xMin, xMax, width, allPoints };
+	}
+
+	function attachBankChartInteraction(chartWrap, chart, tooltip) {
+		const svgEl = chartWrap.querySelector('[data-lanista-bank-svg]');
+		const overlay = chartWrap.querySelector('[data-lanista-bank-overlay]');
+		const crosshair = chartWrap.querySelector('[data-lanista-bank-crosshair]');
+		const dot = chartWrap.querySelector('[data-lanista-bank-dot]');
+		if (!svgEl || !overlay) return;
+
+		const showPoint = (point) => {
+			const x = chart.xScale(point.t);
+			const y = chart.yScale(point.value);
+			crosshair.setAttribute('x1', x.toFixed(1));
+			crosshair.setAttribute('x2', x.toFixed(1));
+			crosshair.setAttribute('visibility', 'visible');
+			dot.setAttribute('cx', x.toFixed(1));
+			dot.setAttribute('cy', y.toFixed(1));
+			dot.setAttribute('visibility', 'visible');
+			tooltip.textContent = `${formatChartDate(point.t)}: ${formatMoney(point.value)}`;
+			tooltip.style.display = 'block';
+			const rect = svgEl.getBoundingClientRect();
+			const pixelX = (x / chart.width) * rect.width;
+			tooltip.style.left = `${Math.min(pixelX + 8, rect.width - 120)}px`;
+			tooltip.style.top = '4px';
+		};
+
+		overlay.addEventListener('mousemove', (event) => {
+			const rect = svgEl.getBoundingClientRect();
+			const scaleX = chart.width / rect.width;
+			const viewBoxX = (event.clientX - rect.left) * scaleX;
+			const t = chart.xMin + ((viewBoxX - 56) / (chart.width - 56 - 12)) * (chart.xMax - chart.xMin);
+			let nearest = chart.allPoints[0];
+			let nearestDistance = Infinity;
+			chart.allPoints.forEach((point) => {
+				const distance = Math.abs(point.t - t);
+				if (distance < nearestDistance) {
+					nearestDistance = distance;
+					nearest = point;
+				}
+			});
+			showPoint(nearest);
+		});
+		overlay.addEventListener('mouseleave', () => {
+			crosshair.setAttribute('visibility', 'hidden');
+			dot.setAttribute('visibility', 'hidden');
+			tooltip.style.display = 'none';
+		});
+	}
+
+	function renderBankChart(card, deposits) {
+		const now = Date.now();
+		card.innerHTML = '';
+		if (!deposits.length) {
+			card.innerHTML = '<p class="text-muted-foreground text-xs px-1 py-2">Inga insättningar att visa.</p>';
+			return;
+		}
+
+		const baseRate = BANK_IDLE_RATE;
+		const earliest = Math.min(...deposits.map((deposit) => Date.parse(deposit.created_at)));
+		const maxMaturity = Math.max(...deposits.map((deposit) => Date.parse(deposit.earliest_withdrawal_date)));
+		const horizon = Math.max(now + BANK_PROJECTION_DAYS * MS_PER_DAY, maxMaturity + 2 * MS_PER_DAY);
+
+		const totalAt = (t) => deposits.reduce((sum, deposit) =>
+			sum + (t >= Date.parse(deposit.created_at) ? depositValueAt(deposit, baseRate, t) : 0), 0);
+		const sample = (from, to, count) => Array.from({ length: count + 1 }, (_, index) => {
+			const t = from + ((to - from) * index) / count;
+			return { t, value: totalAt(t) };
+		});
+		const past = sample(earliest, now, BANK_CHART_SAMPLES);
+		const future = sample(now, horizon, BANK_CHART_SAMPLES);
+
+		const totalDeposited = deposits.reduce((sum, deposit) => sum + deposit.amount, 0);
+		const totalNow = totalAt(now);
+		const dailyIncome = totalAt(now + MS_PER_DAY) - totalNow;
+		const in7Days = totalAt(now + 7 * MS_PER_DAY);
+		const in30Days = totalAt(now + 30 * MS_PER_DAY);
+		const withdrawableNow = deposits.filter((deposit) => deposit.may_withdraw)
+			.reduce((sum, deposit) => sum + deposit.withdrawal_amount, 0);
+
+		const colors = getBankColors();
+		const chart = buildBankChartSvg(past, future, now, colors);
+
+		const heading = document.createElement('p');
+		heading.className = 'font-semibold text-sm px-1';
+		heading.textContent = 'Kapitalutveckling';
+		card.appendChild(heading);
+
+		const stats = document.createElement('div');
+		stats.className = 'text-muted-foreground text-xs px-1 space-y-0.5';
+		[
+			`Insatt totalt: ${formatMoney(totalDeposited)} · Nuvarande värde: ${formatMoney(totalNow)} (+${formatMoney(totalNow - totalDeposited)})`,
+			`Uttagsbart just nu: ${formatMoney(withdrawableNow)} · Dagsintäkt: +${formatMoney(dailyIncome)}/dag`,
+			`Om 7 dagar: ~${formatMoney(in7Days)} · Om 30 dagar: ~${formatMoney(in30Days)} (om inget läggs till eller tas ut)`
+		].forEach((line) => {
+			const row = document.createElement('div');
+			row.textContent = line;
+			stats.appendChild(row);
+		});
+		card.appendChild(stats);
+
+		const chartWrap = document.createElement('div');
+		chartWrap.style.cssText = 'position:relative;margin-top:4px;';
+		chartWrap.innerHTML = chart.svg;
+		card.appendChild(chartWrap);
+
+		const tooltip = document.createElement('div');
+		tooltip.style.cssText = `position:absolute;pointer-events:none;display:none;white-space:nowrap;font-size:11px;padding:3px 6px;border-radius:4px;background:${colors.card};border:1px solid ${colors.border};color:${colors.foreground};`;
+		chartWrap.appendChild(tooltip);
+
+		attachBankChartInteraction(chartWrap, chart, tooltip);
+	}
+
+	function ensureBankChartCard(table) {
+		const anchor = table.closest('.data-table-root') || table.parentElement;
+		if (!anchor || !anchor.parentElement) return null;
+		let card = anchor.parentElement.querySelector(':scope > [data-lanista-bank-chart]');
+		if (!card) {
+			card = document.createElement('div');
+			card.dataset.lanistaBankChart = 'true';
+			card.className = 'bg-card text-card-foreground flex flex-col gap-1 rounded border p-3 shadow-xl surface-card border-border/70 mb-4';
+			anchor.parentElement.insertBefore(card, anchor);
+		}
+		return card;
+	}
+
+	// Verified live against /game/bank (19 real deposits: every row matched and its interest
+	// figure checked against the table's own Nuvarande Värde/Insättning columns) and against
+	// /game/avatar/me/statistics/trends for styling - that page's own charts render to <canvas>
+	// with no charting library exposed on window, so there's no instance to reuse or hook into
+	// from here; this draws its own SVG instead, using the same bg-card/border-border/
+	// text-muted-foreground/text-primary utility classes and colors the trends charts resolve to.
+	async function scanBankPage() {
+		if (bankScanning) return;
+		bankScanning = true;
+		try {
+			const deposits = await getDeposits();
+			if (!Array.isArray(deposits) || !deposits.length) return;
+			const table = findDepositsTable(deposits);
+			if (!table) return;
+			const card = ensureBankChartCard(table);
+			if (card) renderBankChart(card, deposits);
+			ensureBankColumns(table, deposits);
+		} finally {
+			bankScanning = false;
+		}
+	}
+
 	const pageFeatures = [
 		{
 			paths: ['/game/market/craft/available'],
@@ -1388,6 +1794,10 @@
 		{
 			paths: ['/game/arena/battles/'],
 			run: scanBattlePage
+		},
+		{
+			paths: ['/game/bank'],
+			run: scanBankPage
 		}
 	];
 
@@ -1405,4 +1815,11 @@
 
 	new MutationObserver(scheduleFeatureScan).observe(document.body, { childList: true, subtree: true });
 	scheduleFeatureScan();
+
+	// Interest keeps accruing purely with the passage of time, with no DOM mutation to trigger a
+	// rescan off of - so the bank page also gets a plain timer, on top of the mutation-driven scan
+	// every other feature relies on.
+	setInterval(() => {
+		if (location.pathname.startsWith('/game/bank')) scanBankPage();
+	}, BANK_DEPOSITS_CACHE_TTL_MS + 5000);
 })();
