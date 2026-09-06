@@ -1440,8 +1440,10 @@
 		return deposit.amount_at_withdrawal * Math.pow(1 + baseRate, daysBetween(maturity, t));
 	}
 
+	// "sm" (silvermynt) is the bank's own currency label, confirmed live in the deposits table
+	// itself ("160 sm") - matching it here keeps these numbers reading the same as the site's own.
 	function formatMoney(value) {
-		return Math.round(value).toLocaleString('sv-SE');
+		return `${Math.round(value).toLocaleString('sv-SE')} sm`;
 	}
 
 	function formatChartDate(t) {
@@ -1469,7 +1471,12 @@
 			card: sampleThemeColor('bg-card', 'backgroundColor'),
 			foreground: sampleThemeColor('text-card-foreground', 'color'),
 			muted: sampleThemeColor('text-muted-foreground', 'color'),
-			border: sampleThemeColor('border border-border/70', 'borderColor')
+			border: sampleThemeColor('border border-border/70', 'borderColor'),
+			// The site's own line charts (see /game/avatar/me/statistics/trends) draw in this
+			// warm amber rather than a generic accent blue - confirmed live (bg-primary/
+			// text-primary both resolve to it) - so the bank chart uses the same color instead
+			// of an invented one that would clash with the site's sepia/parchment theme.
+			primary: sampleThemeColor('text-primary', 'color')
 		};
 	}
 
@@ -1506,16 +1513,30 @@
 		});
 	}
 
+	// Confirmed live: the table reads Datum | Insättning | Nuvarande Värde | Värde Vid
+	// Uttagsdatum | Uttagsdatum | (Ta ut button, no header text) - inserting right after
+	// Insättning puts the new column next to the principal it's computed from, rather than
+	// trailing the withdraw-button column. Falls back to appending at the end if that header
+	// text isn't found (site copy changed, or a differently-laid-out table).
+	function findInsertIndex(header) {
+		const insättningCell = Array.from(header.cells)
+			.find((cell) => cell.innerText.trim().toLowerCase() === 'insättning');
+		return insättningCell ? insättningCell.cellIndex + 1 : header.cells.length;
+	}
+
 	function ensureBankInterestColumn(table, deposits) {
 		const header = table.tHead && table.tHead.rows[0];
 		if (!header) return;
 		if (!header.querySelector('[data-lanista-bank-column]')) {
+			const insertIndex = findInsertIndex(header);
+			table.dataset.lanistaBankInsertAt = String(insertIndex);
 			const headerCell = document.createElement('th');
 			headerCell.textContent = 'Ränta';
 			headerCell.dataset.lanistaBankColumn = 'true';
 			headerCell.className = 'text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap';
-			header.appendChild(headerCell);
+			header.insertBefore(headerCell, header.cells[insertIndex] || null);
 		}
+		const insertIndex = Number(table.dataset.lanistaBankInsertAt);
 
 		Array.from(table.tBodies).forEach((body) => {
 			Array.from(body.rows).forEach((row, index) => {
@@ -1525,7 +1546,7 @@
 					cell = document.createElement('td');
 					cell.dataset.lanistaBankCell = 'true';
 					cell.className = 'p-2 align-middle';
-					row.appendChild(cell);
+					row.insertBefore(cell, row.cells[insertIndex] || null);
 				}
 				if (!deposit) {
 					cell.textContent = '-';
@@ -1587,12 +1608,12 @@
 				${gridLines}
 				<line x1="${nowX}" y1="${padding.top}" x2="${nowX}" y2="${height - padding.bottom}" stroke="${colors.muted}" stroke-width="1" stroke-dasharray="3,3" />
 				<text x="${nowX}" y="${padding.top - 2}" text-anchor="middle" font-size="10" fill="${colors.muted}">Idag</text>
-				<path d="${toPath(past)}" fill="none" stroke="#3b82f6" stroke-width="2" />
-				<path d="${toPath(future)}" fill="none" stroke="#3b82f6" stroke-width="2" stroke-dasharray="5,4" stroke-opacity="0.55" />
-				<circle cx="${nowX}" cy="${yScale(past[past.length - 1].value).toFixed(1)}" r="3" fill="#3b82f6" />
+				<path d="${toPath(past)}" fill="none" stroke="${colors.primary}" stroke-width="2" />
+				<path d="${toPath(future)}" fill="none" stroke="${colors.primary}" stroke-width="2" stroke-dasharray="5,4" stroke-opacity="0.55" />
+				<circle cx="${nowX}" cy="${yScale(past[past.length - 1].value).toFixed(1)}" r="3" fill="${colors.primary}" />
 				${dateLabels}
 				<line data-lanista-bank-crosshair="true" x1="0" y1="${padding.top}" x2="0" y2="${height - padding.bottom}" stroke="${colors.muted}" stroke-width="1" visibility="hidden" />
-				<circle data-lanista-bank-dot="true" r="3.5" fill="#3b82f6" visibility="hidden" />
+				<circle data-lanista-bank-dot="true" r="3.5" fill="${colors.primary}" visibility="hidden" />
 				<rect data-lanista-bank-overlay="true" x="${padding.left}" y="${padding.top}" width="${innerWidth}" height="${innerHeight}" fill="transparent" />
 			</svg>`;
 
@@ -1722,13 +1743,12 @@
 		return card;
 	}
 
-	// NOTE: built without a live look at /game/bank or /game/avatar/me/statistics/trends (no
-	// browser session was available while writing this) - the interest math above is verified
-	// against a real captured /api/bank/deposits response, but the table/column detection is
-	// deliberately defensive (matches by amount text rather than column position) and the chart
-	// is a self-contained SVG rather than reusing the trends page's own chart component, since
-	// there was no way to confirm what that component is or whether it's reachable from outside
-	// its own Vue instance. Worth a real check against the live page.
+	// Verified live against /game/bank (19 real deposits: every row matched and its interest
+	// figure checked against the table's own Nuvarande Värde/Insättning columns) and against
+	// /game/avatar/me/statistics/trends for styling - that page's own charts render to <canvas>
+	// with no charting library exposed on window, so there's no instance to reuse or hook into
+	// from here; this draws its own SVG instead, using the same bg-card/border-border/
+	// text-muted-foreground/text-primary utility classes and colors the trends charts resolve to.
 	async function scanBankPage() {
 		if (bankScanning) return;
 		bankScanning = true;
