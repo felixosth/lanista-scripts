@@ -113,6 +113,24 @@
             font-size: 0.9em;
         }
 
+        .filter-group.checkbox-group {
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .filter-group.checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 0;
+            padding: 10px 0;
+        }
+
+        .filter-group.checkbox-group input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+
         .comparison-bar {
             background: #e8dcc8;
             padding: 15px 20px;
@@ -823,6 +841,13 @@
                         <input type="number" id="maxLevelFilter" min="0" max="50" placeholder="50">
                     </div>
 
+                    <div class="filter-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="craftableFilter">
+                            Kan tillverkas
+                        </label>
+                    </div>
+
                     <div class="filter-group">
                         <label>Sortering</label>
                         <select id="sortFilter">
@@ -986,6 +1011,11 @@
             return !!((stub.material_requirements && stub.material_requirements.length) || (stub.item_requirements && stub.item_requirements.length));
         }
 
+        function isCraftable(item) {
+            const recipe = recipesByItemId[item.id];
+            return !!recipe && hasRecipeData(recipe);
+        }
+
         function indexRecipeStub(stub) {
             const canonical = resolveItem(stub);
             if (!canonical) return;
@@ -1058,6 +1088,7 @@
             const typeFilter = document.getElementById('typeFilter').value;
             const minLevel = parseInt(document.getElementById('minLevelFilter').value) || 0;
             const maxLevel = parseInt(document.getElementById('maxLevelFilter').value) || 999;
+            const craftableOnly = document.getElementById('craftableFilter').checked;
 
             filteredItems = allItems.filter(item => {
                 // Search - split by spaces, ALL must match (AND logic)
@@ -1083,6 +1114,11 @@
                 // Level
                 const level = getItemLevel(item);
                 if (level < minLevel || level > maxLevel) {
+                    return false;
+                }
+
+                // Craftable
+                if (craftableOnly && !isCraftable(item)) {
                     return false;
                 }
 
@@ -1120,12 +1156,14 @@
             const type = document.getElementById('typeFilter').value;
             const minLevel = document.getElementById('minLevelFilter').value;
             const maxLevel = document.getElementById('maxLevelFilter').value;
+            const craftable = document.getElementById('craftableFilter').checked;
             const sort = document.getElementById('sortFilter').value;
 
             if (search) params.set('q', search);
             if (type) params.set('type', type);
             if (minLevel) params.set('min', minLevel);
             if (maxLevel) params.set('max', maxLevel);
+            if (craftable) params.set('craftable', '1');
             if (sort && sort !== 'name') params.set('sort', sort);
             if (currentDisplayMode !== 'grid') params.set('view', currentDisplayMode);
             if (currentPage > 1) params.set('page', currentPage);
@@ -1151,6 +1189,7 @@
             document.getElementById('typeFilter').value = params.get('type') || '';
             document.getElementById('minLevelFilter').value = params.get('min') || '';
             document.getElementById('maxLevelFilter').value = params.get('max') || '';
+            document.getElementById('craftableFilter').checked = params.get('craftable') === '1';
             document.getElementById('sortFilter').value = params.get('sort') || 'name';
 
             currentDisplayMode = params.get('view') === 'table' ? 'table' : 'grid';
@@ -1742,6 +1781,7 @@
             document.getElementById('typeFilter').value = '';
             document.getElementById('minLevelFilter').value = '';
             document.getElementById('maxLevelFilter').value = '';
+            document.getElementById('craftableFilter').checked = false;
             document.getElementById('sortFilter').value = 'name';
             applyFilters();
         }
@@ -1763,6 +1803,7 @@
         document.getElementById('typeFilter').addEventListener('change', applyFilters);
         document.getElementById('minLevelFilter').addEventListener('change', applyFilters);
         document.getElementById('maxLevelFilter').addEventListener('change', applyFilters);
+        document.getElementById('craftableFilter').addEventListener('change', applyFilters);
         document.getElementById('sortFilter').addEventListener('change', applyFilters);
     </script>
 </body>
