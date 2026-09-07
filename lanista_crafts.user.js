@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.11.2
+// @version     1.11.3
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -942,19 +942,23 @@
 	// The eye icon everywhere on the site (member lists, battle team headers, ...) is a
 	// standalone hover-tooltip component with no click behavior of its own (confirmed live:
 	// hovering it fires GET /api/avatars/{id}/gear/preview and shows race+weapons in a
-	// v-popper tooltip) - it's always the element immediately before the avatar's own <a
-	// href="/game/avatar/{id}">. Once our own button is inserted right after that wrapper, the
-	// wrapper's nextElementSibling becomes our button instead of the link on subsequent scans,
-	// so this also accepts our own button as proof the wrapper was already correctly resolved -
-	// otherwise a rescan would climb past it looking for the (no longer adjacent) link and could
-	// latch onto an unrelated ancestor's sibling instead.
-	function findEyeIconWrapper(icon) {
+	// v-popper tooltip) - usually it's the element immediately before the avatar's own <a
+	// href="/game/avatar/{id}">, but party leader rows insert an extra <i class="fa-user-shield">
+	// between the two, so this scans forward through later siblings too rather than only the
+	// immediate next one. It stops at another row's own eye icon so it never overreaches into
+	// unrelated content. Once our own button is inserted right before the link, a rescan finds
+	// the button (via its dataset) sitting right before the link again, so it also accepts that
+	// as proof the wrapper was already correctly resolved.
+	function findAvatarLinkAfterEye(icon) {
 		let element = icon;
 		while (element && element.parentElement) {
-			const next = element.nextElementSibling;
-			if (next && next.matches) {
-				if (next.matches('a[href^="/game/avatar/"]')) return element;
-				if (next.dataset && next.dataset.lanistaStatsButton) return element;
+			let sibling = element.nextElementSibling;
+			while (sibling) {
+				if (sibling.matches && sibling.matches('a[href^="/game/avatar/"]')) {
+					return { wrapper: element, link: sibling };
+				}
+				if (sibling.querySelector && sibling.querySelector('i.fa-eye')) return null;
+				sibling = sibling.nextElementSibling;
 			}
 			element = element.parentElement;
 		}
@@ -1369,14 +1373,15 @@
 	// over the site - guild member lists, battle team headers, arena rankings, etc.
 	function scanAvatarInspectButtons() {
 		document.querySelectorAll('i.fa-eye').forEach((icon) => {
-			const wrapper = findEyeIconWrapper(icon);
-			if (!wrapper) return;
-			const next = wrapper.nextElementSibling;
-			if (!next || (next.dataset && next.dataset.lanistaStatsButton)) return;
-			const avatarId = avatarIdFromHref(next.getAttribute('href'));
+			const found = findAvatarLinkAfterEye(icon);
+			if (!found) return;
+			const { wrapper, link } = found;
+			const prev = link.previousElementSibling;
+			if (prev && prev.dataset && prev.dataset.lanistaStatsButton) return;
+			const avatarId = avatarIdFromHref(link.getAttribute('href'));
 			if (!avatarId) return;
-			const avatarName = next.textContent.trim().replace(/\s*\([^)]*\)\s*$/, '');
-			wrapper.parentNode.insertBefore(createStatsTriggerButton(avatarId, avatarName), next);
+			const avatarName = link.textContent.trim().replace(/\s*\([^)]*\)\s*$/, '');
+			wrapper.parentNode.insertBefore(createStatsTriggerButton(avatarId, avatarName), link);
 		});
 	}
 
