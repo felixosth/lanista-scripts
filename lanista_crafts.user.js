@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.11.3
+// @version     1.11.4
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -796,9 +796,9 @@
 		});
 	}
 
-	function renderBattleTotals(host, beforeNode, totals, battleTeamDamage, battleTeamSize, attackedFirst) {
+	function renderBattleTotals(host, beforeNode, totals, battleTeamDamage, battleTeamSize, attackedFirst, roundHistory) {
 		const entries = Array.from(totals, ([name, stats]) => ({ name, ...stats }));
-		const signature = JSON.stringify({ entries, attackedFirst });
+		const signature = JSON.stringify({ entries, attackedFirst, roundHistory });
 		let card = host.querySelector(':scope > [data-lanista-battle-totals]');
 		const inPlace = card && card.nextSibling === beforeNode;
 		if (card && card.dataset.lanistaBattleSignature === signature && inPlace) return;
@@ -823,6 +823,12 @@
 		heading.textContent = 'Totalt för striden';
 		body.appendChild(heading);
 		const colors = sideColors();
+		if (roundHistory && roundHistory.length >= 2) {
+			const chartWrap = document.createElement('div');
+			chartWrap.style.cssText = 'position:relative;margin-bottom:8px;';
+			body.appendChild(chartWrap);
+			renderRoundTimelineChart(chartWrap, roundHistory, { ...getThemeColors(), ...colors });
+		}
 		entries.forEach((participant) => {
 			const context = {
 				totalDamageTaken: participant.damageTaken,
@@ -864,7 +870,10 @@
 		const totals = new Map();
 		let roundsCounted = 0;
 		let selfAttackedFirstRounds = 0;
-		rounds.forEach(({ container }) => {
+		const roundHistory = [];
+		let cumulativeAlly = 0;
+		let cumulativeEnemy = 0;
+		rounds.forEach(({ number, container }) => {
 			const { participants, firstAttacker } = summarizeRound(container, currentName);
 			// firstAttacker is the resolved attacker of the round's earliest combat-outcome
 			// event (see summarizeRound) - only meaningful for a 1v1 duel; a team-battle round
@@ -899,6 +908,9 @@
 				const roundTeamDamage = sumBySide(participants, 'damageDone');
 				const roundTeamSize = countBySide(participants);
 				renderParticipantSummaries(container, participants, totals, roundTeamDamage, roundTeamSize);
+				cumulativeAlly += roundTeamDamage.get('ally') || 0;
+				cumulativeEnemy += roundTeamDamage.get('enemy') || 0;
+				roundHistory.push({ round: number, ally: cumulativeAlly, enemy: cumulativeEnemy });
 			}
 		});
 
@@ -922,7 +934,7 @@
 			const isDuel = totals.size === 2;
 			const attackedFirst = isDuel ? { count: selfAttackedFirstRounds, total: roundsCounted } : null;
 			const firstCard = rounds[0].container.parentElement;
-			renderBattleTotals(firstCard.parentElement, firstCard, totals, battleTeamDamage, battleTeamSize, attackedFirst);
+			renderBattleTotals(firstCard.parentElement, firstCard, totals, battleTeamDamage, battleTeamSize, attackedFirst, roundHistory);
 		}
 	}
 
@@ -1467,12 +1479,21 @@
 		return value;
 	}
 
-	function getBankColors() {
+	// Shared by every hand-rolled SVG chart on the page (bank chart, battle round timeline) -
+	// the card/foreground/muted/border quartet every chart card needs regardless of what its
+	// own data series are colored with.
+	function getThemeColors() {
 		return {
 			card: sampleThemeColor('bg-card', 'backgroundColor'),
 			foreground: sampleThemeColor('text-card-foreground', 'color'),
 			muted: sampleThemeColor('text-muted-foreground', 'color'),
-			border: sampleThemeColor('border border-border/70', 'borderColor'),
+			border: sampleThemeColor('border border-border/70', 'borderColor')
+		};
+	}
+
+	function getBankColors() {
+		return {
+			...getThemeColors(),
 			// The site's own line charts (see /game/avatar/me/statistics/trends) draw in this
 			// warm amber rather than a generic accent blue - confirmed live (bg-primary/
 			// text-primary both resolve to it) - so the bank chart uses the same color instead
@@ -1757,6 +1778,125 @@
 		chartWrap.appendChild(tooltip);
 
 		attachBankChartInteraction(chartWrap, chart, tooltip);
+	}
+
+	function formatDamageValue(value) {
+		return Math.round(value).toLocaleString('sv-SE');
+	}
+
+	// Same construction as buildBankChartSvg (shared xScale/yScale returned alongside the SVG
+	// for the interaction handler to reuse) but for a round-indexed x-axis instead of a
+	// continuous time scale, and two always-solid series (ally/enemy cumulative damage done)
+	// instead of a solid-past/dashed-future single series - a battle has no "future" to project.
+	function buildRoundTimelineSvg(history, colors) {
+		const width = 760;
+		const height = 200;
+		const padding = { left: 48, right: 12, top: 12, bottom: 22 };
+		const xMin = history[0].round;
+		const xMax = history[history.length - 1].round;
+		const values = history.flatMap((point) => [point.ally, point.enemy]);
+		const yMax = Math.max(...values, 1) * 1.05;
+		const innerWidth = width - padding.left - padding.right;
+		const innerHeight = height - padding.top - padding.bottom;
+
+		const xScale = (round) => padding.left + ((round - xMin) / (xMax - xMin || 1)) * innerWidth;
+		const yScale = (value) => padding.top + (1 - value / yMax) * innerHeight;
+
+		const toPath = (key) => history.map((point, index) =>
+			`${index === 0 ? 'M' : 'L'}${xScale(point.round).toFixed(1)},${yScale(point[key]).toFixed(1)}`).join(' ');
+
+		const gridLines = [0, 1, 2, 3].map((step) => {
+			const value = (yMax * step) / 3;
+			const y = yScale(value).toFixed(1);
+			return `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" stroke="${colors.border}" stroke-width="1" stroke-dasharray="2,3" />` +
+				`<text x="${padding.left - 6}" y="${y}" text-anchor="end" dominant-baseline="middle" font-size="10" fill="${colors.muted}">${formatDamageValue(value)}</text>`;
+		}).join('');
+
+		// history.length >= 2 is guaranteed by the only caller (renderBattleTotals only invokes
+		// this once there are at least two rounds), so xMax > xMin always holds here.
+		const roundLabels = [{ round: xMin, anchor: 'start' }, { round: xMax, anchor: 'end' }].map(({ round, anchor }) =>
+			`<text x="${xScale(round).toFixed(1)}" y="${height - 6}" text-anchor="${anchor}" font-size="10" fill="${colors.muted}">Runda ${round}</text>`
+		).join('');
+
+		const svg = `
+			<svg viewBox="0 0 ${width} ${height}" style="display:block;width:100%;height:auto;" data-lanista-round-svg="true">
+				${gridLines}
+				<path d="${toPath('ally')}" fill="none" stroke="${colors.ally}" stroke-width="2" />
+				<path d="${toPath('enemy')}" fill="none" stroke="${colors.enemy}" stroke-width="2" />
+				${roundLabels}
+				<line data-lanista-round-crosshair="true" x1="0" y1="${padding.top}" x2="0" y2="${height - padding.bottom}" stroke="${colors.muted}" stroke-width="1" visibility="hidden" />
+				<circle data-lanista-round-dot-ally="true" r="3.5" fill="${colors.ally}" visibility="hidden" />
+				<circle data-lanista-round-dot-enemy="true" r="3.5" fill="${colors.enemy}" visibility="hidden" />
+				<rect data-lanista-round-overlay="true" x="${padding.left}" y="${padding.top}" width="${innerWidth}" height="${innerHeight}" fill="transparent" />
+			</svg>`;
+
+		return { svg, xScale, yScale, xMin, xMax, width, history };
+	}
+
+	function attachRoundTimelineInteraction(chartWrap, chart, tooltip) {
+		const svgEl = chartWrap.querySelector('[data-lanista-round-svg]');
+		const overlay = chartWrap.querySelector('[data-lanista-round-overlay]');
+		const crosshair = chartWrap.querySelector('[data-lanista-round-crosshair]');
+		const dotAlly = chartWrap.querySelector('[data-lanista-round-dot-ally]');
+		const dotEnemy = chartWrap.querySelector('[data-lanista-round-dot-enemy]');
+		if (!svgEl || !overlay) return;
+
+		const showPoint = (point) => {
+			const x = chart.xScale(point.round);
+			crosshair.setAttribute('x1', x.toFixed(1));
+			crosshair.setAttribute('x2', x.toFixed(1));
+			crosshair.setAttribute('visibility', 'visible');
+			[[dotAlly, point.ally], [dotEnemy, point.enemy]].forEach(([dot, value]) => {
+				dot.setAttribute('cx', x.toFixed(1));
+				dot.setAttribute('cy', chart.yScale(value).toFixed(1));
+				dot.setAttribute('visibility', 'visible');
+			});
+			tooltip.textContent = `Runda ${point.round}: Eget lag ${formatDamageValue(point.ally)}, Motståndare ${formatDamageValue(point.enemy)}`;
+			tooltip.style.display = 'block';
+			const rect = svgEl.getBoundingClientRect();
+			const pixelX = (x / chart.width) * rect.width;
+			tooltip.style.left = `${Math.min(pixelX + 8, rect.width - 150)}px`;
+			tooltip.style.top = '4px';
+		};
+
+		overlay.addEventListener('mousemove', (event) => {
+			const rect = svgEl.getBoundingClientRect();
+			const scaleX = chart.width / rect.width;
+			const viewBoxX = (event.clientX - rect.left) * scaleX;
+			const round = chart.xMin + ((viewBoxX - 48) / (chart.width - 48 - 12)) * (chart.xMax - chart.xMin);
+			let nearest = chart.history[0];
+			let nearestDistance = Infinity;
+			chart.history.forEach((point) => {
+				const distance = Math.abs(point.round - round);
+				if (distance < nearestDistance) {
+					nearestDistance = distance;
+					nearest = point;
+				}
+			});
+			showPoint(nearest);
+		});
+		overlay.addEventListener('mouseleave', () => {
+			crosshair.setAttribute('visibility', 'hidden');
+			dotAlly.setAttribute('visibility', 'hidden');
+			dotEnemy.setAttribute('visibility', 'hidden');
+			tooltip.style.display = 'none';
+		});
+	}
+
+	// Renders the "Totalt för striden" card's round-by-round cumulative damage chart - each
+	// point is the running total of that side's damage done through that round (see the
+	// roundHistory accumulation in scanBattlePage), so the line's slope shows momentum shifts
+	// a single end-of-battle total can't: a steep late climb reads differently from a steady
+	// grind even when the final numbers match.
+	function renderRoundTimelineChart(container, history, colors) {
+		const chart = buildRoundTimelineSvg(history, colors);
+		container.innerHTML = chart.svg;
+
+		const tooltip = document.createElement('div');
+		tooltip.style.cssText = `position:absolute;pointer-events:none;display:none;white-space:nowrap;font-size:11px;padding:3px 6px;border-radius:4px;background:${colors.card};border:1px solid ${colors.border};color:${colors.foreground};`;
+		container.appendChild(tooltip);
+
+		attachRoundTimelineInteraction(container, chart, tooltip);
 	}
 
 	function ensureBankChartCard(table) {
