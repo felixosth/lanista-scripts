@@ -929,6 +929,24 @@
 			const battleEntries = Array.from(totals.values());
 			const battleTeamDamage = sumBySide(battleEntries, 'damageDone');
 			const battleTeamSize = countBySide(battleEntries);
+			// roundHistory is built purely from the same narrative-regex parse as the rest of
+			// this loop, which the comment on parseFinalStatsSummary above already documents as
+			// an approximation - so once the battle's finished and exact per-side totals are
+			// known (battleTeamDamage, just computed above, already reflects the exactStats
+			// override), rescale every round's cumulative value so the last round lands exactly
+			// on the confirmed total instead of silently disagreeing with the totals card right
+			// below the chart. This keeps the parsed round-to-round shape while anchoring the
+			// one number a reader can actually check against the panel text.
+			if (roundHistory.length) {
+				const lastPoint = roundHistory[roundHistory.length - 1];
+				['ally', 'enemy'].forEach((side) => {
+					const rawTotal = lastPoint[side];
+					const exactTotal = battleTeamDamage.get(side) || 0;
+					if (!rawTotal || rawTotal === exactTotal) return;
+					const scale = exactTotal / rawTotal;
+					roundHistory.forEach((point) => { point[side] *= scale; });
+				});
+			}
 			// "Attacked first" only means something with exactly two fighters in the whole
 			// battle - a team battle has no single "who went first this round" to attribute.
 			const isDuel = totals.size === 2;
