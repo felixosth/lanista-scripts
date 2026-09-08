@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.11.3
+// @version     1.11.7
 //
 // @match       https://lanista.se/game/*
 // @grant       none
@@ -683,19 +683,81 @@
 		return { ally: sample('green'), enemy: sample('red') };
 	}
 
-	// The end-of-battle block starts with a "Lag N går segrande ur striden!" heading,
-	// which (unlike the per-player reward flavor text right after it, which seems to
-	// vary by performance rather than strictly by win/loss) looks like a fixed,
-	// non-varying template. Rather than trying to match reward-sentence wording, we use
-	// it to find which side's name is mentioned first in that block - the site groups
-	// winners' reward lines before losers' - and treat that as the winning side.
-	function detectWinningSide() {
-		const heading = Array.from(document.querySelectorAll('p.font-semibold'))
+	// The end-of-battle block starts with a "Lag N går segrande ur striden!" heading -
+	// both detectWinningSide and detectLoot below key off it (the winner's reward
+	// flavor text, any loot pickup, and the confirmation phrasing all live in the same
+	// card as this heading), so they share this one lookup rather than re-finding it
+	// twice.
+	//
+	// Confirmed live against the actual rendered markup: the heading is a plain <p> with
+	// no font-semibold class of its own (only its inner "Lag N" text is wrapped in
+	// <strong>), sitting alone in its own wrapper div alongside just an empty Vue
+	// comment node - no green/red tag anywhere in that wrapper, and no loot text either.
+	// The winner's colored name (and any loot) only show up in the next sibling
+	// paragraph, one level up. Rather than hardcoding that exact number of levels
+	// (fragile against a future extra wrapper), walk up from the heading to the nearest
+	// ancestor that actually contains a green/red tag, bounded to this end-of-battle
+	// card's own root (.bg-card, the same class every round card and the totals card
+	// already render with - see renderBattleTotals) so it can't accidentally reach into
+	// an unrelated card.
+	function findEndOfBattleCard() {
+		const heading = Array.from(document.querySelectorAll('p'))
 			.find((element) => /går segrande ur striden/i.test(element.innerText));
 		if (!heading) return null;
-		const firstTag = heading.parentElement.querySelector('green, red');
+		return heading.closest('.bg-card') || heading.parentElement;
+	}
+
+	// The site groups winners' reward lines before losers' in this block, so whichever
+	// side's name is mentioned first (in a real green/red tag) is the winning side.
+	// Rather than trying to match reward-sentence wording (which, unlike this grouping
+	// order, looks like it varies by performance), this is the one part of the block
+	// that looks like a fixed, non-varying signal.
+	function detectWinningSide() {
+		const card = findEndOfBattleCard();
+		const firstTag = card && card.querySelector('green, red');
 		if (!firstTag) return null;
 		return firstTag.tagName.toLowerCase() === 'green' ? 'ally' : 'enemy';
+	}
+
+	// Confirmed against a real battle's own API response (a monster hunt vs. Fullvuxen
+	// Silverbjörn): the drop renders from a "battle.loot_material.loot_text_1" entry
+	// with {quantity, material_name, storage_name} args, which the site turns into a
+	// bold "<N> st <ItemName>" segment somewhere in the winner's flavor text
+	// ("...ställer sig upp med <strong>1 st Svart valnöt</strong> i händerna...."),
+	// followed later by a fixed-looking confirmation sentence naming storage_name
+	// ("...Xs förråd"). Unlike the "<strong>N</strong> silvermynt"/
+	// "<strong>N</strong> erfarenhetspoäng" reward bolds nearby (which never pair a
+	// number with "st" inside the bold itself), that "<N> st <item>" shape looks
+	// specific enough to loot to use as the anchor instead of the narrative wording
+	// around it, which - like the round-combat narrative elsewhere in this file -
+	// probably varies a lot by scenario. Pairs each loot bold with the storage-
+	// confirmation tag in the same document order; unconfirmed whether that holds up
+	// against a multi-item drop, since the one recorded example only had one.
+	//
+	// This only covers loot_material (a raw material with a quantity) - the game likely
+	// has a separate template for looting actual equipment (a named weapon/armor piece
+	// off an NPC, presumably with no quantity at all), which almost certainly doesn't
+	// render as "<N> st <item>" and so wouldn't be caught here. No recorded example of
+	// that case yet to confirm the real wording against.
+	function detectLoot(currentName) {
+		const card = findEndOfBattleCard();
+		if (!card) return [];
+		const lootBolds = Array.from(card.querySelectorAll('strong'))
+			.map((element) => /^(\d+)\s*st\s+(.+)$/i.exec(element.textContent.trim()))
+			.filter(Boolean);
+		if (!lootBolds.length) return [];
+		const storageTags = Array.from(card.querySelectorAll('green, red')).filter((tag) => {
+			const next = tag.nextSibling;
+			return next && next.nodeType === Node.TEXT_NODE && /^s förråd/.test(next.textContent);
+		});
+		return lootBolds
+			.map((match, index) => {
+				const tag = storageTags[index];
+				if (!tag) return null;
+				const recipient = tag.innerText.trim();
+				return { quantity: Number(match[1]), item: match[2].trim(), recipient, isSelf: recipient === currentName };
+			})
+			.filter(Boolean);
 	}
 
 	// Once a battle finishes, the site renders one <span class="font-light summary"> per
@@ -796,9 +858,9 @@
 		});
 	}
 
-	function renderBattleTotals(host, beforeNode, totals, battleTeamDamage, battleTeamSize, attackedFirst) {
+	function renderBattleTotals(host, beforeNode, totals, battleTeamDamage, battleTeamSize, attackedFirst, roundHistory, loot) {
 		const entries = Array.from(totals, ([name, stats]) => ({ name, ...stats }));
-		const signature = JSON.stringify({ entries, attackedFirst });
+		const signature = JSON.stringify({ entries, attackedFirst, roundHistory, loot });
 		let card = host.querySelector(':scope > [data-lanista-battle-totals]');
 		const inPlace = card && card.nextSibling === beforeNode;
 		if (card && card.dataset.lanistaBattleSignature === signature && inPlace) return;
@@ -823,6 +885,39 @@
 		heading.textContent = 'Totalt för striden';
 		body.appendChild(heading);
 		const colors = sideColors();
+		// The only other place a viewer can currently see who won is the small 🏆 prefix on
+		// the winning participant's own name further down this card (see buildParticipantPanel)
+		// - easy to miss, especially in a team battle with several panels to scroll past. Only
+		// entries actually get isWinner set once detectWinningSide() has resolved a result (see
+		// scanBattlePage), so this stays hidden for a still-in-progress battle rather than
+		// guessing.
+		const winnerEntries = entries.filter((entry) => entry.isWinner);
+		if (winnerEntries.length) {
+			const winnerLine = document.createElement('p');
+			winnerLine.className = 'mb-1 text-sm font-semibold';
+			const winnerColor = colors[winnerEntries[0].side];
+			if (winnerColor) winnerLine.style.color = winnerColor;
+			const names = winnerEntries.map((entry) => entry.isSelf ? 'Du' : entry.name);
+			winnerLine.textContent = `🏆 ${names.join(', ')} vann striden`;
+			body.appendChild(winnerLine);
+		}
+		// Only rendered when detectLoot actually found something (see its own comment for
+		// how) - no "no loot this time" line, since most battles have none at all and a
+		// line saying so on every single battle would just be noise.
+		if (loot && loot.length) {
+			const lootLine = document.createElement('p');
+			lootLine.className = 'mb-1 text-sm text-muted-foreground';
+			const parts = loot.map((drop) => `${drop.quantity} st ${drop.item}${drop.isSelf ? ' (Du)' : ` (${drop.recipient})`}`);
+			lootLine.textContent = `🎒 Fynd: ${parts.join(', ')}`;
+			body.appendChild(lootLine);
+		}
+		if (roundHistory && roundHistory.length >= 2) {
+			const chartWrap = document.createElement('div');
+			chartWrap.style.cssText = 'position:relative;margin-bottom:8px;';
+			body.appendChild(chartWrap);
+			const winningSide = winnerEntries.length ? winnerEntries[0].side : null;
+			renderRoundTimelineChart(chartWrap, roundHistory, { ...getThemeColors(), ...colors }, winningSide);
+		}
 		entries.forEach((participant) => {
 			const context = {
 				totalDamageTaken: participant.damageTaken,
@@ -864,7 +959,10 @@
 		const totals = new Map();
 		let roundsCounted = 0;
 		let selfAttackedFirstRounds = 0;
-		rounds.forEach(({ container }) => {
+		const roundHistory = [];
+		let cumulativeAlly = 0;
+		let cumulativeEnemy = 0;
+		rounds.forEach(({ number, container }) => {
 			const { participants, firstAttacker } = summarizeRound(container, currentName);
 			// firstAttacker is the resolved attacker of the round's earliest combat-outcome
 			// event (see summarizeRound) - only meaningful for a 1v1 duel; a team-battle round
@@ -899,11 +997,15 @@
 				const roundTeamDamage = sumBySide(participants, 'damageDone');
 				const roundTeamSize = countBySide(participants);
 				renderParticipantSummaries(container, participants, totals, roundTeamDamage, roundTeamSize);
+				cumulativeAlly += roundTeamDamage.get('ally') || 0;
+				cumulativeEnemy += roundTeamDamage.get('enemy') || 0;
+				roundHistory.push({ round: number, ally: cumulativeAlly, enemy: cumulativeEnemy });
 			}
 		});
 
 		if (rounds.length) {
 			const winningSide = detectWinningSide();
+			const loot = detectLoot(currentName);
 			if (winningSide) {
 				totals.forEach((entry) => { entry.isWinner = entry.side === winningSide; });
 			}
@@ -917,12 +1019,30 @@
 			const battleEntries = Array.from(totals.values());
 			const battleTeamDamage = sumBySide(battleEntries, 'damageDone');
 			const battleTeamSize = countBySide(battleEntries);
+			// roundHistory is built purely from the same narrative-regex parse as the rest of
+			// this loop, which the comment on parseFinalStatsSummary above already documents as
+			// an approximation - so once the battle's finished and exact per-side totals are
+			// known (battleTeamDamage, just computed above, already reflects the exactStats
+			// override), rescale every round's cumulative value so the last round lands exactly
+			// on the confirmed total instead of silently disagreeing with the totals card right
+			// below the chart. This keeps the parsed round-to-round shape while anchoring the
+			// one number a reader can actually check against the panel text.
+			if (roundHistory.length) {
+				const lastPoint = roundHistory[roundHistory.length - 1];
+				['ally', 'enemy'].forEach((side) => {
+					const rawTotal = lastPoint[side];
+					const exactTotal = battleTeamDamage.get(side) || 0;
+					if (!rawTotal || rawTotal === exactTotal) return;
+					const scale = exactTotal / rawTotal;
+					roundHistory.forEach((point) => { point[side] *= scale; });
+				});
+			}
 			// "Attacked first" only means something with exactly two fighters in the whole
 			// battle - a team battle has no single "who went first this round" to attribute.
 			const isDuel = totals.size === 2;
 			const attackedFirst = isDuel ? { count: selfAttackedFirstRounds, total: roundsCounted } : null;
 			const firstCard = rounds[0].container.parentElement;
-			renderBattleTotals(firstCard.parentElement, firstCard, totals, battleTeamDamage, battleTeamSize, attackedFirst);
+			renderBattleTotals(firstCard.parentElement, firstCard, totals, battleTeamDamage, battleTeamSize, attackedFirst, roundHistory, loot);
 		}
 	}
 
@@ -1467,12 +1587,21 @@
 		return value;
 	}
 
-	function getBankColors() {
+	// Shared by every hand-rolled SVG chart on the page (bank chart, battle round timeline) -
+	// the card/foreground/muted/border quartet every chart card needs regardless of what its
+	// own data series are colored with.
+	function getThemeColors() {
 		return {
 			card: sampleThemeColor('bg-card', 'backgroundColor'),
 			foreground: sampleThemeColor('text-card-foreground', 'color'),
 			muted: sampleThemeColor('text-muted-foreground', 'color'),
-			border: sampleThemeColor('border border-border/70', 'borderColor'),
+			border: sampleThemeColor('border border-border/70', 'borderColor')
+		};
+	}
+
+	function getBankColors() {
+		return {
+			...getThemeColors(),
 			// The site's own line charts (see /game/avatar/me/statistics/trends) draw in this
 			// warm amber rather than a generic accent blue - confirmed live (bg-primary/
 			// text-primary both resolve to it) - so the bank chart uses the same color instead
@@ -1757,6 +1886,139 @@
 		chartWrap.appendChild(tooltip);
 
 		attachBankChartInteraction(chartWrap, chart, tooltip);
+	}
+
+	function formatDamageValue(value) {
+		return Math.round(value).toLocaleString('sv-SE');
+	}
+
+	// Same construction as buildBankChartSvg (shared xScale/yScale returned alongside the SVG
+	// for the interaction handler to reuse) but for a round-indexed x-axis instead of a
+	// continuous time scale, and two always-solid series (ally/enemy cumulative damage done)
+	// instead of a solid-past/dashed-future single series - a battle has no "future" to project.
+	function buildRoundTimelineSvg(history, colors, winningSide) {
+		const width = 760;
+		const height = 200;
+		// top is taller than the bank chart's equivalent (12) to leave headroom for the
+		// 🏆 winner marker below - the winning line's last point is very often near the
+		// top of the y-scale, so without this the marker (drawn above that point) gets
+		// clipped by the viewBox's own top edge (reported live).
+		const padding = { left: 48, right: 12, top: 28, bottom: 22 };
+		const xMin = history[0].round;
+		const xMax = history[history.length - 1].round;
+		const values = history.flatMap((point) => [point.ally, point.enemy]);
+		const yMax = Math.max(...values, 1) * 1.05;
+		const innerWidth = width - padding.left - padding.right;
+		const innerHeight = height - padding.top - padding.bottom;
+
+		const xScale = (round) => padding.left + ((round - xMin) / (xMax - xMin || 1)) * innerWidth;
+		const yScale = (value) => padding.top + (1 - value / yMax) * innerHeight;
+
+		const toPath = (key) => history.map((point, index) =>
+			`${index === 0 ? 'M' : 'L'}${xScale(point.round).toFixed(1)},${yScale(point[key]).toFixed(1)}`).join(' ');
+
+		const gridLines = [0, 1, 2, 3].map((step) => {
+			const value = (yMax * step) / 3;
+			const y = yScale(value).toFixed(1);
+			return `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" stroke="${colors.border}" stroke-width="1" stroke-dasharray="2,3" />` +
+				`<text x="${padding.left - 6}" y="${y}" text-anchor="end" dominant-baseline="middle" font-size="10" fill="${colors.muted}">${formatDamageValue(value)}</text>`;
+		}).join('');
+
+		// history.length >= 2 is guaranteed by the only caller (renderBattleTotals only invokes
+		// this once there are at least two rounds), so xMax > xMin always holds here.
+		const roundLabels = [{ round: xMin, anchor: 'start' }, { round: xMax, anchor: 'end' }].map(({ round, anchor }) =>
+			`<text x="${xScale(round).toFixed(1)}" y="${height - 6}" text-anchor="${anchor}" font-size="10" fill="${colors.muted}">Runda ${round}</text>`
+		).join('');
+
+		// Only rendered once detectWinningSide has actually resolved a result (see
+		// renderBattleTotals) - drawn before the crosshair/dot/overlay layer below so it
+		// stays purely decorative and never steals a hover near the last round from the
+		// overlay rect that needs it.
+		const lastPoint = history[history.length - 1];
+		const winnerMarker = (winningSide === 'ally' || winningSide === 'enemy')
+			? `<text x="${xScale(lastPoint.round).toFixed(1)}" y="${(yScale(lastPoint[winningSide]) - 10).toFixed(1)}" text-anchor="middle" font-size="16">🏆</text>`
+			: '';
+
+		const svg = `
+			<svg viewBox="0 0 ${width} ${height}" style="display:block;width:100%;height:auto;" data-lanista-round-svg="true">
+				${gridLines}
+				<path d="${toPath('ally')}" fill="none" stroke="${colors.ally}" stroke-width="2" />
+				<path d="${toPath('enemy')}" fill="none" stroke="${colors.enemy}" stroke-width="2" />
+				${winnerMarker}
+				${roundLabels}
+				<line data-lanista-round-crosshair="true" x1="0" y1="${padding.top}" x2="0" y2="${height - padding.bottom}" stroke="${colors.muted}" stroke-width="1" visibility="hidden" />
+				<circle data-lanista-round-dot-ally="true" r="3.5" fill="${colors.ally}" visibility="hidden" />
+				<circle data-lanista-round-dot-enemy="true" r="3.5" fill="${colors.enemy}" visibility="hidden" />
+				<rect data-lanista-round-overlay="true" x="${padding.left}" y="${padding.top}" width="${innerWidth}" height="${innerHeight}" fill="transparent" />
+			</svg>`;
+
+		return { svg, xScale, yScale, xMin, xMax, width, history };
+	}
+
+	function attachRoundTimelineInteraction(chartWrap, chart, tooltip) {
+		const svgEl = chartWrap.querySelector('[data-lanista-round-svg]');
+		const overlay = chartWrap.querySelector('[data-lanista-round-overlay]');
+		const crosshair = chartWrap.querySelector('[data-lanista-round-crosshair]');
+		const dotAlly = chartWrap.querySelector('[data-lanista-round-dot-ally]');
+		const dotEnemy = chartWrap.querySelector('[data-lanista-round-dot-enemy]');
+		if (!svgEl || !overlay) return;
+
+		const showPoint = (point) => {
+			const x = chart.xScale(point.round);
+			crosshair.setAttribute('x1', x.toFixed(1));
+			crosshair.setAttribute('x2', x.toFixed(1));
+			crosshair.setAttribute('visibility', 'visible');
+			[[dotAlly, point.ally], [dotEnemy, point.enemy]].forEach(([dot, value]) => {
+				dot.setAttribute('cx', x.toFixed(1));
+				dot.setAttribute('cy', chart.yScale(value).toFixed(1));
+				dot.setAttribute('visibility', 'visible');
+			});
+			tooltip.textContent = `Runda ${point.round}: Eget lag ${formatDamageValue(point.ally)}, Motståndare ${formatDamageValue(point.enemy)}`;
+			tooltip.style.display = 'block';
+			const rect = svgEl.getBoundingClientRect();
+			const pixelX = (x / chart.width) * rect.width;
+			tooltip.style.left = `${Math.min(pixelX + 8, rect.width - 150)}px`;
+			tooltip.style.top = '4px';
+		};
+
+		overlay.addEventListener('mousemove', (event) => {
+			const rect = svgEl.getBoundingClientRect();
+			const scaleX = chart.width / rect.width;
+			const viewBoxX = (event.clientX - rect.left) * scaleX;
+			const round = chart.xMin + ((viewBoxX - 48) / (chart.width - 48 - 12)) * (chart.xMax - chart.xMin);
+			let nearest = chart.history[0];
+			let nearestDistance = Infinity;
+			chart.history.forEach((point) => {
+				const distance = Math.abs(point.round - round);
+				if (distance < nearestDistance) {
+					nearestDistance = distance;
+					nearest = point;
+				}
+			});
+			showPoint(nearest);
+		});
+		overlay.addEventListener('mouseleave', () => {
+			crosshair.setAttribute('visibility', 'hidden');
+			dotAlly.setAttribute('visibility', 'hidden');
+			dotEnemy.setAttribute('visibility', 'hidden');
+			tooltip.style.display = 'none';
+		});
+	}
+
+	// Renders the "Totalt för striden" card's round-by-round cumulative damage chart - each
+	// point is the running total of that side's damage done through that round (see the
+	// roundHistory accumulation in scanBattlePage), so the line's slope shows momentum shifts
+	// a single end-of-battle total can't: a steep late climb reads differently from a steady
+	// grind even when the final numbers match.
+	function renderRoundTimelineChart(container, history, colors, winningSide) {
+		const chart = buildRoundTimelineSvg(history, colors, winningSide);
+		container.innerHTML = chart.svg;
+
+		const tooltip = document.createElement('div');
+		tooltip.style.cssText = `position:absolute;pointer-events:none;display:none;white-space:nowrap;font-size:11px;padding:3px 6px;border-radius:4px;background:${colors.card};border:1px solid ${colors.border};color:${colors.foreground};`;
+		container.appendChild(tooltip);
+
+		attachRoundTimelineInteraction(container, chart, tooltip);
 	}
 
 	function ensureBankChartCard(table) {
