@@ -823,6 +823,22 @@
 		heading.textContent = 'Totalt för striden';
 		body.appendChild(heading);
 		const colors = sideColors();
+		// The only other place a viewer can currently see who won is the small 🏆 prefix on
+		// the winning participant's own name further down this card (see buildParticipantPanel)
+		// - easy to miss, especially in a team battle with several panels to scroll past. Only
+		// entries actually get isWinner set once detectWinningSide() has resolved a result (see
+		// scanBattlePage), so this stays hidden for a still-in-progress battle rather than
+		// guessing.
+		const winnerEntries = entries.filter((entry) => entry.isWinner);
+		if (winnerEntries.length) {
+			const winnerLine = document.createElement('p');
+			winnerLine.className = 'mb-1 text-sm font-semibold';
+			const winnerColor = colors[winnerEntries[0].side];
+			if (winnerColor) winnerLine.style.color = winnerColor;
+			const names = winnerEntries.map((entry) => entry.isSelf ? 'Du' : entry.name);
+			winnerLine.textContent = `🏆 ${names.join(', ')} vann striden`;
+			body.appendChild(winnerLine);
+		}
 		if (roundHistory && roundHistory.length >= 2) {
 			const chartWrap = document.createElement('div');
 			chartWrap.style.cssText = 'position:relative;margin-bottom:8px;';
