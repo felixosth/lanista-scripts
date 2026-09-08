@@ -689,11 +689,23 @@
 	// non-varying template. Rather than trying to match reward-sentence wording, we use
 	// it to find which side's name is mentioned first in that block - the site groups
 	// winners' reward lines before losers' - and treat that as the winning side.
+	//
+	// Confirmed live against the actual rendered markup: the heading is a plain <p> with
+	// no font-semibold class of its own (only its inner "Lag N" text is wrapped in
+	// <strong>), sitting alone in its own wrapper div alongside just an empty Vue
+	// comment node - no green/red tag anywhere in that wrapper. The winner's colored
+	// name only shows up in the next sibling paragraph, one level up. Rather than
+	// hardcoding that exact number of levels (fragile against a future extra wrapper),
+	// walk up from the heading to the nearest ancestor that actually contains a
+	// green/red tag, bounded to this end-of-battle card's own root (.bg-card, the same
+	// class every round card and the totals card already render with - see
+	// renderBattleTotals) so it can't accidentally reach into an unrelated card.
 	function detectWinningSide() {
-		const heading = Array.from(document.querySelectorAll('p.font-semibold'))
+		const heading = Array.from(document.querySelectorAll('p'))
 			.find((element) => /går segrande ur striden/i.test(element.innerText));
 		if (!heading) return null;
-		const firstTag = heading.parentElement.querySelector('green, red');
+		const card = heading.closest('.bg-card') || heading.parentElement;
+		const firstTag = card && card.querySelector('green, red');
 		if (!firstTag) return null;
 		return firstTag.tagName.toLowerCase() === 'green' ? 'ally' : 'enemy';
 	}
