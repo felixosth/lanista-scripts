@@ -719,11 +719,13 @@
 		return firstTag.tagName.toLowerCase() === 'green' ? 'ally' : 'enemy';
 	}
 
-	// Loot drops (confirmed live against one recorded monster-hunt battle so far) show
-	// up as a bold "<N> st <ItemName>" segment somewhere in the winner's flavor text
+	// Confirmed against a real battle's own API response (a monster hunt vs. Fullvuxen
+	// Silverbjörn): the drop renders from a "battle.loot_material.loot_text_1" entry
+	// with {quantity, material_name, storage_name} args, which the site turns into a
+	// bold "<N> st <ItemName>" segment somewhere in the winner's flavor text
 	// ("...ställer sig upp med <strong>1 st Svart valnöt</strong> i händerna...."),
-	// followed later by a fixed-looking confirmation sentence naming whoever's storage
-	// it went to ("...Xs förråd"). Unlike the "<strong>N</strong> silvermynt"/
+	// followed later by a fixed-looking confirmation sentence naming storage_name
+	// ("...Xs förråd"). Unlike the "<strong>N</strong> silvermynt"/
 	// "<strong>N</strong> erfarenhetspoäng" reward bolds nearby (which never pair a
 	// number with "st" inside the bold itself), that "<N> st <item>" shape looks
 	// specific enough to loot to use as the anchor instead of the narrative wording
@@ -731,6 +733,12 @@
 	// probably varies a lot by scenario. Pairs each loot bold with the storage-
 	// confirmation tag in the same document order; unconfirmed whether that holds up
 	// against a multi-item drop, since the one recorded example only had one.
+	//
+	// This only covers loot_material (a raw material with a quantity) - the game likely
+	// has a separate template for looting actual equipment (a named weapon/armor piece
+	// off an NPC, presumably with no quantity at all), which almost certainly doesn't
+	// render as "<N> st <item>" and so wouldn't be caught here. No recorded example of
+	// that case yet to confirm the real wording against.
 	function detectLoot(currentName) {
 		const card = findEndOfBattleCard();
 		if (!card) return [];
