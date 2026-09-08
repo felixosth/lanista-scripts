@@ -4,6 +4,9 @@ import csv
 import re
 import html
 from collections import defaultdict
+from pathlib import Path
+
+DATA_DIR = Path(__file__).resolve().parent.parent / 'data'
 
 
 def strip_markup(value):
@@ -324,11 +327,12 @@ def write_csv(rows, filepath):
 
 
 def main():
-    items, canonical = load_and_index_items('lanista_items_detailed.json')
+    items, canonical = load_and_index_items(DATA_DIR / 'lanista_items_detailed.json')
     recipes = reconstruct_recipes(items)
     rows = build_csv_rows(items, canonical, recipes)
-    write_csv(rows, 'lanista_items.csv')
-    print(f'Wrote {len(rows)} rows to lanista_items.csv')
+    output_path = DATA_DIR / 'lanista_items.csv'
+    write_csv(rows, output_path)
+    print(f'Wrote {len(rows)} rows to {output_path}')
 
 
 if __name__ == '__main__':
