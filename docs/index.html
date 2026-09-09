@@ -226,14 +226,6 @@
             border: 3px solid #8b7355;
         }
 
-        .item-card.plan-selected {
-            border: 3px solid #4a7c59;
-        }
-
-        .item-card.selected.plan-selected {
-            border-style: double;
-        }
-
         .item-image {
             width: 100%;
             height: 200px;
@@ -300,24 +292,6 @@
             background: #ccc;
         }
 
-        .plan-btn {
-            width: 100%;
-            padding: 8px;
-            margin-top: 6px;
-            background: #dcebe1;
-            color: #2f5b3f;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9em;
-            font-weight: 500;
-            transition: background 0.2s;
-        }
-
-        .plan-btn:hover {
-            background: #c7ddd0;
-        }
-
         .items-table {
             width: 100%;
             border-collapse: collapse;
@@ -355,11 +329,6 @@
         .items-table tbody tr.selected {
             background: #f0ede8;
             border-left: 3px solid #8b7355;
-        }
-
-        .items-table tbody tr.plan-selected {
-            background: #ecf3ef;
-            border-right: 3px solid #4a7c59;
         }
 
         .item-row-name {
@@ -950,7 +919,7 @@
                 </div>
             </div>
 
-            <!-- Comparison bar -->
+            <!-- Selection bar -->
             <div id="comparisonBar" style="display: none;" class="comparison-bar">
                 <div>
                     <strong>Valda föremål:</strong>
@@ -958,19 +927,8 @@
                 </div>
                 <div class="comparison-actions">
                     <button onclick="showComparison()">Jämför</button>
+                    <button onclick="showCraftPlan()">Tillverkningsplan</button>
                     <button class="secondary" onclick="clearSelection()">Rensa val</button>
-                </div>
-            </div>
-
-            <!-- Crafting plan bar -->
-            <div id="craftPlanBar" style="display: none;" class="comparison-bar">
-                <div>
-                    <strong>Tillverkningsplan:</strong>
-                    <div class="selected-items" id="craftPlanItemsDisplay"></div>
-                </div>
-                <div class="comparison-actions">
-                    <button onclick="showCraftPlan()">Visa tillverkningsplan</button>
-                    <button class="secondary" onclick="clearCraftPlanSelection()">Rensa val</button>
                 </div>
             </div>
 
@@ -1038,7 +996,6 @@
         let allItems = [];
         let filteredItems = [];
         let selectedItems = [];
-        let craftPlanItems = [];
         let craftPlanExpanded = new Set();
         let currentView = 'list';
         let currentDisplayMode = 'grid';
@@ -1345,7 +1302,7 @@
 
             const container = document.getElementById('gridContainer');
             container.innerHTML = pageItems.map(item => `
-                <div class="item-card ${selectedItems.includes(item.id) ? 'selected' : ''} ${craftPlanItems.includes(item.id) ? 'plan-selected' : ''}" onclick="showDetail(${item.id})">
+                <div class="item-card ${selectedItems.includes(item.id) ? 'selected' : ''}" onclick="showDetail(${item.id})">
                     <div class="item-image">
                         ${item.asset?.url ? `<img src="${item.asset.url}" alt="${item.name}">` : ''}
                     </div>
@@ -1356,7 +1313,6 @@
                             ${getItemStatsHTML(item)}
                         </div>
                         <button class="compare-btn" onclick="event.stopPropagation(); selectItem(event, ${item.id})">+ Markera</button>
-                        ${isCraftable(item) ? `<button class="plan-btn" onclick="event.stopPropagation(); toggleCraftPlanItem(event, ${item.id})">+ Tillverkning</button>` : ''}
                     </div>
                 </div>
             `).join('');
@@ -1371,7 +1327,7 @@
 
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = pageItems.map(item => `
-                <tr class="${selectedItems.includes(item.id) ? 'selected' : ''} ${craftPlanItems.includes(item.id) ? 'plan-selected' : ''}" onclick="showDetail(${item.id})">
+                <tr class="${selectedItems.includes(item.id) ? 'selected' : ''}" onclick="showDetail(${item.id})">
                     <td>
                         <div class="item-row-name">
                             ${item.asset?.url ? `<div class="item-row-image"><img src="${item.asset.url}" alt="${item.name}"></div>` : ''}
@@ -1383,7 +1339,6 @@
                     <td>${getSellValue(item).toLocaleString('sv-SE')}</td>
                     <td style="text-align: center;">
                         <button class="compare-btn" onclick="event.stopPropagation(); selectItem(event, ${item.id})">+ Markera</button>
-                        ${isCraftable(item) ? `<button class="plan-btn" onclick="event.stopPropagation(); toggleCraftPlanItem(event, ${item.id})">+ Tillverkning</button>` : ''}
                     </td>
                 </tr>
             `).join('');
@@ -1471,46 +1426,15 @@
             }
         }
 
-        function toggleCraftPlanItem(event, itemId) {
-            event.stopPropagation();
-            if (craftPlanItems.includes(itemId)) {
-                craftPlanItems = craftPlanItems.filter(id => id !== itemId);
-            } else {
-                craftPlanItems.push(itemId);
-            }
-            updateCraftPlanBar();
-            renderItems();
-        }
-
-        function updateCraftPlanBar() {
-            const bar = document.getElementById('craftPlanBar');
-            const display = document.getElementById('craftPlanItemsDisplay');
-
-            if (craftPlanItems.length > 0) {
-                bar.style.display = 'flex';
-                display.innerHTML = craftPlanItems.map(id => {
-                    const item = allItems.find(i => i.id === id);
-                    return `
-                        <div class="item-chip">
-                            <span>${item.name}</span>
-                            <span class="remove" onclick="toggleCraftPlanItem(event, ${id})">×</span>
-                        </div>
-                    `;
-                }).join('');
-            } else {
-                bar.style.display = 'none';
-            }
-        }
-
-        function clearCraftPlanSelection() {
-            craftPlanItems = [];
-            updateCraftPlanBar();
-            renderItems();
+        function craftPlanSelection() {
+            return selectedItems
+                .map(id => allItems.find(i => i.id === id))
+                .filter(item => item && isCraftable(item));
         }
 
         function showCraftPlan() {
-            if (craftPlanItems.length === 0) {
-                alert('Välj minst ett tillverkningsbart föremål');
+            if (craftPlanSelection().length === 0) {
+                alert('Inga av de valda föremålen kan tillverkas');
                 return;
             }
             craftPlanExpanded = new Set();
@@ -1611,8 +1535,8 @@
                 });
             }
 
-            craftPlanItems.forEach(itemId => {
-                const recipe = recipesByItemId[itemId];
+            craftPlanSelection().forEach(item => {
+                const recipe = recipesByItemId[item.id];
                 if (!recipe) return;
                 walk(recipe.material_requirements, 1);
                 walk(recipe.item_requirements, 1);
@@ -1622,7 +1546,7 @@
         }
 
         function renderCraftPlanModal() {
-            const items = craftPlanItems.map(id => allItems.find(i => i.id === id)).filter(Boolean);
+            const items = craftPlanSelection();
 
             const sections = items.map(item => {
                 const recipe = recipesByItemId[item.id];
