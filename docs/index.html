@@ -226,6 +226,14 @@
             border: 3px solid #8b7355;
         }
 
+        .item-card.plan-selected {
+            border: 3px solid #4a7c59;
+        }
+
+        .item-card.selected.plan-selected {
+            border-style: double;
+        }
+
         .item-image {
             width: 100%;
             height: 200px;
@@ -292,6 +300,24 @@
             background: #ccc;
         }
 
+        .plan-btn {
+            width: 100%;
+            padding: 8px;
+            margin-top: 6px;
+            background: #dcebe1;
+            color: #2f5b3f;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .plan-btn:hover {
+            background: #c7ddd0;
+        }
+
         .items-table {
             width: 100%;
             border-collapse: collapse;
@@ -329,6 +355,11 @@
         .items-table tbody tr.selected {
             background: #f0ede8;
             border-left: 3px solid #8b7355;
+        }
+
+        .items-table tbody tr.plan-selected {
+            background: #ecf3ef;
+            border-right: 3px solid #4a7c59;
         }
 
         .item-row-name {
@@ -564,6 +595,60 @@
             margin: 6px 0 0 12px;
             padding-left: 10px;
             border-left: 2px solid #e0dcd8;
+        }
+
+        .craft-plan-section {
+            margin-bottom: 30px;
+        }
+
+        .craft-plan-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+
+        .craft-plan-table th,
+        .craft-plan-table td {
+            padding: 8px 10px;
+            font-size: 0.9em;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .craft-plan-table tr.depth-row td.name-cell {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .craft-plan-table .row-toggle {
+            width: 14px;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+            color: #8b7355;
+            font-size: 0.8em;
+            transition: transform 0.15s ease;
+            flex-shrink: 0;
+        }
+
+        .craft-plan-table .row-toggle.open {
+            transform: rotate(90deg);
+        }
+
+        .craft-plan-table .name-cell .name.linked {
+            cursor: pointer;
+        }
+
+        .craft-plan-table .name-cell .name.linked:hover {
+            color: #8b7355;
+            text-decoration: underline;
+        }
+
+        .craft-plan-table .qty-cell {
+            font-weight: 600;
+            color: #8b7355;
+            white-space: nowrap;
         }
 
         .comparison-view {
@@ -877,6 +962,18 @@
                 </div>
             </div>
 
+            <!-- Crafting plan bar -->
+            <div id="craftPlanBar" style="display: none;" class="comparison-bar">
+                <div>
+                    <strong>Tillverkningsplan:</strong>
+                    <div class="selected-items" id="craftPlanItemsDisplay"></div>
+                </div>
+                <div class="comparison-actions">
+                    <button onclick="showCraftPlan()">Visa tillverkningsplan</button>
+                    <button class="secondary" onclick="clearCraftPlanSelection()">Rensa val</button>
+                </div>
+            </div>
+
             <div id="countInfo" class="count-info"></div>
 
             <!-- Grid view -->
@@ -926,10 +1023,23 @@
         </div>
     </div>
 
+    <!-- Crafting Plan Modal -->
+    <div id="craftPlanModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-close">
+                <h2 id="craftPlanModalTitle">Tillverkningsplan</h2>
+                <button class="modal-close-btn" onclick="closeCraftPlanModal()">×</button>
+            </div>
+            <div class="modal-body" id="craftPlanModalBody"></div>
+        </div>
+    </div>
+
     <script>
         let allItems = [];
         let filteredItems = [];
         let selectedItems = [];
+        let craftPlanItems = [];
+        let craftPlanExpanded = new Set();
         let currentView = 'list';
         let currentDisplayMode = 'grid';
         const ITEMS_PER_PAGE = 50;
@@ -1235,7 +1345,7 @@
 
             const container = document.getElementById('gridContainer');
             container.innerHTML = pageItems.map(item => `
-                <div class="item-card ${selectedItems.includes(item.id) ? 'selected' : ''}" onclick="showDetail(${item.id})">
+                <div class="item-card ${selectedItems.includes(item.id) ? 'selected' : ''} ${craftPlanItems.includes(item.id) ? 'plan-selected' : ''}" onclick="showDetail(${item.id})">
                     <div class="item-image">
                         ${item.asset?.url ? `<img src="${item.asset.url}" alt="${item.name}">` : ''}
                     </div>
@@ -1245,7 +1355,8 @@
                         <div class="item-stats">
                             ${getItemStatsHTML(item)}
                         </div>
-                        <button class="compare-btn" onclick="event.stopPropagation(); selectItem(event, ${item.id})">+ Jämför</button>
+                        <button class="compare-btn" onclick="event.stopPropagation(); selectItem(event, ${item.id})">+ Markera</button>
+                        ${isCraftable(item) ? `<button class="plan-btn" onclick="event.stopPropagation(); toggleCraftPlanItem(event, ${item.id})">+ Tillverkning</button>` : ''}
                     </div>
                 </div>
             `).join('');
@@ -1260,7 +1371,7 @@
 
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = pageItems.map(item => `
-                <tr class="${selectedItems.includes(item.id) ? 'selected' : ''}" onclick="showDetail(${item.id})">
+                <tr class="${selectedItems.includes(item.id) ? 'selected' : ''} ${craftPlanItems.includes(item.id) ? 'plan-selected' : ''}" onclick="showDetail(${item.id})">
                     <td>
                         <div class="item-row-name">
                             ${item.asset?.url ? `<div class="item-row-image"><img src="${item.asset.url}" alt="${item.name}"></div>` : ''}
@@ -1270,7 +1381,10 @@
                     <td>${subtypeNames[item.type_name] || item.type_name || typeNames[item.type] || item.type}</td>
                     <td>${getItemLevel(item)}</td>
                     <td>${getSellValue(item).toLocaleString('sv-SE')}</td>
-                    <td style="text-align: center;"><button class="compare-btn" onclick="event.stopPropagation(); selectItem(event, ${item.id})">+ Jämför</button></td>
+                    <td style="text-align: center;">
+                        <button class="compare-btn" onclick="event.stopPropagation(); selectItem(event, ${item.id})">+ Markera</button>
+                        ${isCraftable(item) ? `<button class="plan-btn" onclick="event.stopPropagation(); toggleCraftPlanItem(event, ${item.id})">+ Tillverkning</button>` : ''}
+                    </td>
                 </tr>
             `).join('');
 
@@ -1355,6 +1469,213 @@
             } else {
                 bar.style.display = 'none';
             }
+        }
+
+        function toggleCraftPlanItem(event, itemId) {
+            event.stopPropagation();
+            if (craftPlanItems.includes(itemId)) {
+                craftPlanItems = craftPlanItems.filter(id => id !== itemId);
+            } else {
+                craftPlanItems.push(itemId);
+            }
+            updateCraftPlanBar();
+            renderItems();
+        }
+
+        function updateCraftPlanBar() {
+            const bar = document.getElementById('craftPlanBar');
+            const display = document.getElementById('craftPlanItemsDisplay');
+
+            if (craftPlanItems.length > 0) {
+                bar.style.display = 'flex';
+                display.innerHTML = craftPlanItems.map(id => {
+                    const item = allItems.find(i => i.id === id);
+                    return `
+                        <div class="item-chip">
+                            <span>${item.name}</span>
+                            <span class="remove" onclick="toggleCraftPlanItem(event, ${id})">×</span>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                bar.style.display = 'none';
+            }
+        }
+
+        function clearCraftPlanSelection() {
+            craftPlanItems = [];
+            updateCraftPlanBar();
+            renderItems();
+        }
+
+        function showCraftPlan() {
+            if (craftPlanItems.length === 0) {
+                alert('Välj minst ett tillverkningsbart föremål');
+                return;
+            }
+            craftPlanExpanded = new Set();
+            renderCraftPlanModal();
+            document.getElementById('craftPlanModal').classList.add('active');
+        }
+
+        function closeCraftPlanModal() {
+            document.getElementById('craftPlanModal').classList.remove('active');
+        }
+
+        function toggleCraftPlanExpand(itemId) {
+            if (craftPlanExpanded.has(itemId)) {
+                craftPlanExpanded.delete(itemId);
+            } else {
+                craftPlanExpanded.add(itemId);
+            }
+            renderCraftPlanModal();
+        }
+
+        // Table analog of renderReqList (used in the single-item detail view): renders each
+        // requirement as an indented row, and - unlike the detail view's CSS-only show/hide -
+        // actually re-renders on toggle, since expanding a row here must also update the
+        // combined "Sammanställning" totals below, not just reveal/hide markup.
+        function renderReqTableRows(reqs, depth) {
+            return reqs.map(req => {
+                const matStub = req.material;
+                const itemStub = itemableOf(req);
+                const target = itemStub ? resolveItem(itemStub) : (matStub ? resolveItem(matStub) : null);
+                const name = matStub?.name || itemStub?.name || 'Okänt';
+                const craftable = target && isCraftable(target);
+                const expanded = target && craftPlanExpanded.has(target.id);
+                const subRecipe = target ? recipesByItemId[target.id] : null;
+                const nestedReqs = subRecipe ? [...(subRecipe.material_requirements || []), ...(subRecipe.item_requirements || [])] : [];
+
+                let row = `
+                    <tr class="depth-row">
+                        <td class="name-cell" style="padding-left: ${depth * 20}px;">
+                            ${craftable
+                                ? `<span class="row-toggle ${expanded ? 'open' : ''}" onclick="toggleCraftPlanExpand(${target.id})">▶</span>`
+                                : `<span class="row-toggle" style="visibility: hidden;">▶</span>`}
+                            <span class="name${target ? ' linked' : ''}" ${target ? `onclick="showDetail(${target.id})"` : ''}>${name}</span>
+                        </td>
+                        <td class="qty-cell">×${req.quantity}</td>
+                    </tr>
+                `;
+                if (expanded && nestedReqs.length > 0) {
+                    row += renderReqTableRows(nestedReqs, depth + 1);
+                }
+                return row;
+            }).join('');
+        }
+
+        function renderCraftPlanTable(reqs, heading) {
+            if (!reqs || reqs.length === 0) return '';
+            return `
+                <div style="margin-bottom: 15px;">
+                    <h4 style="font-size: 0.95em; color: #666; margin-bottom: 8px;">${heading}</h4>
+                    <table class="craft-plan-table">
+                        <tbody>
+                            ${renderReqTableRows(reqs, 0)}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // Walks every selected item's requirements, substituting an expanded requirement with
+        // its own sub-requirements (quantities multiplied through), and sums the resulting
+        // leaves into a single shopping list keyed by resolved item id (or name, if unresolved).
+        function aggregateCraftPlanTotals() {
+            const totals = new Map();
+
+            function walk(reqs, multiplier) {
+                (reqs || []).forEach(req => {
+                    const matStub = req.material;
+                    const itemStub = itemableOf(req);
+                    const target = itemStub ? resolveItem(itemStub) : (matStub ? resolveItem(matStub) : null);
+                    const name = matStub?.name || itemStub?.name || 'Okänt';
+                    const qty = req.quantity * multiplier;
+
+                    if (target && craftPlanExpanded.has(target.id)) {
+                        const subRecipe = recipesByItemId[target.id];
+                        const nestedReqs = subRecipe ? [...(subRecipe.material_requirements || []), ...(subRecipe.item_requirements || [])] : [];
+                        if (nestedReqs.length > 0) {
+                            walk(nestedReqs, qty);
+                            return;
+                        }
+                    }
+
+                    const key = target ? `item:${target.id}` : `name:${name}`;
+                    const existing = totals.get(key);
+                    if (existing) {
+                        existing.quantity += qty;
+                    } else {
+                        totals.set(key, { name, quantity: qty, target });
+                    }
+                });
+            }
+
+            craftPlanItems.forEach(itemId => {
+                const recipe = recipesByItemId[itemId];
+                if (!recipe) return;
+                walk(recipe.material_requirements, 1);
+                walk(recipe.item_requirements, 1);
+            });
+
+            return [...totals.values()].sort((a, b) => a.name.localeCompare(b.name, 'sv'));
+        }
+
+        function renderCraftPlanModal() {
+            const items = craftPlanItems.map(id => allItems.find(i => i.id === id)).filter(Boolean);
+
+            const sections = items.map(item => {
+                const recipe = recipesByItemId[item.id];
+                if (!recipe) return '';
+
+                const professionHTML = (recipe.profession_requirements && recipe.profession_requirements.length > 0) ? `
+                    <div style="margin-bottom: 15px;">
+                        <h4 style="font-size: 0.95em; color: #666; margin-bottom: 8px;">Yrke</h4>
+                        <div class="stat-grid">
+                            ${recipe.profession_requirements.map(pr => `
+                                <div class="stat-item">
+                                    <div class="stat-label">${pr.profession?.name || 'Okänt yrke'}</div>
+                                    <div class="stat-value">Nivå ${pr.level}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : '';
+
+                return `
+                    <div class="craft-plan-section">
+                        <h3 class="name linked" style="cursor: pointer;" onclick="showDetail(${item.id})">${item.name}</h3>
+                        ${professionHTML}
+                        ${renderCraftPlanTable(recipe.material_requirements, 'Material')}
+                        ${renderCraftPlanTable(recipe.item_requirements, 'Föremål')}
+                    </div>
+                `;
+            }).join('');
+
+            const totals = aggregateCraftPlanTotals();
+            const totalsHTML = totals.length > 0 ? `
+                <div class="craft-plan-section">
+                    <h3 style="margin-bottom: 8px;">Sammanställning</h3>
+                    <table class="craft-plan-table">
+                        <thead>
+                            <tr><th>Namn</th><th>Antal totalt</th></tr>
+                        </thead>
+                        <tbody>
+                            ${totals.map(t => `
+                                <tr class="depth-row">
+                                    <td class="name-cell">
+                                        <span class="row-toggle" style="visibility: hidden;">▶</span>
+                                        <span class="name${t.target ? ' linked' : ''}" ${t.target ? `onclick="showDetail(${t.target.id})"` : ''}>${t.name}</span>
+                                    </td>
+                                    <td class="qty-cell">×${t.quantity}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            ` : '';
+
+            document.getElementById('craftPlanModalBody').innerHTML = sections + totalsHTML;
         }
 
         function toggleCraftReq(el) {
@@ -1641,9 +1962,16 @@
             }
         });
 
+        document.getElementById('craftPlanModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCraftPlanModal();
+            }
+        });
+
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeModal();
+                closeCraftPlanModal();
             }
         });
 
