@@ -3,6 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Bläddra, filtrera och jämför över 1 700 föremål i Lanista – vapen, rustningar, sköldar, smycken och material med fullständiga stats och craft-recept.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://felixosth.github.io/lanista-scripts/">
+    <meta property="og:title" content="Lanista Item Browser">
+    <meta property="og:description" content="Bläddra, filtrera och jämför över 1 700 föremål i Lanista – vapen, rustningar, sköldar, smycken och material med fullständiga stats och craft-recept.">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Lanista Item Browser">
+    <meta name="twitter:description" content="Bläddra, filtrera och jämför över 1 700 föremål i Lanista – vapen, rustningar, sköldar, smycken och material med fullständiga stats och craft-recept.">
     <title>Lanista Item Browser</title>
     <style>
         * {
@@ -1003,6 +1011,7 @@
         let currentPage = 1;
         let currentModalItemId = null;
         let restoringFromURL = false;
+        const DEFAULT_TITLE = 'Lanista Item Browser';
 
         const typeNames = {
             'weapon': 'Vapen',
@@ -1845,6 +1854,7 @@
             `;
 
             document.getElementById('modalTitle').textContent = item.name;
+            document.title = `${item.name} – ${DEFAULT_TITLE}`;
             document.getElementById('modalBody').innerHTML = html;
             document.getElementById('itemModal').classList.add('active');
 
@@ -1876,6 +1886,7 @@
         function closeModal() {
             document.getElementById('itemModal').classList.remove('active');
             currentModalItemId = null;
+            document.title = DEFAULT_TITLE;
             updateURL();
         }
 
