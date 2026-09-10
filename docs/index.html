@@ -1042,9 +1042,9 @@
         // unique-id items in allItems (matched by name, disambiguated by other fields),
         // and collect each canonical item's real recipe (materials, sub-items, profession,
         // coins, time) wherever it appears embedded in the data.
-        let itemsById = {};
+        let itemsByKey = {};
         let itemsByName = {};
-        let recipesByItemId = {};
+        let recipesByKey = {};
 
         function resolveItem(stub) {
             if (!stub || !stub.name) return null;
@@ -1079,21 +1079,21 @@
         }
 
         function isCraftable(item) {
-            const recipe = recipesByItemId[item.id];
+            const recipe = recipesByKey[item.key];
             return !!recipe && hasRecipeData(recipe);
         }
 
         function indexRecipeStub(stub) {
             const canonical = resolveItem(stub);
             if (!canonical) return;
-            const existing = recipesByItemId[canonical.id];
+            const existing = recipesByKey[canonical.key];
             // The same item can turn up both as a bare item_requirements reference and,
             // elsewhere, as a fully-embedded recipe (material_requirements/profession/etc.) -
             // and which one is encountered first depends on array order, not usefulness.
             // Never let a bare stub displace a real recipe, but do let a real recipe replace
             // an earlier bare stub.
             if (existing && (hasRecipeData(existing) || !hasRecipeData(stub))) return;
-            recipesByItemId[canonical.id] = stub;
+            recipesByKey[canonical.key] = stub;
             (stub.material_requirements || []).forEach(req => { const it = itemableOf(req); if (it) indexRecipeStub(it); });
             (stub.item_requirements || []).forEach(req => { const it = itemableOf(req); if (it) indexRecipeStub(it); });
         }
@@ -1109,12 +1109,12 @@
         fetch('lanista_items_detailed.json')
             .then(response => response.json())
             .then(data => {
-                allItems = data.map(item => ({
-                    ...item,
-                    type: getItemType(item)
-                }));
+                allItems = data.map(item => {
+                    const type = getItemType(item);
+                    return { ...item, type, key: `${type}:${item.id}` };
+                });
                 allItems.forEach(item => {
-                    itemsById[item.id] = item;
+                    itemsByKey[item.key] = item;
                     (itemsByName[item.name] = itemsByName[item.name] || []).push(item);
                 });
                 buildRecipeIndex();
@@ -1270,9 +1270,9 @@
 
             applyFilters();
 
-            const itemId = parseInt(params.get('item'));
-            if (itemId) {
-                showDetail(itemId);
+            const itemKey = params.get('item');
+            if (itemKey) {
+                showDetail(itemKey);
             } else {
                 closeModal();
             }
@@ -1302,7 +1302,7 @@
 
             const container = document.getElementById('gridContainer');
             container.innerHTML = pageItems.map(item => `
-                <div class="item-card ${selectedItems.includes(item.id) ? 'selected' : ''}" onclick="showDetail(${item.id})">
+                <div class="item-card ${selectedItems.includes(item.key) ? 'selected' : ''}" onclick="showDetail('${item.key}')">
                     <div class="item-image">
                         ${item.asset?.url ? `<img src="${item.asset.url}" alt="${item.name}">` : ''}
                     </div>
@@ -1312,7 +1312,7 @@
                         <div class="item-stats">
                             ${getItemStatsHTML(item)}
                         </div>
-                        <button class="compare-btn" onclick="event.stopPropagation(); selectItem(event, ${item.id})">+ Markera</button>
+                        <button class="compare-btn" onclick="event.stopPropagation(); selectItem(event, '${item.key}')">+ Markera</button>
                     </div>
                 </div>
             `).join('');
@@ -1327,7 +1327,7 @@
 
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = pageItems.map(item => `
-                <tr class="${selectedItems.includes(item.id) ? 'selected' : ''}" onclick="showDetail(${item.id})">
+                <tr class="${selectedItems.includes(item.key) ? 'selected' : ''}" onclick="showDetail('${item.key}')">
                     <td>
                         <div class="item-row-name">
                             ${item.asset?.url ? `<div class="item-row-image"><img src="${item.asset.url}" alt="${item.name}"></div>` : ''}
@@ -1338,7 +1338,7 @@
                     <td>${getItemLevel(item)}</td>
                     <td>${getSellValue(item).toLocaleString('sv-SE')}</td>
                     <td style="text-align: center;">
-                        <button class="compare-btn" onclick="event.stopPropagation(); selectItem(event, ${item.id})">+ Markera</button>
+                        <button class="compare-btn" onclick="event.stopPropagation(); selectItem(event, '${item.key}')">+ Markera</button>
                     </td>
                 </tr>
             `).join('');
@@ -1395,12 +1395,12 @@
             window.scrollTo(0, 0);
         }
 
-        function selectItem(event, itemId) {
+        function selectItem(event, itemKey) {
             event.stopPropagation();
-            if (selectedItems.includes(itemId)) {
-                selectedItems = selectedItems.filter(id => id !== itemId);
+            if (selectedItems.includes(itemKey)) {
+                selectedItems = selectedItems.filter(key => key !== itemKey);
             } else {
-                selectedItems.push(itemId);
+                selectedItems.push(itemKey);
             }
             updateComparisonBar();
             renderItems();
@@ -1412,12 +1412,12 @@
 
             if (selectedItems.length > 0) {
                 bar.style.display = 'flex';
-                display.innerHTML = selectedItems.map(id => {
-                    const item = allItems.find(i => i.id === id);
+                display.innerHTML = selectedItems.map(key => {
+                    const item = itemsByKey[key];
                     return `
                         <div class="item-chip">
                             <span>${item.name}</span>
-                            <span class="remove" onclick="selectItem(event, ${id})">×</span>
+                            <span class="remove" onclick="selectItem(event, '${key}')">×</span>
                         </div>
                     `;
                 }).join('');
@@ -1428,7 +1428,7 @@
 
         function craftPlanSelection() {
             return selectedItems
-                .map(id => allItems.find(i => i.id === id))
+                .map(key => itemsByKey[key])
                 .filter(item => item && isCraftable(item));
         }
 
@@ -1466,17 +1466,17 @@
                 const target = itemStub ? resolveItem(itemStub) : (matStub ? resolveItem(matStub) : null);
                 const name = matStub?.name || itemStub?.name || 'Okänt';
                 const craftable = target && isCraftable(target);
-                const expanded = target && craftPlanExpanded.has(target.id);
-                const subRecipe = target ? recipesByItemId[target.id] : null;
+                const expanded = target && craftPlanExpanded.has(target.key);
+                const subRecipe = target ? recipesByKey[target.key] : null;
                 const nestedReqs = subRecipe ? [...(subRecipe.material_requirements || []), ...(subRecipe.item_requirements || [])] : [];
 
                 let row = `
                     <tr class="depth-row">
                         <td class="name-cell" style="padding-left: ${depth * 20}px;">
                             ${craftable
-                                ? `<span class="row-toggle ${expanded ? 'open' : ''}" onclick="toggleCraftPlanExpand(${target.id})">▶</span>`
+                                ? `<span class="row-toggle ${expanded ? 'open' : ''}" onclick="toggleCraftPlanExpand('${target.key}')">▶</span>`
                                 : `<span class="row-toggle" style="visibility: hidden;">▶</span>`}
-                            <span class="name${target ? ' linked' : ''}" ${target ? `onclick="showDetail(${target.id})"` : ''}>${name}</span>
+                            <span class="name${target ? ' linked' : ''}" ${target ? `onclick="showDetail('${target.key}')"` : ''}>${name}</span>
                         </td>
                         <td class="qty-cell">×${req.quantity}</td>
                     </tr>
@@ -1516,8 +1516,8 @@
                     const name = matStub?.name || itemStub?.name || 'Okänt';
                     const qty = req.quantity * multiplier;
 
-                    if (target && craftPlanExpanded.has(target.id)) {
-                        const subRecipe = recipesByItemId[target.id];
+                    if (target && craftPlanExpanded.has(target.key)) {
+                        const subRecipe = recipesByKey[target.key];
                         const nestedReqs = subRecipe ? [...(subRecipe.material_requirements || []), ...(subRecipe.item_requirements || [])] : [];
                         if (nestedReqs.length > 0) {
                             walk(nestedReqs, qty);
@@ -1525,7 +1525,7 @@
                         }
                     }
 
-                    const key = target ? `item:${target.id}` : `name:${name}`;
+                    const key = target ? `item:${target.key}` : `name:${name}`;
                     const existing = totals.get(key);
                     if (existing) {
                         existing.quantity += qty;
@@ -1536,7 +1536,7 @@
             }
 
             craftPlanSelection().forEach(item => {
-                const recipe = recipesByItemId[item.id];
+                const recipe = recipesByKey[item.key];
                 if (!recipe) return;
                 walk(recipe.material_requirements, 1);
                 walk(recipe.item_requirements, 1);
@@ -1549,7 +1549,7 @@
             const items = craftPlanSelection();
 
             const sections = items.map(item => {
-                const recipe = recipesByItemId[item.id];
+                const recipe = recipesByKey[item.key];
                 if (!recipe) return '';
 
                 const professionHTML = (recipe.profession_requirements && recipe.profession_requirements.length > 0) ? `
@@ -1568,7 +1568,7 @@
 
                 return `
                     <div class="craft-plan-section">
-                        <h3 class="name linked" style="cursor: pointer;" onclick="showDetail(${item.id})">${item.name}</h3>
+                        <h3 class="name linked" style="cursor: pointer;" onclick="showDetail('${item.key}')">${item.name}</h3>
                         ${professionHTML}
                         ${renderCraftPlanTable(recipe.material_requirements, 'Material')}
                         ${renderCraftPlanTable(recipe.item_requirements, 'Föremål')}
@@ -1589,7 +1589,7 @@
                                 <tr class="depth-row">
                                     <td class="name-cell">
                                         <span class="row-toggle" style="visibility: hidden;">▶</span>
-                                        <span class="name${t.target ? ' linked' : ''}" ${t.target ? `onclick="showDetail(${t.target.id})"` : ''}>${t.name}</span>
+                                        <span class="name${t.target ? ' linked' : ''}" ${t.target ? `onclick="showDetail('${t.target.key}')"` : ''}>${t.name}</span>
                                     </td>
                                     <td class="qty-cell">×${t.quantity}</td>
                                 </tr>
@@ -1609,8 +1609,8 @@
             el.classList.toggle('open', !open);
         }
 
-        function showDetail(itemId) {
-            const item = allItems.find(i => i.id === itemId);
+        function showDetail(itemKey) {
+            const item = itemsByKey[itemKey];
             if (!item) return;
 
             const level = getItemLevel(item);
@@ -1754,8 +1754,7 @@
                     ` : ''}
 
                     ${(() => {
-                        if (item.is_material) return '';
-                        const recipe = recipesByItemId[item.id];
+                        const recipe = recipesByKey[item.key];
                         if (!recipe) return '';
                         const hasMaterials = recipe.material_requirements && recipe.material_requirements.length > 0;
                         const hasItems = recipe.item_requirements && recipe.item_requirements.length > 0;
@@ -1767,14 +1766,14 @@
                                 const itemStub = itemableOf(req);
                                 const target = itemStub ? resolveItem(itemStub) : (matStub ? resolveItem(matStub) : null);
                                 const name = matStub?.name || itemStub?.name || 'Okänt';
-                                const subRecipe = target ? recipesByItemId[target.id] : null;
+                                const subRecipe = target ? recipesByKey[target.key] : null;
                                 const nestedReqs = [...(subRecipe?.material_requirements || []), ...(subRecipe?.item_requirements || [])];
                                 const hasNested = nestedReqs.length > 0;
 
                                 return `
                                     <div class="craft-node">
                                         <span class="craft-chip">
-                                            <span class="name${target ? ' linked' : ''}" ${target ? `onclick="showDetail(${target.id})"` : ''}>${name}</span>
+                                            <span class="name${target ? ' linked' : ''}" ${target ? `onclick="showDetail('${target.key}')"` : ''}>${name}</span>
                                             <span class="qty">×${req.quantity}</span>
                                             ${hasNested ? `<span class="toggle" onclick="toggleCraftReq(this)">▶</span>` : ''}
                                         </span>
@@ -1821,13 +1820,13 @@
 
 
                     ${(() => {
-                        const usedIn = findItemsUsingIngredient(item.id);
+                        const usedIn = findItemsUsingIngredient(item.key);
                         return usedIn.length > 0 ? `
                             <div class="detail-section">
                                 <h3>Används i</h3>
                                 <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                                     ${usedIn.map(used => `
-                                        <div style="padding: 6px 12px; background: #f0ede8; border-radius: 4px; cursor: pointer; font-size: 0.9em;" onclick="showDetail(${used.id})">
+                                        <div style="padding: 6px 12px; background: #f0ede8; border-radius: 4px; cursor: pointer; font-size: 0.9em;" onclick="showDetail('${used.key}')">
                                             ${used.name}
                                         </div>
                                     `).join('')}
@@ -1849,25 +1848,25 @@
             document.getElementById('modalBody').innerHTML = html;
             document.getElementById('itemModal').classList.add('active');
 
-            currentModalItemId = itemId;
+            currentModalItemId = itemKey;
             updateURL(true);
         }
 
-        function findItemsUsingIngredient(ingredientId) {
+        function findItemsUsingIngredient(ingredientKey) {
             const usedIn = [];
-            for (const idKey in recipesByItemId) {
-                const recipe = recipesByItemId[idKey];
+            for (const key in recipesByKey) {
+                const recipe = recipesByKey[key];
                 const usesIt = (recipe.material_requirements || []).some(req => {
                     const target = req.material ? resolveItem(req.material) : null;
-                    return target && target.id === ingredientId;
+                    return target && target.key === ingredientKey;
                 }) || (recipe.item_requirements || []).some(req => {
                     const stub = itemableOf(req);
                     const target = stub ? resolveItem(stub) : null;
-                    return target && target.id === ingredientId;
+                    return target && target.key === ingredientKey;
                 });
                 if (usesIt) {
-                    const craftedItem = itemsById[idKey];
-                    if (craftedItem && craftedItem.id !== ingredientId) usedIn.push(craftedItem);
+                    const craftedItem = itemsByKey[key];
+                    if (craftedItem && craftedItem.key !== ingredientKey) usedIn.push(craftedItem);
                 }
             }
             usedIn.sort((a, b) => a.name.localeCompare(b.name, 'sv'));
@@ -1905,7 +1904,7 @@
                 return;
             }
 
-            const items = selectedItems.map(id => allItems.find(i => i.id === id)).filter(Boolean);
+            const items = selectedItems.map(key => itemsByKey[key]).filter(Boolean);
             const comparisonContent = document.getElementById('comparisonContent');
             const level = item => { const l = getItemLevel(item); return l === '' ? null : l; };
 
@@ -1954,7 +1953,7 @@
                             <tr>
                                 <th style="width: 200px;">Egenskaper</th>
                                 ${items.map(item => `
-                                    <th onclick="showDetail(${item.id})">
+                                    <th onclick="showDetail('${item.key}')">
                                         <div class="comparison-item-cell">
                                             ${item.asset?.url ? `<div class="comparison-item-image"><img src="${item.asset.url}" alt="${item.name}"></div>` : ''}
                                             <div>${item.name}</div>
@@ -1980,14 +1979,14 @@
                  ...(item.enchant_modifiers || []).map(m => [m.enchantable_name, m.enchant_value_display])]
                     .forEach(([name, display]) => {
                         if (!bonusRows.has(name)) bonusRows.set(name, new Map());
-                        bonusRows.get(name).set(item.id, { display, numeric: parseFloat(display) });
+                        bonusRows.get(name).set(item.key, { display, numeric: parseFloat(display) });
                     });
             });
 
             if (bonusRows.size > 0) {
                 html += `<tr class="comparison-section-row"><td colspan="${items.length + 1}">Bonusar</td></tr>`;
-                bonusRows.forEach((byItemId, name) => {
-                    const values = items.map(item => byItemId.get(item.id) || { display: null, numeric: null });
+                bonusRows.forEach((byItemKey, name) => {
+                    const values = items.map(item => byItemKey.get(item.key) || { display: null, numeric: null });
                     html += renderRow(name, values);
                 });
             }
