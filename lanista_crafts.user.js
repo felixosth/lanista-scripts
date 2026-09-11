@@ -1210,6 +1210,7 @@
 			won: participant.won,
 			fighterName: participant.fighter.name,
 			opponents: Array.from(enemyNames),
+			roundCount: (battle.rounds || []).length,
 			damageDone: own.damage_done,
 			maxDamageDone: own.max_damage_done,
 			damageTaken: own.damage_taken,
@@ -1330,6 +1331,7 @@
 			totalOwnFumbled: sumOwnAttacks('fumbled'),
 			totalOwnDodgedByOpponent: sumOwnAttacks('dodgedByOpponent'),
 			totalOwnBlockedByOpponent: sumOwnAttacks('blockedByOpponent'),
+			totalRounds: sum('roundCount'),
 			avgDamageDone: sum('damageDone') / battles.length,
 			wins,
 			decided: decided.length
@@ -1354,7 +1356,11 @@
 			describe: (summary, rate) => `Du anföll först i bara ${formatPercent(summary.totalAttackedFirstCount, summary.totalAttackedFirstRounds)} av ronderna (${summary.totalAttackedFirstCount}/${summary.totalAttackedFirstRounds}).`
 		},
 		{
-			stat: 'Vapenfärdighet (eller byt taktik)',
+			// The in-game Egenskapsguide (Vapenfärdigheter page, confirmed live) says a weapon
+			// used with too little skill "kommer du att missa nästan alla attacker", and gives its
+			// own fix as "lägg poäng i vapenfärdighet" OR switch to the Lätta attacker tactic - both
+			// named here rather than just "byt taktik" since the game itself is that specific.
+			stat: 'Vapenfärdighet (eller taktiken Lätta attacker)',
 			minSample: 12,
 			sample: (summary) => summary.totalOwnAttempts,
 			rate: (summary) => summary.totalOwnFumbled / summary.totalOwnAttempts,
@@ -1366,7 +1372,27 @@
 			describe: (summary, rate) => `Dina attacker missade helt ${formatPercent(summary.totalOwnFumbled, summary.totalOwnAttempts)} av gångerna (${summary.totalOwnFumbled}/${summary.totalOwnAttempts}) - utöver det som motståndaren undvek eller blockerade.`
 		},
 		{
-			stat: 'Uthållighet (eller en försiktigare taktik)',
+			// Undvika Anfall (confirmed live via the same guide) is explicitly "din chans att ducka
+			// eller undvika motståndarens attacker" - the direct counterpart to the fumble rule
+			// above, but for damage coming IN rather than going out. Uthållighet does NOT belong
+			// here: its own guide page says it only governs how many rounds you can fight before
+			// giving up from exhaustion, nothing about mitigating damage per hit - an earlier
+			// version of this rule pointed at Uthållighet, which was wrong.
+			stat: 'Undvika Anfall',
+			minSample: 12,
+			sample: (summary) => summary.totalAttacksAgainst,
+			rate: (summary) => (summary.totalDodges + summary.totalBlocks) / summary.totalAttacksAgainst,
+			direction: 'below',
+			threshold: 0.35,
+			worstAt: 0.05,
+			describe: (summary, rate) => `Du undvek eller blockerade bara ${formatPercent(summary.totalDodges + summary.totalBlocks, summary.totalAttacksAgainst)} av attackerna mot dig (${summary.totalDodges + summary.totalBlocks}/${summary.totalAttacksAgainst}).`
+		},
+		{
+			// Styrka/Bashälsa (not Uthållighet, see above) are what the guide ties to dealing more
+			// damage and surviving more of it respectively - this rule just flags that the ratio is
+			// bad, it's the describe() text's job to point at the two actual levers plus a tactic
+			// change, since which of those three fits best isn't something battle stats alone settle.
+			stat: 'Styrka eller Bashälsa (eller en försiktigare taktik)',
 			minSample: 1,
 			sample: (summary) => summary.totalDamageDone,
 			rate: (summary) => summary.totalDamageTaken / summary.totalDamageDone,
@@ -1810,6 +1836,27 @@
 		return wrap;
 	}
 
+	// Crit rate and rounds/damage-per-round are shown as plain info, never as a scored
+	// suggestion - the in-game Egenskapsguide (walked through page by page, confirmed live) does
+	// not tie critical hit chance to any specific egenskap, and gives no baseline for what counts
+	// as "too many" rounds or "too little" damage per round, so scoring either against an invented
+	// threshold would be exactly the kind of unverified guess that turned out wrong for Tur/crit
+	// and Uthållighet/damage-taken above.
+	function buildInfoStatsLine(summary) {
+		const parts = [];
+		if (summary.totalHitsLandedByOwnSide) {
+			parts.push(`Kritiska träffar: ${formatPercent(summary.totalCriticalHits, summary.totalHitsLandedByOwnSide)} (${summary.totalCriticalHits}/${summary.totalHitsLandedByOwnSide})`);
+		}
+		if (summary.totalRounds) {
+			parts.push(`${(summary.totalRounds / summary.count).toFixed(1)} rondar/match · ${(summary.totalDamageDone / summary.totalRounds).toFixed(1)} skada/rond`);
+		}
+		if (!parts.length) return null;
+		const line = document.createElement('p');
+		line.className = 'text-muted-foreground text-xs';
+		line.textContent = parts.join(' · ');
+		return line;
+	}
+
 	// Bars read oldest-to-newest, left to right (the opposite order from the dot strip and table
 	// below, which both stay in the API's own newest-first order) - a trend is only readable as a
 	// trend if time runs left to right, the same convention buildRoundTimelineSvg already uses for
@@ -1972,6 +2019,8 @@
 		const colors = { ...getBankColors(), ...getResultColors() };
 
 		container.appendChild(buildFormStrip(battles, summary, colors));
+		const infoLine = buildInfoStatsLine(summary);
+		if (infoLine) container.appendChild(infoLine);
 		container.appendChild(buildDamageChartCard(battles, colors));
 		container.appendChild(buildSuggestionsCard(summary, colors));
 		container.appendChild(buildMatchTable(battles));
