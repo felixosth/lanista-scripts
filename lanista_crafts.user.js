@@ -1138,32 +1138,36 @@
 	}
 
 	// Unlike computeAttackedFirst (only a round's first entry, only in a 1v1), this tallies every
-	// combat-resolution entry across every round, for any battle shape - each of these five
-	// categories is one where args.player_one names the attacker of a resolved attack (confirmed
-	// live alongside computeAttackedFirst above): "miss" is the attacker whiffing entirely (a
-	// "fumla" in the site's own battle text - explicitly a different failure than the defender
-	// evading), "dodge" and the block/absorb categories are the defender's doing, not the
-	// attacker's, and "attack"/"attack_with_armor_block"/"attack_glancing_dodge" are hits that
-	// connected (in full, armor-reduced, or glancing). Keeping fumbled separate from
-	// dodgedByOpponent/blockedByOpponent is the whole point: a high miss rate points at the
-	// attacker's own weapon skill, while a high dodge/block rate against them is about the
-	// opponent's evasion, not something more weapon skill fixes.
-	const OWN_ATTACK_OUTCOME_CATEGORIES = {
-		attack: 'landed',
-		attack_with_armor_block: 'landed',
-		attack_glancing_dodge: 'landed',
-		miss: 'fumbled',
-		dodge: 'dodgedByOpponent',
-		weapon_block: 'blockedByOpponent',
-		shield_block: 'blockedByOpponent',
-		shield_absorb: 'blockedByOpponent'
-	};
+	// combat-resolution entry across every round, for any battle shape - every category this
+	// resolves names the attacker of a resolved attack in args.player_one (confirmed live
+	// alongside computeAttackedFirst above). Rule-based rather than an exact-match table because
+	// a live sweep across 16 real battles turned up far more variants than the original four
+	// categories covered: any "*_partial_miss" category (attack_partial_miss,
+	// attack_with_armor_block_partial_miss, weapon_block_partial_miss,
+	// shield_absorb_partial_miss, ...) still carries a real damage figure - the attacker still
+	// connects for reduced damage - but the category name and the reported live case both agree
+	// it's a fumble outcome, not a landed hit; "miss"/"ranged_miss" are the attacker whiffing
+	// entirely (a "fumla" in the site's own battle text); "dodge" and the block/absorb categories
+	// (without a partial-miss suffix) are the defender's doing, not the attacker's; every other
+	// "attack*" or "ranged" category is a hit that connected (in full, armor-reduced, glancing, or
+	// some combination). Keeping fumbled separate from dodgedByOpponent/blockedByOpponent is the
+	// whole point: a high miss rate points at the attacker's own weapon skill, while a high
+	// dodge/block rate against them is about the opponent's evasion, not something more weapon
+	// skill fixes.
+	function classifyAttackOutcome(category) {
+		if (category.includes('partial_miss')) return 'fumbled';
+		if (category === 'miss' || category === 'ranged_miss') return 'fumbled';
+		if (category === 'dodge') return 'dodgedByOpponent';
+		if (category === 'weapon_block' || category === 'shield_block' || category === 'shield_absorb') return 'blockedByOpponent';
+		if (category === 'ranged' || category.startsWith('attack')) return 'landed';
+		return null;
+	}
 
 	function computeOwnAttackOutcomes(battle, fighterName) {
 		const outcomes = { landed: 0, fumbled: 0, dodgedByOpponent: 0, blockedByOpponent: 0 };
 		let total = 0;
 		(battle.rounds || []).forEach((round) => (round.text || []).forEach((entry) => {
-			const bucket = OWN_ATTACK_OUTCOME_CATEGORIES[entry.key.split('.')[1]];
+			const bucket = classifyAttackOutcome(entry.key.split('.')[1]);
 			if (!bucket || !entry.args || stripSideTags(entry.args.player_one) !== fighterName) return;
 			outcomes[bucket]++;
 			total++;
@@ -1180,7 +1184,7 @@
 	function computeOpponentWeapons(battle, enemyNames) {
 		const weapons = new Set();
 		(battle.rounds || []).forEach((round) => (round.text || []).forEach((entry) => {
-			if (!OWN_ATTACK_OUTCOME_CATEGORIES[entry.key.split('.')[1]]) return;
+			if (!classifyAttackOutcome(entry.key.split('.')[1])) return;
 			if (!entry.args || !entry.args.weapon || entry.args.weapon === 'N/A') return;
 			if (!enemyNames.has(stripSideTags(entry.args.player_one))) return;
 			// Confirmed live: some weapon names carry stray leading/trailing whitespace in the
@@ -1781,9 +1785,27 @@
 		heading.textContent = `${avatarName} - analys av senaste matcherna`;
 		body.appendChild(heading);
 
+		// A plain client-side view filter over whatever's already been fetched, not a re-fetch -
+		// "Visa fler" still pulls real, unfiltered matches (so the fetched count matches what was
+		// asked for), this just hides odjur/lagspel (odjur) fights from every card below when
+		// checked. type_display is "Odjur" for a solo monster hunt and "Lagspel (Odjur)" for a
+		// team one (both confirmed live) - matching on "odjur" case-insensitively covers both
+		// without needing to enumerate every team-battle label the server might use.
+		const excludeBotsLabel = document.createElement('label');
+		excludeBotsLabel.className = 'flex items-center gap-1.5 text-xs text-muted-foreground';
+		const excludeBotsCheckbox = document.createElement('input');
+		excludeBotsCheckbox.type = 'checkbox';
+		excludeBotsLabel.append(excludeBotsCheckbox, document.createTextNode('Exkludera strider mot odjur'));
+		body.appendChild(excludeBotsLabel);
+
 		const resultsContainer = document.createElement('div');
 		resultsContainer.className = 'space-y-3';
 		body.appendChild(resultsContainer);
+
+		excludeBotsCheckbox.addEventListener('change', () => {
+			state.excludeBots = excludeBotsCheckbox.checked;
+			renderAnalyzerResults(resultsContainer, state, loadMore);
+		});
 
 		backdrop.lanistaKeyHandler = (event) => {
 			if (event.key === 'Escape') closeAnalyzerModal(backdrop);
@@ -1796,6 +1818,7 @@
 		document.body.appendChild(backdrop);
 
 		const state = createBattleState(avatarId);
+		state.excludeBots = false;
 
 		function showStatus(text) {
 			resultsContainer.innerHTML = '';
@@ -2085,12 +2108,22 @@
 	}
 
 	function renderAnalyzerResults(container, state, loadMore) {
-		const battles = state.battles;
 		container.innerHTML = '';
-		if (!battles.length) {
+		if (!state.battles.length) {
 			const empty = document.createElement('div');
 			empty.className = 'text-muted-foreground text-xs';
 			empty.textContent = 'Ingen matchdata hittades.';
+			container.appendChild(empty);
+			return;
+		}
+
+		const battles = state.excludeBots
+			? state.battles.filter((battle) => !/odjur/i.test(battle.typeDisplay || ''))
+			: state.battles;
+		if (!battles.length) {
+			const empty = document.createElement('div');
+			empty.className = 'text-muted-foreground text-xs';
+			empty.textContent = 'Alla hämtade matcher var mot odjur - avmarkera filtret eller hämta fler matcher.';
 			container.appendChild(empty);
 			return;
 		}
