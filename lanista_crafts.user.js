@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.17.0
+// @version     1.18.0
 //
 // @match       https://lanista.se/game/*
 // @match       https://lanista.se/
@@ -1462,6 +1462,10 @@
 			const key = battle.tacticName || 'OKÄND';
 			const entry = byTactic.get(key) || {
 				tacticName: battle.tacticName,
+				// Kept alongside the accumulated sums below (not instead of them) so the renderer
+				// can run tallyByKeys(battles, ...) per tactic for the opponent-race breakdown,
+				// without this function needing to know anything about races itself.
+				battles: [],
 				count: 0,
 				wins: 0,
 				decided: 0,
@@ -1479,6 +1483,7 @@
 				lowestHpPercentSum: 0,
 				lowestHpPercentCount: 0
 			};
+			entry.battles.push(battle);
 			entry.count++;
 			if (battle.won === true || battle.won === false) {
 				entry.decided++;
@@ -2105,6 +2110,17 @@
 				group.opponentAttempts ? `Fumlade: ${formatPercent(group.opponentFumbled, group.opponentAttempts)}` : null,
 				group.ownAttempts ? `Undvek dig: ${formatPercent(group.dodgedOrBlockedByOpponent, group.ownAttempts)}` : null
 			]));
+
+			// Same tallyByKeys used for the overall "Vinst mot ras" card, just scoped to this
+			// tactic's own duels - answers "does this tactic hold up against every race I've
+			// faced with it, or only some", which the overall race card can't show on its own
+			// since it mixes every tactic together.
+			const raceTally = tallyByKeys(group.battles, (battle) => battle.opponentAvatarIds.map((id) => opponentRaceCache.get(id)));
+			if (raceTally.length) {
+				sides.appendChild(tacticSideBlock('Mot ras', raceTally.slice(0, 5).map((entry) =>
+					`${entry.key}: ${formatPercent(entry.wins, entry.total)} (${entry.wins}/${entry.total})`
+				)));
+			}
 
 			panel.appendChild(sides);
 			wrap.appendChild(panel);
