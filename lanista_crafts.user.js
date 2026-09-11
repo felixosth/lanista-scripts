@@ -1341,9 +1341,21 @@
 	// Thresholds below are deliberately conservative (a small sample shouldn't scream "hög" at
 	// someone) and are the whole tuning surface for computeSuggestions - if the advice reads as
 	// over- or under-eager in practice, adjust these numbers rather than the scoring logic.
+	// Tactics summary below is from the game's own wiki (user-supplied, not assumed) - each
+	// SUGGESTION_RULES entry's stat label names the matching tactic alongside the egenskap
+	// wherever the wiki confirms that tactic actually moves the same thing the rule measures:
+	// - Offensiv: +initiativ/provokation (gear-only), -parera/blockera/undvika
+	// - Defensiv: +parera/blockera/undvika, -initiativ/provokation
+	// - Bärsärk: +initiativ/provokation (more than Offensiv), -parera/undvika/sköldblockera/
+	//   träffsäkerhet, +5% skada tagen
+	// - Tunga attacker: +skada, -träffsäkerhet, -initiativ något, -perfekta träffar (måttligt)
+	// - Lätta attacker: -skada, +träffsäkerhet, +initiativ något, +perfekta träffar (litet, upp
+	//   till spelarens "pt-potential")
 	const SUGGESTION_RULES = [
 		{
-			stat: 'Initiativstyrka',
+			// Offensiv and Bärsärk both raise initiative per the tactics summary above, so a low
+			// attack-first rate has a tactic-side fix too, not just points in Initiativstyrka.
+			stat: 'Initiativstyrka (eller en mer offensiv taktik)',
 			minSample: 6,
 			sample: (summary) => summary.totalAttackedFirstRounds,
 			rate: (summary) => summary.totalAttackedFirstCount / summary.totalAttackedFirstRounds,
@@ -1359,7 +1371,9 @@
 			// The in-game Egenskapsguide (Vapenfärdigheter page, confirmed live) says a weapon
 			// used with too little skill "kommer du att missa nästan alla attacker", and gives its
 			// own fix as "lägg poäng i vapenfärdighet" OR switch to the Lätta attacker tactic - both
-			// named here rather than just "byt taktik" since the game itself is that specific.
+			// named here rather than just "byt taktik" since the game itself is that specific. The
+			// tactics summary confirms it from the other side too: Lätta attacker "ökar din
+			// träffsäkerhet", Tunga attacker "minskar din träffsäkerhet".
 			stat: 'Vapenfärdighet (eller taktiken Lätta attacker)',
 			minSample: 12,
 			sample: (summary) => summary.totalOwnAttempts,
@@ -1377,8 +1391,10 @@
 			// above, but for damage coming IN rather than going out. Uthållighet does NOT belong
 			// here: its own guide page says it only governs how many rounds you can fight before
 			// giving up from exhaustion, nothing about mitigating damage per hit - an earlier
-			// version of this rule pointed at Uthållighet, which was wrong.
-			stat: 'Undvika Anfall',
+			// version of this rule pointed at Uthållighet, which was wrong. Defensiv raises
+			// parera/blockera/undvika directly (Offensiv/Bärsärk lower it), so that's the tactic
+			// half of this suggestion.
+			stat: 'Undvika Anfall (eller en mer defensiv taktik)',
 			minSample: 12,
 			sample: (summary) => summary.totalAttacksAgainst,
 			rate: (summary) => (summary.totalDodges + summary.totalBlocks) / summary.totalAttacksAgainst,
@@ -1389,10 +1405,10 @@
 		},
 		{
 			// Styrka/Bashälsa (not Uthållighet, see above) are what the guide ties to dealing more
-			// damage and surviving more of it respectively - this rule just flags that the ratio is
-			// bad, it's the describe() text's job to point at the two actual levers plus a tactic
-			// change, since which of those three fits best isn't something battle stats alone settle.
-			stat: 'Styrka eller Bashälsa (eller en försiktigare taktik)',
+			// damage and surviving more of it respectively. Bärsärk explicitly adds +5% skada
+			// tagen on top of cutting undvika/blockera/parera, and Offensiv cuts the same three, so
+			// a less aggressive tactic is a real third lever here, not a vague hedge.
+			stat: 'Styrka eller Bashälsa (eller en mindre offensiv taktik)',
 			minSample: 1,
 			sample: (summary) => summary.totalDamageDone,
 			rate: (summary) => summary.totalDamageTaken / summary.totalDamageDone,
@@ -1836,16 +1852,18 @@
 		return wrap;
 	}
 
-	// Crit rate and rounds/damage-per-round are shown as plain info, never as a scored
-	// suggestion - the in-game Egenskapsguide (walked through page by page, confirmed live) does
-	// not tie critical hit chance to any specific egenskap, and gives no baseline for what counts
-	// as "too many" rounds or "too little" damage per round, so scoring either against an invented
-	// threshold would be exactly the kind of unverified guess that turned out wrong for Tur/crit
-	// and Uthållighet/damage-taken above.
+	// Crit ("perfekt träff") rate and rounds/damage-per-round are shown as plain info, never as a
+	// scored suggestion - no egenskap governs perfekt träff-chansen (the Egenskapsguide, walked
+	// through page by page, never ties it to one; confirmed Tur doesn't either). The user-supplied
+	// tactics wiki instead ties it to the Tunga/Lätta attacker secondary tactic (Lätta raises it
+	// a little, Tunga lowers it, capped by the player's own "pt-potential") - a real lever, just
+	// not a points one, and with no stated baseline for what rate counts as low. Rounds/damage-
+	// per-round has no stated baseline either, so it stays informational too rather than another
+	// invented threshold like the Tur/crit and Uthållighet/damage-taken mistakes above.
 	function buildInfoStatsLine(summary) {
 		const parts = [];
 		if (summary.totalHitsLandedByOwnSide) {
-			parts.push(`Kritiska träffar: ${formatPercent(summary.totalCriticalHits, summary.totalHitsLandedByOwnSide)} (${summary.totalCriticalHits}/${summary.totalHitsLandedByOwnSide})`);
+			parts.push(`Perfekta träffar: ${formatPercent(summary.totalCriticalHits, summary.totalHitsLandedByOwnSide)} (${summary.totalCriticalHits}/${summary.totalHitsLandedByOwnSide}, påverkas av Tunga/Lätta attacker-taktiken, inte en egenskap)`);
 		}
 		if (summary.totalRounds) {
 			parts.push(`${(summary.totalRounds / summary.count).toFixed(1)} rondar/match · ${(summary.totalDamageDone / summary.totalRounds).toFixed(1)} skada/rond`);
