@@ -1167,6 +1167,22 @@
 		return total ? { ...outcomes, total } : null;
 	}
 
+	// battle_tactic_name (e.g. "OFFENSIVE_LIGHT") is a primary tactic (NORMAL/OFFENSIVE/DEFENSIVE/
+	// BERSERK) plus a secondary one (NORMAL/HEAVY/LIGHT) joined with "_" - shown per-match in the
+	// analyzer table so a reader can judge a low dodge or accuracy rate against the tactic that
+	// produced it themselves (a Bärsärk match with low Undvika Anfall is the tactic working as
+	// intended, not a build gap - see the tactics summary the user supplied), rather than this
+	// script presuming to know which stats fit someone's intended playstyle.
+	const TACTIC_LABELS = { NORMAL: 'Normal', OFFENSIVE: 'Offensiv', DEFENSIVE: 'Defensiv', BERSERK: 'Bärsärk', HEAVY: 'Tung', LIGHT: 'Lätt' };
+
+	function formatTacticName(name) {
+		if (!name) return '-';
+		const [primary, secondary] = name.split('_');
+		const primaryLabel = TACTIC_LABELS[primary] || primary;
+		const secondaryLabel = TACTIC_LABELS[secondary];
+		return secondaryLabel && secondaryLabel !== 'Normal' ? `${primaryLabel}, ${secondaryLabel}` : primaryLabel;
+	}
+
 	// /api/battles/{id}'s per-round "participant_data" (used by scanBattlePage above) is scoped
 	// to whichever avatar is currently logged in, not to whoever's battle list it was reached
 	// through - confirmed live by fetching a battle the logged-in avatar wasn't part of at all,
@@ -1211,6 +1227,11 @@
 			fighterName: participant.fighter.name,
 			opponents: Array.from(enemyNames),
 			roundCount: (battle.rounds || []).length,
+			// participant_data is scoped to the logged-in avatar (see comment above), which on the
+			// page this analyzer is reached from is always this same avatarId, so the first round
+			// that carries one is this avatar's own tactic for the match (the pre-battle "setup"
+			// round, order -1, already carries it in every example seen).
+			tacticName: (battle.rounds || []).find((round) => round.participant_data)?.participant_data?.battle_tactic_name || null,
 			damageDone: own.damage_done,
 			maxDamageDone: own.max_damage_done,
 			damageTaken: own.damage_taken,
@@ -1336,118 +1357,6 @@
 			wins,
 			decided: decided.length
 		};
-	}
-
-	// Thresholds below are deliberately conservative (a small sample shouldn't scream "hög" at
-	// someone) and are the whole tuning surface for computeSuggestions - if the advice reads as
-	// over- or under-eager in practice, adjust these numbers rather than the scoring logic.
-	// Tactics summary below is from the game's own wiki (user-supplied, not assumed) - each
-	// SUGGESTION_RULES entry's stat label names the matching tactic alongside the egenskap
-	// wherever the wiki confirms that tactic actually moves the same thing the rule measures:
-	// - Offensiv: +initiativ/provokation (gear-only), -parera/blockera/undvika
-	// - Defensiv: +parera/blockera/undvika, -initiativ/provokation
-	// - Bärsärk: +initiativ/provokation (more than Offensiv), -parera/undvika/sköldblockera/
-	//   träffsäkerhet, +5% skada tagen
-	// - Tunga attacker: +skada, -träffsäkerhet, -initiativ något, -perfekta träffar (måttligt)
-	// - Lätta attacker: -skada, +träffsäkerhet, +initiativ något, +perfekta träffar (litet, upp
-	//   till spelarens "pt-potential")
-	const SUGGESTION_RULES = [
-		{
-			// Offensiv and Bärsärk both raise initiative per the tactics summary above, so a low
-			// attack-first rate has a tactic-side fix too, not just points in Initiativstyrka.
-			stat: 'Initiativstyrka (eller en mer offensiv taktik)',
-			minSample: 6,
-			sample: (summary) => summary.totalAttackedFirstRounds,
-			rate: (summary) => summary.totalAttackedFirstCount / summary.totalAttackedFirstRounds,
-			// Going first roughly half the time is the 1v1 baseline - only worth flagging once a
-			// player is losing that coin flip more often than winning it. Direction "below" means
-			// a LOW rate is the problem here, unlike the other two rules below.
-			direction: 'below',
-			threshold: 0.45,
-			worstAt: 0.1,
-			describe: (summary, rate) => `Du anföll först i bara ${formatPercent(summary.totalAttackedFirstCount, summary.totalAttackedFirstRounds)} av ronderna (${summary.totalAttackedFirstCount}/${summary.totalAttackedFirstRounds}).`
-		},
-		{
-			// The in-game Egenskapsguide (Vapenfärdigheter page, confirmed live) says a weapon
-			// used with too little skill "kommer du att missa nästan alla attacker", and gives its
-			// own fix as "lägg poäng i vapenfärdighet" OR switch to the Lätta attacker tactic - both
-			// named here rather than just "byt taktik" since the game itself is that specific. The
-			// tactics summary confirms it from the other side too: Lätta attacker "ökar din
-			// träffsäkerhet", Tunga attacker "minskar din träffsäkerhet".
-			stat: 'Vapenfärdighet (eller taktiken Lätta attacker)',
-			minSample: 12,
-			sample: (summary) => summary.totalOwnAttempts,
-			rate: (summary) => summary.totalOwnFumbled / summary.totalOwnAttempts,
-			// A clean whiff - missing entirely regardless of what the opponent does - should be
-			// rarer than 1-in-10 attacks once weapon skill is reasonable for the fight.
-			direction: 'above',
-			threshold: 0.1,
-			worstAt: 0.3,
-			describe: (summary, rate) => `Dina attacker missade helt ${formatPercent(summary.totalOwnFumbled, summary.totalOwnAttempts)} av gångerna (${summary.totalOwnFumbled}/${summary.totalOwnAttempts}) - utöver det som motståndaren undvek eller blockerade.`
-		},
-		{
-			// Undvika Anfall (confirmed live via the same guide) is explicitly "din chans att ducka
-			// eller undvika motståndarens attacker" - the direct counterpart to the fumble rule
-			// above, but for damage coming IN rather than going out. Uthållighet does NOT belong
-			// here: its own guide page says it only governs how many rounds you can fight before
-			// giving up from exhaustion, nothing about mitigating damage per hit - an earlier
-			// version of this rule pointed at Uthållighet, which was wrong. Defensiv raises
-			// parera/blockera/undvika directly (Offensiv/Bärsärk lower it), so that's the tactic
-			// half of this suggestion.
-			stat: 'Undvika Anfall (eller en mer defensiv taktik)',
-			minSample: 12,
-			sample: (summary) => summary.totalAttacksAgainst,
-			rate: (summary) => (summary.totalDodges + summary.totalBlocks) / summary.totalAttacksAgainst,
-			direction: 'below',
-			threshold: 0.35,
-			worstAt: 0.05,
-			describe: (summary, rate) => `Du undvek eller blockerade bara ${formatPercent(summary.totalDodges + summary.totalBlocks, summary.totalAttacksAgainst)} av attackerna mot dig (${summary.totalDodges + summary.totalBlocks}/${summary.totalAttacksAgainst}).`
-		},
-		{
-			// Styrka/Bashälsa (not Uthållighet, see above) are what the guide ties to dealing more
-			// damage and surviving more of it respectively. Bärsärk explicitly adds +5% skada
-			// tagen on top of cutting undvika/blockera/parera, and Offensiv cuts the same three, so
-			// a less aggressive tactic is a real third lever here, not a vague hedge.
-			stat: 'Styrka eller Bashälsa (eller en mindre offensiv taktik)',
-			minSample: 1,
-			sample: (summary) => summary.totalDamageDone,
-			rate: (summary) => summary.totalDamageTaken / summary.totalDamageDone,
-			// >1 already means taking more than dealing - only flag once that gap is clear
-			// rather than at the first match that happens to run slightly behind.
-			direction: 'above',
-			threshold: 1.15,
-			worstAt: 2,
-			describe: (summary, rate) => `Du tog i snitt ${rate.toFixed(1)}x så mycket skada som du delade ut.`
-		}
-	];
-
-	function urgencyLabel(score) {
-		if (score >= 0.66) return 'hög';
-		if (score >= 0.33) return 'medel';
-		return 'låg';
-	}
-
-	// Ranks by how far past its own threshold each rule sits (0 at the threshold, 1 at worstAt),
-	// so "hög"/"medel"/"låg" means the same thing across three unrelated stats instead of each rule
-	// inventing its own scale. The ratio works unchanged for a "below" rule (Initiativstyrka) too:
-	// worstAt sits on the same side of threshold as a bad rate there, so numerator and denominator
-	// flip sign together and the ratio still lands in [0, 1] on the bad side. Rules under minSample
-	// are left out entirely rather than shown with a caveat - a suggestion someone can't
-	// sanity-check against enough matches is just noise.
-	function computeSuggestions(summary) {
-		return SUGGESTION_RULES
-			.map((rule) => {
-				if (rule.sample(summary) < rule.minSample) return null;
-				const rate = rule.rate(summary);
-				if (!Number.isFinite(rate)) return null;
-				const flagged = rule.direction === 'below' ? rate < rule.threshold : rate > rule.threshold;
-				if (!flagged) return null;
-				const score = Math.min(1, Math.max(0, (rate - rule.threshold) / (rule.worstAt - rule.threshold)));
-				return { stat: rule.stat, score, level: urgencyLabel(score), text: rule.describe(summary, rate) };
-			})
-			.filter(Boolean)
-			.sort((a, b) => b.score - a.score)
-			.slice(0, 3);
 	}
 
 	function formatBattleDate(iso) {
@@ -1688,7 +1597,7 @@
 		heading.textContent = '📊 Analysera dina strider';
 		const sub = document.createElement('p');
 		sub.className = 'text-muted-foreground text-xs';
-		sub.textContent = 'Se mönster i dina senaste matcher och vilka egenskaper som är värda fler poäng.';
+		sub.textContent = 'Se statistik, taktik och trender för dina senaste matcher.';
 		text.append(heading, sub);
 
 		const button = document.createElement('button');
@@ -1852,27 +1761,58 @@
 		return wrap;
 	}
 
-	// Crit ("perfekt träff") rate and rounds/damage-per-round are shown as plain info, never as a
-	// scored suggestion - no egenskap governs perfekt träff-chansen (the Egenskapsguide, walked
-	// through page by page, never ties it to one; confirmed Tur doesn't either). The user-supplied
-	// tactics wiki instead ties it to the Tunga/Lätta attacker secondary tactic (Lätta raises it
-	// a little, Tunga lowers it, capped by the player's own "pt-potential") - a real lever, just
-	// not a points one, and with no stated baseline for what rate counts as low. Rounds/damage-
-	// per-round has no stated baseline either, so it stays informational too rather than another
-	// invented threshold like the Tur/crit and Uthållighet/damage-taken mistakes above.
-	function buildInfoStatsLine(summary) {
-		const parts = [];
+	function statTile(label, value, detail) {
+		const tile = document.createElement('div');
+		tile.className = 'rounded border border-border/60 bg-muted/20 p-2';
+		const labelEl = document.createElement('p');
+		labelEl.className = 'text-muted-foreground text-[11px]';
+		labelEl.textContent = label;
+		const valueEl = document.createElement('p');
+		valueEl.className = 'text-sm font-semibold';
+		valueEl.textContent = value;
+		tile.append(labelEl, valueEl);
+		if (detail) {
+			const detailEl = document.createElement('p');
+			detailEl.className = 'text-muted-foreground text-[11px]';
+			detailEl.textContent = detail;
+			tile.appendChild(detailEl);
+		}
+		return tile;
+	}
+
+	// Every rate the battle data can answer, laid out plainly with no recommendation attached -
+	// this used to score these into ranked "spend points here" suggestions, but that judged
+	// someone's build/tactic choices for them (a Bärsärk player's low Undvika Anfall rate is the
+	// tactic working as intended, not a gap - see the Taktik column in the match table below,
+	// and the tactics summary the user supplied). Showing the numbers plainly instead lets a
+	// reader weigh them against their own intended playstyle. Only tiles with enough underlying
+	// data to mean anything are shown - a rate over 0 attempts is just noise.
+	function buildStatsGrid(summary) {
+		const grid = document.createElement('div');
+		grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:6px;';
+
+		if (summary.decided) {
+			grid.appendChild(statTile('Vinstprocent', formatPercent(summary.wins, summary.decided), `${summary.wins}/${summary.decided}`));
+		}
+		if (summary.totalAttackedFirstRounds) {
+			grid.appendChild(statTile('Anföll först', formatPercent(summary.totalAttackedFirstCount, summary.totalAttackedFirstRounds), `${summary.totalAttackedFirstCount}/${summary.totalAttackedFirstRounds} ronder`));
+		}
+		if (summary.totalOwnAttempts) {
+			grid.appendChild(statTile('Landade attacker', formatPercent(summary.totalOwnLanded, summary.totalOwnAttempts), `${summary.totalOwnLanded}/${summary.totalOwnAttempts}`));
+			grid.appendChild(statTile('Fumlade attacker', formatPercent(summary.totalOwnFumbled, summary.totalOwnAttempts), `${summary.totalOwnFumbled}/${summary.totalOwnAttempts}`));
+		}
+		if (summary.totalAttacksAgainst) {
+			grid.appendChild(statTile('Undvek/blockerade', formatPercent(summary.totalDodges + summary.totalBlocks, summary.totalAttacksAgainst), `${summary.totalDodges + summary.totalBlocks}/${summary.totalAttacksAgainst} attacker mot dig`));
+		}
 		if (summary.totalHitsLandedByOwnSide) {
-			parts.push(`Perfekta träffar: ${formatPercent(summary.totalCriticalHits, summary.totalHitsLandedByOwnSide)} (${summary.totalCriticalHits}/${summary.totalHitsLandedByOwnSide}, påverkas av Tunga/Lätta attacker-taktiken, inte en egenskap)`);
+			grid.appendChild(statTile('Perfekta träffar', formatPercent(summary.totalCriticalHits, summary.totalHitsLandedByOwnSide), `${summary.totalCriticalHits}/${summary.totalHitsLandedByOwnSide} · styrs av Tunga/Lätta attacker`));
 		}
 		if (summary.totalRounds) {
-			parts.push(`${(summary.totalRounds / summary.count).toFixed(1)} rondar/match · ${(summary.totalDamageDone / summary.totalRounds).toFixed(1)} skada/rond`);
+			grid.appendChild(statTile('Rondar per match', (summary.totalRounds / summary.count).toFixed(1), `${summary.totalRounds} ronder totalt`));
+			grid.appendChild(statTile('Skada per rond', (summary.totalDamageDone / summary.totalRounds).toFixed(1), null));
 		}
-		if (!parts.length) return null;
-		const line = document.createElement('p');
-		line.className = 'text-muted-foreground text-xs';
-		line.textContent = parts.join(' · ');
-		return line;
+
+		return grid;
 	}
 
 	// Bars read oldest-to-newest, left to right (the opposite order from the dot strip and table
@@ -1919,57 +1859,6 @@
 		return card;
 	}
 
-	function buildSuggestionsCard(summary, colors) {
-		const card = document.createElement('div');
-		card.className = 'rounded border p-3 border-border/60 bg-muted/20 space-y-2';
-
-		const heading = document.createElement('p');
-		heading.className = 'text-sm font-semibold';
-		heading.textContent = 'Förslag på nästa egenskapspoäng';
-		card.appendChild(heading);
-
-		const suggestions = computeSuggestions(summary);
-		if (!suggestions.length) {
-			const empty = document.createElement('p');
-			empty.className = 'text-muted-foreground text-xs';
-			empty.textContent = 'Inga tydliga svagheter hittades i de här matcherna - bra balans.';
-			card.appendChild(empty);
-			return card;
-		}
-
-		suggestions.forEach((suggestion) => {
-			const row = document.createElement('div');
-			row.className = 'space-y-0.5';
-
-			const labelLine = document.createElement('div');
-			labelLine.style.cssText = 'display:flex;justify-content:space-between;gap:8px;font-size:12px;';
-			const statLabel = document.createElement('span');
-			statLabel.className = 'font-medium';
-			statLabel.textContent = suggestion.stat;
-			const levelLabel = document.createElement('span');
-			levelLabel.className = 'text-muted-foreground';
-			levelLabel.textContent = suggestion.level;
-			labelLine.append(statLabel, levelLabel);
-			row.appendChild(labelLine);
-
-			const track = document.createElement('div');
-			track.style.cssText = `height:6px;border-radius:3px;background:${colors.border};overflow:hidden;`;
-			const fill = document.createElement('div');
-			fill.style.cssText = `height:100%;width:${Math.max(6, suggestion.score * 100).toFixed(0)}%;border-radius:3px;background:${colors.primary};`;
-			track.appendChild(fill);
-			row.appendChild(track);
-
-			const text = document.createElement('p');
-			text.className = 'text-muted-foreground text-xs';
-			text.textContent = suggestion.text;
-			row.appendChild(text);
-
-			card.appendChild(row);
-		});
-
-		return card;
-	}
-
 	function buildMatchTable(battles) {
 		const wrap = document.createElement('div');
 		wrap.className = 'overflow-x-auto rounded border border-border/60';
@@ -1980,7 +1869,7 @@
 
 		const thead = document.createElement('thead');
 		const headerRow = document.createElement('tr');
-		['Datum', 'Typ', 'Motståndare', 'Resultat', 'Skada (ut/in)', 'Anföll först', 'Fumlade'].forEach((label) => {
+		['Datum', 'Typ', 'Motståndare', 'Taktik', 'Resultat', 'Skada (ut/in)', 'Anföll först', 'Fumlade'].forEach((label) => {
 			const th = document.createElement('th');
 			th.className = 'text-foreground h-8 px-2 text-left align-middle text-xs font-medium whitespace-nowrap';
 			th.textContent = label;
@@ -2005,6 +1894,7 @@
 			row.appendChild(cell(formatBattleDate(battle.createdAt)));
 			row.appendChild(cell(battle.typeDisplay || '-'));
 			row.appendChild(cell(battle.opponents.join(', ') || '-'));
+			row.appendChild(cell(formatTacticName(battle.tacticName)));
 
 			const resultSpan = document.createElement('span');
 			resultSpan.className = battle.won === true ? 'capitalize text-green-600' : battle.won === false ? 'capitalize text-red-600' : '';
@@ -2034,13 +1924,11 @@
 		}
 
 		const summary = aggregateBattleStats(battles);
-		const colors = { ...getBankColors(), ...getResultColors() };
+		const colors = { ...getThemeColors(), ...getResultColors() };
 
 		container.appendChild(buildFormStrip(battles, summary, colors));
-		const infoLine = buildInfoStatsLine(summary);
-		if (infoLine) container.appendChild(infoLine);
+		container.appendChild(buildStatsGrid(summary));
 		container.appendChild(buildDamageChartCard(battles, colors));
-		container.appendChild(buildSuggestionsCard(summary, colors));
 		container.appendChild(buildMatchTable(battles));
 
 		if (hasMoreBattles(state)) {
