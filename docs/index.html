@@ -1666,6 +1666,41 @@
                 otherStats.push(`<div class="stat-item"><div class="stat-label">Förtrollningsplatser</div><div class="stat-value">${item.max_enchants}</div></div>`);
             }
 
+            // Enchantments carry their own bonus fields instead of the weapon/armor ones
+            // above (min_damage/max_damage instead of base_damage_min/max,
+            // crit_damage_multiplier instead of the weapon's formatted crit_damage string,
+            // block_rate instead of base_block, etc.), since an enchant's bonuses apply to
+            // whatever it's socketed into rather than being scoped to one item category.
+            if (item.is_enchant) {
+                if (item.min_damage || item.max_damage) {
+                    combatStats.push(`<div class="stat-item"><div class="stat-label">Skada</div><div class="stat-value">${formatRange(item.min_damage || 0, item.max_damage || 0)}</div></div>`);
+                }
+                if (item.damage_potential) {
+                    combatStats.push(`<div class="stat-item"><div class="stat-label">Skadepotential</div><div class="stat-value">${item.damage_potential}</div></div>`);
+                }
+                if (item.crit_damage_multiplier) {
+                    combatStats.push(`<div class="stat-item"><div class="stat-label">Kritisk skada</div><div class="stat-value">+${item.crit_damage_multiplier}%</div></div>`);
+                }
+                if (item.max_crit_rate) {
+                    combatStats.push(`<div class="stat-item"><div class="stat-label">Kritchans</div><div class="stat-value">${formatRange(item.min_crit_rate, item.max_crit_rate)}%</div></div>`);
+                }
+                if (item.crit_rate) {
+                    bonusStats.push(`<div class="stat-item"><div class="stat-label">Perfekt träff</div><div class="stat-value">+${item.crit_rate}%</div></div>`);
+                }
+                if (item.absorption) {
+                    defenseStats.push(`<div class="stat-item"><div class="stat-label">Blockering</div><div class="stat-value">${item.absorption}</div></div>`);
+                }
+                if (item.block_rate) {
+                    defenseStats.push(`<div class="stat-item"><div class="stat-label">Blockchans</div><div class="stat-value">${item.block_rate > 0 ? '+' : ''}${item.block_rate}%</div></div>`);
+                }
+                if (item.increased_hit_rate) {
+                    defenseStats.push(`<div class="stat-item"><div class="stat-label">Träffchans</div><div class="stat-value">+${item.increased_hit_rate}</div></div>`);
+                }
+                if (item.durability) {
+                    otherStats.push(`<div class="stat-item"><div class="stat-label">Hållbarhet</div><div class="stat-value">${item.durability}</div></div>`);
+                }
+            }
+
             // Categorize armor/shield stats (armor uses base_block, shields use absorption)
             if (item.is_armor || item.is_shield) {
                 const block = item.base_block || item.absorption;
