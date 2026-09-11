@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.12.0
+// @version     1.13.0
 //
 // @match       https://lanista.se/game/*
 // @match       https://lanista.se/
@@ -28,6 +28,7 @@
 	const resolvedEndpoints = new Map();
 	let craftsPromise;
 	let currentAvatarPromise;
+	let ownAvatarInfoPromise;
 	let scanTimer;
 
 	// Jewelry-type slots (neck, finger, back, amulet, bracelet, ...) are flagged both is_armor
@@ -1048,6 +1049,7 @@
 	}
 
 	const RECENT_BATTLES_COUNT = 5;
+	const ANALYZER_BATCH_COUNT = 10;
 	const API_CALL_DELAY_MS = 100;
 	const WIN_RATE_CATEGORIES = [
 		{ key: 'CHANCE', label: 'Slumpdueller' },
@@ -1131,6 +1133,40 @@
 		return total ? { count, total } : null;
 	}
 
+	// Unlike computeAttackedFirst (only a round's first entry, only in a 1v1), this tallies every
+	// combat-resolution entry across every round, for any battle shape - each of these five
+	// categories is one where args.player_one names the attacker of a resolved attack (confirmed
+	// live alongside computeAttackedFirst above): "miss" is the attacker whiffing entirely (a
+	// "fumla" in the site's own battle text - explicitly a different failure than the defender
+	// evading), "dodge" and the block/absorb categories are the defender's doing, not the
+	// attacker's, and "attack"/"attack_with_armor_block"/"attack_glancing_dodge" are hits that
+	// connected (in full, armor-reduced, or glancing). Keeping fumbled separate from
+	// dodgedByOpponent/blockedByOpponent is the whole point: a high miss rate points at the
+	// attacker's own weapon skill, while a high dodge/block rate against them is about the
+	// opponent's evasion, not something more weapon skill fixes.
+	const OWN_ATTACK_OUTCOME_CATEGORIES = {
+		attack: 'landed',
+		attack_with_armor_block: 'landed',
+		attack_glancing_dodge: 'landed',
+		miss: 'fumbled',
+		dodge: 'dodgedByOpponent',
+		weapon_block: 'blockedByOpponent',
+		shield_block: 'blockedByOpponent',
+		shield_absorb: 'blockedByOpponent'
+	};
+
+	function computeOwnAttackOutcomes(battle, fighterName) {
+		const outcomes = { landed: 0, fumbled: 0, dodgedByOpponent: 0, blockedByOpponent: 0 };
+		let total = 0;
+		(battle.rounds || []).forEach((round) => (round.text || []).forEach((entry) => {
+			const bucket = OWN_ATTACK_OUTCOME_CATEGORIES[entry.key.split('.')[1]];
+			if (!bucket || !entry.args || stripSideTags(entry.args.player_one) !== fighterName) return;
+			outcomes[bucket]++;
+			total++;
+		}));
+		return total ? { ...outcomes, total } : null;
+	}
+
 	// /api/battles/{id}'s per-round "participant_data" (used by scanBattlePage above) is scoped
 	// to whichever avatar is currently logged in, not to whoever's battle list it was reached
 	// through - confirmed live by fetching a battle the logged-in avatar wasn't part of at all,
@@ -1183,7 +1219,8 @@
 			dodges: own.dodges,
 			blocks: own.blocks,
 			misses: own.misses,
-			attackedFirst: computeAttackedFirst(battle, participant.fighter.name)
+			attackedFirst: computeAttackedFirst(battle, participant.fighter.name),
+			ownAttackOutcomes: computeOwnAttackOutcomes(battle, participant.fighter.name)
 		};
 	}
 
@@ -1251,9 +1288,9 @@
 	// Battles the avatar hasn't finished yet (or ones too old/odd-shaped to carry a
 	// battle.stats entry) are simply skipped rather than surfaced as errors - a partial result
 	// from N of the requested battles is more useful than failing the whole batch over one.
-	async function loadMoreBattles(state, onProgress) {
-		await ensureQueuedBattleIds(state, RECENT_BATTLES_COUNT);
-		const ids = state.idQueue.splice(0, RECENT_BATTLES_COUNT);
+	async function loadMoreBattles(state, batchSize, onProgress) {
+		await ensureQueuedBattleIds(state, batchSize);
+		const ids = state.idQueue.splice(0, batchSize);
 		for (let index = 0; index < ids.length; index++) {
 			onProgress(index + 1, ids.length);
 			const response = await throttledFetch(state, `/api/battles/${ids[index]}`);
@@ -1271,6 +1308,11 @@
 		// Only 1v1s carry an attackedFirst (see computeAttackedFirst) - a team battle/monster
 		// hunt mixed into the same batch of matches just doesn't contribute rounds either way.
 		const duels = battles.filter((battle) => battle.attackedFirst);
+		// ownAttackOutcomes is null for a battle where the fighter never landed a resolved attack
+		// of its own (see computeOwnAttackOutcomes) - excluded here rather than counted as zeroes,
+		// same reasoning as duels above.
+		const withOwnAttacks = battles.filter((battle) => battle.ownAttackOutcomes);
+		const sumOwnAttacks = (key) => withOwnAttacks.reduce((total, battle) => total + battle.ownAttackOutcomes[key], 0);
 		return {
 			count: battles.length,
 			maxDamageDone: Math.max(...battles.map((battle) => battle.maxDamageDone)),
@@ -1283,10 +1325,87 @@
 			totalBlocks: sum('blocks'),
 			totalAttackedFirstCount: duels.reduce((total, battle) => total + battle.attackedFirst.count, 0),
 			totalAttackedFirstRounds: duels.reduce((total, battle) => total + battle.attackedFirst.total, 0),
+			totalOwnAttempts: sumOwnAttacks('total'),
+			totalOwnLanded: sumOwnAttacks('landed'),
+			totalOwnFumbled: sumOwnAttacks('fumbled'),
+			totalOwnDodgedByOpponent: sumOwnAttacks('dodgedByOpponent'),
+			totalOwnBlockedByOpponent: sumOwnAttacks('blockedByOpponent'),
 			avgDamageDone: sum('damageDone') / battles.length,
 			wins,
 			decided: decided.length
 		};
+	}
+
+	// Thresholds below are deliberately conservative (a small sample shouldn't scream "hög" at
+	// someone) and are the whole tuning surface for computeSuggestions - if the advice reads as
+	// over- or under-eager in practice, adjust these numbers rather than the scoring logic.
+	const SUGGESTION_RULES = [
+		{
+			stat: 'Initiativstyrka',
+			minSample: 6,
+			sample: (summary) => summary.totalAttackedFirstRounds,
+			rate: (summary) => summary.totalAttackedFirstCount / summary.totalAttackedFirstRounds,
+			// Going first roughly half the time is the 1v1 baseline - only worth flagging once a
+			// player is losing that coin flip more often than winning it. Direction "below" means
+			// a LOW rate is the problem here, unlike the other two rules below.
+			direction: 'below',
+			threshold: 0.45,
+			worstAt: 0.1,
+			describe: (summary, rate) => `Du anföll först i bara ${formatPercent(summary.totalAttackedFirstCount, summary.totalAttackedFirstRounds)} av ronderna (${summary.totalAttackedFirstCount}/${summary.totalAttackedFirstRounds}).`
+		},
+		{
+			stat: 'Vapenfärdighet (eller byt taktik)',
+			minSample: 12,
+			sample: (summary) => summary.totalOwnAttempts,
+			rate: (summary) => summary.totalOwnFumbled / summary.totalOwnAttempts,
+			// A clean whiff - missing entirely regardless of what the opponent does - should be
+			// rarer than 1-in-10 attacks once weapon skill is reasonable for the fight.
+			direction: 'above',
+			threshold: 0.1,
+			worstAt: 0.3,
+			describe: (summary, rate) => `Dina attacker missade helt ${formatPercent(summary.totalOwnFumbled, summary.totalOwnAttempts)} av gångerna (${summary.totalOwnFumbled}/${summary.totalOwnAttempts}) - utöver det som motståndaren undvek eller blockerade.`
+		},
+		{
+			stat: 'Uthållighet (eller en försiktigare taktik)',
+			minSample: 1,
+			sample: (summary) => summary.totalDamageDone,
+			rate: (summary) => summary.totalDamageTaken / summary.totalDamageDone,
+			// >1 already means taking more than dealing - only flag once that gap is clear
+			// rather than at the first match that happens to run slightly behind.
+			direction: 'above',
+			threshold: 1.15,
+			worstAt: 2,
+			describe: (summary, rate) => `Du tog i snitt ${rate.toFixed(1)}x så mycket skada som du delade ut.`
+		}
+	];
+
+	function urgencyLabel(score) {
+		if (score >= 0.66) return 'hög';
+		if (score >= 0.33) return 'medel';
+		return 'låg';
+	}
+
+	// Ranks by how far past its own threshold each rule sits (0 at the threshold, 1 at worstAt),
+	// so "hög"/"medel"/"låg" means the same thing across three unrelated stats instead of each rule
+	// inventing its own scale. The ratio works unchanged for a "below" rule (Initiativstyrka) too:
+	// worstAt sits on the same side of threshold as a bad rate there, so numerator and denominator
+	// flip sign together and the ratio still lands in [0, 1] on the bad side. Rules under minSample
+	// are left out entirely rather than shown with a caveat - a suggestion someone can't
+	// sanity-check against enough matches is just noise.
+	function computeSuggestions(summary) {
+		return SUGGESTION_RULES
+			.map((rule) => {
+				if (rule.sample(summary) < rule.minSample) return null;
+				const rate = rule.rate(summary);
+				if (!Number.isFinite(rate)) return null;
+				const flagged = rule.direction === 'below' ? rate < rule.threshold : rate > rule.threshold;
+				if (!flagged) return null;
+				const score = Math.min(1, Math.max(0, (rate - rule.threshold) / (rule.worstAt - rule.threshold)));
+				return { stat: rule.stat, score, level: urgencyLabel(score), text: rule.describe(summary, rate) };
+			})
+			.filter(Boolean)
+			.sort((a, b) => b.score - a.score)
+			.slice(0, 3);
 	}
 
 	function formatBattleDate(iso) {
@@ -1361,7 +1480,7 @@
 				triggerButton.textContent = 'Hämtar fler matcher...';
 			}
 			ensureWinRates(state)
-				.then(() => loadMoreBattles(state, (done, total) => {
+				.then(() => loadMoreBattles(state, RECENT_BATTLES_COUNT, (done, total) => {
 					const progressText = `Hämtar match ${done} av ${total}...`;
 					if (isFirstLoad) showStatus(progressText);
 					else if (triggerButton) triggerButton.textContent = progressText;
@@ -1504,6 +1623,367 @@
 			const avatarName = link.textContent.trim().replace(/\s*\([^)]*\)\s*$/, '');
 			wrapper.parentNode.insertBefore(createStatsTriggerButton(avatarId, avatarName), link);
 		});
+	}
+
+	function getOwnAvatarInfo() {
+		if (!ownAvatarInfoPromise) {
+			ownAvatarInfoPromise = fetch('/api/avatars/me')
+				.then((response) => response.ok ? response.json() : null)
+				.then((avatar) => avatar ? { id: avatar.id, name: avatar.name } : null)
+				.catch(() => null);
+		}
+		return ownAvatarInfoPromise;
+	}
+
+	function buildAnalyzerEntryCard(avatarId, avatarName) {
+		const card = document.createElement('div');
+		card.dataset.lanistaAnalyzerEntry = 'true';
+		card.className = 'bg-card text-card-foreground flex flex-wrap items-center justify-between gap-3 rounded border p-3 shadow-xl border-border/70';
+
+		const text = document.createElement('div');
+		const heading = document.createElement('p');
+		heading.className = 'font-semibold';
+		heading.textContent = '📊 Analysera dina strider';
+		const sub = document.createElement('p');
+		sub.className = 'text-muted-foreground text-xs';
+		sub.textContent = 'Se mönster i dina senaste matcher och vilka egenskaper som är värda fler poäng.';
+		text.append(heading, sub);
+
+		const button = document.createElement('button');
+		button.type = 'button';
+		button.textContent = 'Analysera';
+		button.className = 'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md border bg-background px-3 py-1.5 text-xs font-medium shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground';
+		button.addEventListener('click', () => openAnalyzerModal(avatarId, avatarName));
+
+		card.append(text, button);
+		return card;
+	}
+
+	function findAnalyzerEntryCard(tableRoot) {
+		return tableRoot.parentElement.querySelector(':scope > [data-lanista-analyzer-entry]');
+	}
+
+	let ownHistoryScanning = false;
+
+	// "/game/avatar/me/history" (the tab labeled "Historia" on the logged-in player's own
+	// gladiator) reuses the same generic data-table component as the bank page's deposits table -
+	// .data-table-root is that component's own wrapper class, confirmed live, so this anchors to
+	// it the same way ensureBankChartCard does rather than guessing at page-specific markup that
+	// could shift with the table's own contents (pagination, empty state). Deliberately a second,
+	// more prominent entry point alongside the small 📊 icon scanAvatarInspectButtons already adds
+	// next to every avatar link site-wide - that one stays a quick glance at anyone's record, this
+	// one is specifically "look at my own build" and gets a full table+chart+suggestions view.
+	async function scanOwnHistoryPage() {
+		if (ownHistoryScanning) return;
+		const tableRoot = document.querySelector('.data-table-root');
+		if (!tableRoot || findAnalyzerEntryCard(tableRoot)) return;
+		ownHistoryScanning = true;
+		try {
+			const info = await getOwnAvatarInfo();
+			const freshRoot = document.querySelector('.data-table-root');
+			if (!info || !freshRoot || findAnalyzerEntryCard(freshRoot)) return;
+			freshRoot.parentElement.insertBefore(buildAnalyzerEntryCard(info.id, info.name), freshRoot);
+		} finally {
+			ownHistoryScanning = false;
+		}
+	}
+
+	// Sampled the same way as getThemeColors/getBankColors (see their own comments) -
+	// text-green-600/text-red-600 are the exact classes the history table itself uses for its
+	// "Ja"/"Nej" Vinst column (confirmed live), so anything this popup colors for win/loss agrees
+	// with how the site already colors the very table it's inserted next to.
+	function getResultColors() {
+		return {
+			win: sampleThemeColor('text-green-600', 'color'),
+			loss: sampleThemeColor('text-red-600', 'color')
+		};
+	}
+
+	function closeAnalyzerModal(backdrop) {
+		backdrop.remove();
+		document.removeEventListener('keydown', backdrop.lanistaKeyHandler);
+	}
+
+	function openAnalyzerModal(avatarId, avatarName) {
+		const backdrop = document.createElement('div');
+		backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+
+		const modal = document.createElement('div');
+		modal.className = 'bg-card text-card-foreground rounded border shadow-xl border-border/70';
+		modal.style.cssText = 'max-width:800px;width:100%;max-height:88vh;overflow-y:auto;position:relative;';
+		backdrop.appendChild(modal);
+
+		const closeButton = document.createElement('button');
+		closeButton.type = 'button';
+		closeButton.textContent = '✕';
+		closeButton.style.cssText = 'position:absolute;top:8px;right:8px;cursor:pointer;background:none;border:none;font-size:14px;line-height:1;padding:4px;';
+		closeButton.addEventListener('click', () => closeAnalyzerModal(backdrop));
+		modal.appendChild(closeButton);
+
+		const body = document.createElement('div');
+		body.className = 'px-3 md:px-5 py-3 space-y-3';
+		modal.appendChild(body);
+
+		const heading = document.createElement('p');
+		heading.className = 'font-semibold';
+		heading.textContent = `${avatarName} - analys av senaste matcherna`;
+		body.appendChild(heading);
+
+		const resultsContainer = document.createElement('div');
+		resultsContainer.className = 'space-y-3';
+		body.appendChild(resultsContainer);
+
+		backdrop.lanistaKeyHandler = (event) => {
+			if (event.key === 'Escape') closeAnalyzerModal(backdrop);
+		};
+		document.addEventListener('keydown', backdrop.lanistaKeyHandler);
+		backdrop.addEventListener('click', (event) => {
+			if (event.target === backdrop) closeAnalyzerModal(backdrop);
+		});
+
+		document.body.appendChild(backdrop);
+
+		const state = createBattleState(avatarId);
+
+		function showStatus(text) {
+			resultsContainer.innerHTML = '';
+			const status = document.createElement('div');
+			status.className = 'text-muted-foreground text-xs';
+			status.textContent = text;
+			resultsContainer.appendChild(status);
+		}
+
+		function loadMore(triggerButton) {
+			const isFirstLoad = !state.battles.length;
+			if (isFirstLoad) showStatus(`Hämtar dina senaste ${ANALYZER_BATCH_COUNT} matcher...`);
+			else if (triggerButton) {
+				triggerButton.disabled = true;
+				triggerButton.textContent = 'Hämtar fler matcher...';
+			}
+			ensureWinRates(state)
+				.then(() => loadMoreBattles(state, ANALYZER_BATCH_COUNT, (done, total) => {
+					const progressText = `Hämtar match ${done} av ${total}...`;
+					if (isFirstLoad) showStatus(progressText);
+					else if (triggerButton) triggerButton.textContent = progressText;
+				}))
+				.then(() => {
+					if (!backdrop.isConnected) return;
+					renderAnalyzerResults(resultsContainer, state, loadMore);
+				})
+				.catch((error) => {
+					console.error('lanista analyzer error', error);
+					if (!backdrop.isConnected) return;
+					if (isFirstLoad) showStatus('Kunde inte hämta matchdata.');
+					else if (triggerButton) {
+						triggerButton.disabled = false;
+						triggerButton.textContent = 'Visa fler (misslyckades, försök igen)';
+					}
+				});
+		}
+
+		loadMore();
+	}
+
+	function buildFormStrip(battles, summary, colors) {
+		const wrap = document.createElement('div');
+		wrap.className = 'space-y-1';
+
+		const dots = document.createElement('div');
+		dots.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+		battles.forEach((battle) => {
+			const dot = document.createElement('span');
+			const label = battle.won === true ? 'Vinst' : battle.won === false ? 'Förlust' : 'Oavgjort';
+			dot.title = `${formatBattleDate(battle.createdAt)} · ${label}`;
+			const dotColor = battle.won === true ? colors.win : battle.won === false ? colors.loss : colors.muted;
+			dot.style.cssText = `display:inline-block;width:9px;height:9px;border-radius:50%;background:${dotColor};`;
+			dots.appendChild(dot);
+		});
+		wrap.appendChild(dots);
+
+		const line = document.createElement('p');
+		line.className = 'text-muted-foreground text-xs';
+		line.textContent = summary.decided
+			? `${summary.wins} vinster, ${summary.decided - summary.wins} förluster av ${summary.decided} avgjorda (${formatPercent(summary.wins, summary.decided)}) · senaste ${summary.count} matcherna, nyast först`
+			: `Senaste ${summary.count} matcherna, nyast först`;
+		wrap.appendChild(line);
+
+		return wrap;
+	}
+
+	// Bars read oldest-to-newest, left to right (the opposite order from the dot strip and table
+	// below, which both stay in the API's own newest-first order) - a trend is only readable as a
+	// trend if time runs left to right, the same convention buildRoundTimelineSvg already uses for
+	// a single battle's round-by-round chart.
+	function buildDamageBarsSvg(battles, colors) {
+		const chronological = battles.slice().reverse();
+		const width = 640;
+		const height = 120;
+		const midY = height / 2;
+		const maxValue = Math.max(1, ...chronological.map((battle) => Math.max(battle.damageDone, battle.damageTaken)));
+		const barGap = 3;
+		const barWidth = Math.max(2, (width - barGap * (chronological.length - 1)) / chronological.length);
+		const scale = (midY - 6) / maxValue;
+
+		const bars = chronological.map((battle, index) => {
+			const x = index * (barWidth + barGap);
+			const doneHeight = battle.damageDone * scale;
+			const takenHeight = battle.damageTaken * scale;
+			return `<rect x="${x.toFixed(1)}" y="${(midY - doneHeight).toFixed(1)}" width="${barWidth.toFixed(1)}" height="${doneHeight.toFixed(1)}" class="text-green-600" fill="currentColor" />` +
+				`<rect x="${x.toFixed(1)}" y="${midY.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${takenHeight.toFixed(1)}" class="text-red-600" fill="currentColor" />`;
+		}).join('');
+
+		return `<svg viewBox="0 0 ${width} ${height}" style="width:100%;height:${height}px;display:block;">` +
+			`<line x1="0" y1="${midY}" x2="${width}" y2="${midY}" stroke="${colors.border}" stroke-width="1" />` +
+			bars +
+			`</svg>`;
+	}
+
+	function buildDamageChartCard(battles, colors) {
+		const card = document.createElement('div');
+		card.className = 'rounded border p-2 border-border/60 bg-muted/20';
+
+		const label = document.createElement('p');
+		label.className = 'text-muted-foreground mb-1 text-xs';
+		label.textContent = 'Skada utdelad (grönt) och mottagen (rött) per match, äldst till vänster';
+		card.appendChild(label);
+
+		const chart = document.createElement('div');
+		chart.innerHTML = buildDamageBarsSvg(battles, colors);
+		card.appendChild(chart);
+
+		return card;
+	}
+
+	function buildSuggestionsCard(summary, colors) {
+		const card = document.createElement('div');
+		card.className = 'rounded border p-3 border-border/60 bg-muted/20 space-y-2';
+
+		const heading = document.createElement('p');
+		heading.className = 'text-sm font-semibold';
+		heading.textContent = 'Förslag på nästa egenskapspoäng';
+		card.appendChild(heading);
+
+		const suggestions = computeSuggestions(summary);
+		if (!suggestions.length) {
+			const empty = document.createElement('p');
+			empty.className = 'text-muted-foreground text-xs';
+			empty.textContent = 'Inga tydliga svagheter hittades i de här matcherna - bra balans.';
+			card.appendChild(empty);
+			return card;
+		}
+
+		suggestions.forEach((suggestion) => {
+			const row = document.createElement('div');
+			row.className = 'space-y-0.5';
+
+			const labelLine = document.createElement('div');
+			labelLine.style.cssText = 'display:flex;justify-content:space-between;gap:8px;font-size:12px;';
+			const statLabel = document.createElement('span');
+			statLabel.className = 'font-medium';
+			statLabel.textContent = suggestion.stat;
+			const levelLabel = document.createElement('span');
+			levelLabel.className = 'text-muted-foreground';
+			levelLabel.textContent = suggestion.level;
+			labelLine.append(statLabel, levelLabel);
+			row.appendChild(labelLine);
+
+			const track = document.createElement('div');
+			track.style.cssText = `height:6px;border-radius:3px;background:${colors.border};overflow:hidden;`;
+			const fill = document.createElement('div');
+			fill.style.cssText = `height:100%;width:${Math.max(6, suggestion.score * 100).toFixed(0)}%;border-radius:3px;background:${colors.primary};`;
+			track.appendChild(fill);
+			row.appendChild(track);
+
+			const text = document.createElement('p');
+			text.className = 'text-muted-foreground text-xs';
+			text.textContent = suggestion.text;
+			row.appendChild(text);
+
+			card.appendChild(row);
+		});
+
+		return card;
+	}
+
+	function buildMatchTable(battles) {
+		const wrap = document.createElement('div');
+		wrap.className = 'overflow-x-auto rounded border border-border/60';
+
+		const table = document.createElement('table');
+		table.className = 'w-full caption-bottom text-sm';
+		wrap.appendChild(table);
+
+		const thead = document.createElement('thead');
+		const headerRow = document.createElement('tr');
+		['Datum', 'Typ', 'Motståndare', 'Resultat', 'Skada (ut/in)', 'Anföll först', 'Fumlade'].forEach((label) => {
+			const th = document.createElement('th');
+			th.className = 'text-foreground h-8 px-2 text-left align-middle text-xs font-medium whitespace-nowrap';
+			th.textContent = label;
+			headerRow.appendChild(th);
+		});
+		thead.appendChild(headerRow);
+		table.appendChild(thead);
+
+		const tbody = document.createElement('tbody');
+		battles.forEach((battle) => {
+			const row = document.createElement('tr');
+			row.className = 'border-b border-border/40';
+
+			const cell = (content) => {
+				const td = document.createElement('td');
+				td.className = 'p-2 align-middle text-xs whitespace-nowrap';
+				if (content instanceof Node) td.appendChild(content);
+				else td.textContent = content;
+				return td;
+			};
+
+			row.appendChild(cell(formatBattleDate(battle.createdAt)));
+			row.appendChild(cell(battle.typeDisplay || '-'));
+			row.appendChild(cell(battle.opponents.join(', ') || '-'));
+
+			const resultSpan = document.createElement('span');
+			resultSpan.className = battle.won === true ? 'capitalize text-green-600' : battle.won === false ? 'capitalize text-red-600' : '';
+			resultSpan.textContent = battle.won === true ? 'vinst' : battle.won === false ? 'förlust' : '-';
+			row.appendChild(cell(resultSpan));
+
+			row.appendChild(cell(`${battle.damageDone} / ${battle.damageTaken}`));
+			row.appendChild(cell(battle.attackedFirst ? `${battle.attackedFirst.count}/${battle.attackedFirst.total}` : '-'));
+			row.appendChild(cell(battle.ownAttackOutcomes ? `${battle.ownAttackOutcomes.fumbled}/${battle.ownAttackOutcomes.total}` : '-'));
+
+			tbody.appendChild(row);
+		});
+		table.appendChild(tbody);
+
+		return wrap;
+	}
+
+	function renderAnalyzerResults(container, state, loadMore) {
+		const battles = state.battles;
+		container.innerHTML = '';
+		if (!battles.length) {
+			const empty = document.createElement('div');
+			empty.className = 'text-muted-foreground text-xs';
+			empty.textContent = 'Ingen matchdata hittades.';
+			container.appendChild(empty);
+			return;
+		}
+
+		const summary = aggregateBattleStats(battles);
+		const colors = { ...getBankColors(), ...getResultColors() };
+
+		container.appendChild(buildFormStrip(battles, summary, colors));
+		container.appendChild(buildDamageChartCard(battles, colors));
+		container.appendChild(buildSuggestionsCard(summary, colors));
+		container.appendChild(buildMatchTable(battles));
+
+		if (hasMoreBattles(state)) {
+			const loadMoreButton = document.createElement('button');
+			loadMoreButton.type = 'button';
+			loadMoreButton.textContent = 'Visa fler';
+			loadMoreButton.className = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md border bg-background px-3 py-1 text-xs font-medium shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground';
+			loadMoreButton.addEventListener('click', () => loadMore(loadMoreButton));
+			container.appendChild(loadMoreButton);
+		}
 	}
 
 	const MS_PER_DAY = 86400000;
@@ -2069,6 +2549,10 @@
 		{
 			paths: ['/game/bank'],
 			run: scanBankPage
+		},
+		{
+			paths: ['/game/avatar/me/history'],
+			run: scanOwnHistoryPage
 		}
 	];
 
