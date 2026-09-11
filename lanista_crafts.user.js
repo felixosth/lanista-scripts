@@ -30,6 +30,10 @@
 	let currentAvatarPromise;
 	let ownAvatarInfoPromise;
 	let scanTimer;
+	// Module-level (not per-popup state) since an opponent's race never changes mid-session and
+	// the same foes keep reappearing across "Visa fler" clicks and separate analyzer opens - once
+	// resolved here, re-analyzing never re-fetches a race for an avatar id already seen.
+	const opponentRaceCache = new Map();
 
 	// Jewelry-type slots (neck, finger, back, amulet, bracelet, ...) are flagged both is_armor
 	// and is_trinket at once, and it isn't knowable up front which of those two words (if
@@ -1167,6 +1171,26 @@
 		return total ? { ...outcomes, total } : null;
 	}
 
+	// Same resolved-attack categories as computeOwnAttackOutcomes, but reading the *enemy* side's
+	// weapon field instead of tallying an outcome for our own - args.weapon is the name of
+	// whatever the attacker (args.player_one) is wielding for that attack, already present in
+	// data this script fetches anyway, so a per-battle "which weapons did I face" set costs zero
+	// extra requests. Deduplicated per battle (a Set) since a weapon used 10 times in one fight
+	// should count once toward that fight's win/loss, not 10 times.
+	function computeOpponentWeapons(battle, enemyNames) {
+		const weapons = new Set();
+		(battle.rounds || []).forEach((round) => (round.text || []).forEach((entry) => {
+			if (!OWN_ATTACK_OUTCOME_CATEGORIES[entry.key.split('.')[1]]) return;
+			if (!entry.args || !entry.args.weapon || entry.args.weapon === 'N/A') return;
+			if (!enemyNames.has(stripSideTags(entry.args.player_one))) return;
+			// Confirmed live: some weapon names carry stray leading/trailing whitespace in the
+			// server's own text (e.g. " Skallslaga ") - untrimmed, that would fragment one weapon
+			// into two separate tally entries.
+			weapons.add(entry.args.weapon.trim());
+		}));
+		return Array.from(weapons);
+	}
+
 	// battle_tactic_name (e.g. "OFFENSIVE_LIGHT") is a primary tactic (NORMAL/OFFENSIVE/DEFENSIVE/
 	// BERSERK) plus a secondary one (NORMAL/HEAVY/LIGHT) joined with "_" - shown per-match in the
 	// analyzer table so a reader can judge a low dodge or accuracy rate against the tactic that
@@ -1226,6 +1250,14 @@
 			won: participant.won,
 			fighterName: participant.fighter.name,
 			opponents: Array.from(enemyNames),
+			opponentWeapons: computeOpponentWeapons(battle, enemyNames),
+			// unique_id is "avatar_{id}" for a real gladiator or "npc_{id}_{hash}" for a monster/NPC
+			// (confirmed live) - only the former has a race worth looking up via /api/avatars/{id},
+			// so monster-hunt opponents are simply excluded here rather than attempted and failing.
+			opponentAvatarIds: (battle.participants || [])
+				.filter((entry) => entry.team !== participant.team)
+				.map((entry) => (/^avatar_(\d+)$/.exec(entry.unique_id) || [])[1])
+				.filter(Boolean),
 			roundCount: (battle.rounds || []).length,
 			// participant_data is scoped to the logged-in avatar (see comment above), which on the
 			// page this analyzer is reached from is always this same avatarId, so the first round
@@ -1279,6 +1311,30 @@
 		state.winRatesFetched = true;
 		const response = await throttledFetch(state, `/api/avatars/${state.avatarId}/statistics`);
 		state.winRates = response && response.ok ? await response.json().catch(() => null) : null;
+	}
+
+	// name_display on /api/avatars/{id}'s race object is "singular|plural" (confirmed live, e.g.
+	// "ork|orker", "alv|alver") - only the singular half is useful here, capitalized to match how
+	// the site's own UI writes race names ("Ras: Ork" on the info tab).
+	function formatRaceName(nameDisplay) {
+		const singular = (nameDisplay || '').split('|')[0];
+		return singular ? singular.charAt(0).toUpperCase() + singular.slice(1) : null;
+	}
+
+	// One extra request per *unique* opponent avatar id not already in opponentRaceCache - the
+	// only piece of this analyzer that isn't free, since race appears nowhere in the battle
+	// payload or its round text (unlike tactic and weapon, see their own comments). Runs through
+	// the same throttledFetch as everything else, so it's still 100ms-spaced from the battle
+	// fetches that preceded it, not a burst on top of them.
+	async function ensureOpponentRaces(state, avatarIds, onProgress) {
+		const unresolved = Array.from(new Set(avatarIds)).filter((id) => !opponentRaceCache.has(id));
+		for (let index = 0; index < unresolved.length; index++) {
+			onProgress(index + 1, unresolved.length);
+			const id = unresolved[index];
+			const response = await throttledFetch(state, `/api/avatars/${id}`);
+			const avatar = response && response.ok ? await response.json().catch(() => null) : null;
+			opponentRaceCache.set(id, (avatar && formatRaceName(avatar.race && avatar.race.name_display)) || null);
+		}
 	}
 
 	async function ensureQueuedBattleIds(state, count) {
@@ -1357,6 +1413,51 @@
 			wins,
 			decided: decided.length
 		};
+	}
+
+	function aggregateByTactic(battles) {
+		const byTactic = new Map();
+		battles.forEach((battle) => {
+			const key = battle.tacticName || 'OKÄND';
+			const entry = byTactic.get(key) || {
+				tacticName: battle.tacticName,
+				count: 0,
+				wins: 0,
+				decided: 0,
+				totalDamageDone: 0,
+				totalDamageTaken: 0,
+				totalRounds: 0
+			};
+			entry.count++;
+			entry.totalDamageDone += battle.damageDone;
+			entry.totalDamageTaken += battle.damageTaken;
+			entry.totalRounds += battle.roundCount;
+			if (battle.won === true || battle.won === false) {
+				entry.decided++;
+				if (battle.won) entry.wins++;
+			}
+			byTactic.set(key, entry);
+		});
+		return Array.from(byTactic.values()).sort((a, b) => b.count - a.count);
+	}
+
+	// Shared shape for "which of these battles involved X, and what was the win rate when they
+	// did" - used for both the opponent weapon and opponent race breakdowns. keysForBattle can
+	// return several keys per battle (e.g. a team fight against two differently-armed foes), each
+	// counted once per battle via the Set, same reasoning as computeOpponentWeapons' own dedup.
+	function tallyByKeys(battles, keysForBattle) {
+		const byKey = new Map();
+		battles.forEach((battle) => {
+			if (battle.won !== true && battle.won !== false) return;
+			new Set(keysForBattle(battle)).forEach((key) => {
+				if (!key) return;
+				const entry = byKey.get(key) || { key, wins: 0, total: 0 };
+				entry.total++;
+				if (battle.won) entry.wins++;
+				byKey.set(key, entry);
+			});
+		});
+		return Array.from(byKey.values()).sort((a, b) => b.total - a.total);
 	}
 
 	function formatBattleDate(iso) {
@@ -1718,6 +1819,14 @@
 					else if (triggerButton) triggerButton.textContent = progressText;
 				}))
 				.then(() => {
+					const avatarIds = state.battles.flatMap((battle) => battle.opponentAvatarIds);
+					return ensureOpponentRaces(state, avatarIds, (done, total) => {
+						const progressText = `Hämtar motståndarraser ${done} av ${total}...`;
+						if (isFirstLoad) showStatus(progressText);
+						else if (triggerButton) triggerButton.textContent = progressText;
+					});
+				})
+				.then(() => {
 					if (!backdrop.isConnected) return;
 					renderAnalyzerResults(resultsContainer, state, loadMore);
 				})
@@ -1813,6 +1922,69 @@
 		}
 
 		return grid;
+	}
+
+	// One <details> per tactic actually played, sorted by how often - collapsed by default so the
+	// card stays short with few tactics tried, but a click reveals the per-tactic averages needed
+	// to compare "how did Bärsärk actually go for me" against another tactic, without this script
+	// judging which one is right.
+	function buildTacticBreakdown(battles) {
+		const groups = aggregateByTactic(battles);
+		if (!groups.length) return null;
+
+		const card = document.createElement('div');
+		card.className = 'rounded border p-3 border-border/60 bg-muted/20 space-y-1';
+
+		const heading = document.createElement('p');
+		heading.className = 'text-sm font-semibold';
+		heading.textContent = 'Per taktik';
+		card.appendChild(heading);
+
+		groups.forEach((group) => {
+			const details = document.createElement('details');
+			details.className = 'rounded border border-border/40 px-2 py-1';
+
+			const summary = document.createElement('summary');
+			summary.className = 'cursor-pointer text-xs font-medium';
+			const winRateText = group.decided ? `${formatPercent(group.wins, group.decided)} vinst (${group.wins}/${group.decided})` : 'inga avgjorda';
+			summary.textContent = `${formatTacticName(group.tacticName)} · ${group.count} matcher · ${winRateText}`;
+			details.appendChild(summary);
+
+			const detail = document.createElement('p');
+			detail.className = 'text-muted-foreground mt-1 text-[11px]';
+			detail.textContent = `Snitt: ${(group.totalDamageDone / group.count).toFixed(1)} skada utdelad, ${(group.totalDamageTaken / group.count).toFixed(1)} mottagen, ${(group.totalRounds / group.count).toFixed(1)} rondar/match`;
+			details.appendChild(detail);
+
+			card.appendChild(details);
+		});
+
+		return card;
+	}
+
+	// Shared renderer for the opponent-weapon and opponent-race breakdowns (see tallyByKeys) -
+	// capped to the 8 most-faced keys so a long tail of one-off weapon names doesn't turn this
+	// into a wall of text; the underlying tally still covers everything fetched, just not all
+	// displayed.
+	function buildTallyCard(title, entries) {
+		if (!entries.length) return null;
+		const card = document.createElement('div');
+		card.className = 'rounded border p-3 border-border/60 bg-muted/20 space-y-1';
+
+		const heading = document.createElement('p');
+		heading.className = 'text-sm font-semibold';
+		heading.textContent = title;
+		card.appendChild(heading);
+
+		const list = document.createElement('div');
+		list.className = 'text-xs space-y-0.5';
+		entries.slice(0, 8).forEach((entry) => {
+			const line = document.createElement('p');
+			line.textContent = `${entry.key}: ${formatPercent(entry.wins, entry.total)} vinst (${entry.wins}/${entry.total})`;
+			list.appendChild(line);
+		});
+		card.appendChild(list);
+
+		return card;
 	}
 
 	// Bars read oldest-to-newest, left to right (the opposite order from the dot strip and table
@@ -1928,6 +2100,16 @@
 
 		container.appendChild(buildFormStrip(battles, summary, colors));
 		container.appendChild(buildStatsGrid(summary));
+
+		const tacticCard = buildTacticBreakdown(battles);
+		if (tacticCard) container.appendChild(tacticCard);
+
+		const weaponCard = buildTallyCard('Vinst mot vapen', tallyByKeys(battles, (battle) => battle.opponentWeapons));
+		if (weaponCard) container.appendChild(weaponCard);
+
+		const raceCard = buildTallyCard('Vinst mot ras', tallyByKeys(battles, (battle) => battle.opponentAvatarIds.map((id) => opponentRaceCache.get(id))));
+		if (raceCard) container.appendChild(raceCard);
+
 		container.appendChild(buildDamageChartCard(battles, colors));
 		container.appendChild(buildMatchTable(battles));
 
