@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.12.0
+// @version     1.21.0
 //
 // @match       https://lanista.se/game/*
 // @match       https://lanista.se/
@@ -28,7 +28,12 @@
 	const resolvedEndpoints = new Map();
 	let craftsPromise;
 	let currentAvatarPromise;
+	let ownAvatarInfoPromise;
 	let scanTimer;
+	// Module-level (not per-popup state) since an opponent's race never changes mid-session and
+	// the same foes keep reappearing across "Visa fler" clicks and separate analyzer opens - once
+	// resolved here, re-analyzing never re-fetches a race for an avatar id already seen.
+	const opponentRaceCache = new Map();
 
 	// Jewelry-type slots (neck, finger, back, amulet, bracelet, ...) are flagged both is_armor
 	// and is_trinket at once, and it isn't knowable up front which of those two words (if
@@ -1048,6 +1053,7 @@
 	}
 
 	const RECENT_BATTLES_COUNT = 5;
+	const ANALYZER_BATCH_COUNT = 10;
 	const API_CALL_DELAY_MS = 100;
 	const WIN_RATE_CATEGORIES = [
 		{ key: 'CHANCE', label: 'Slumpdueller' },
@@ -1131,6 +1137,80 @@
 		return total ? { count, total } : null;
 	}
 
+	// Unlike computeAttackedFirst (only a round's first entry, only in a 1v1), this tallies every
+	// combat-resolution entry across every round, for any battle shape - every category this
+	// resolves names the attacker of a resolved attack in args.player_one (confirmed live
+	// alongside computeAttackedFirst above). Rule-based rather than an exact-match table because
+	// a live sweep across 16 real battles turned up far more variants than the original four
+	// categories covered: any "*_partial_miss" category (attack_partial_miss,
+	// attack_with_armor_block_partial_miss, weapon_block_partial_miss,
+	// shield_absorb_partial_miss, ...) still carries a real damage figure - the attacker still
+	// connects for reduced damage - but the category name and the reported live case both agree
+	// it's a fumble outcome, not a landed hit; "miss"/"ranged_miss" are the attacker whiffing
+	// entirely (a "fumla" in the site's own battle text); "dodge" and the block/absorb categories
+	// (without a partial-miss suffix) are the defender's doing, not the attacker's; every other
+	// "attack*" or "ranged" category is a hit that connected (in full, armor-reduced, glancing, or
+	// some combination). Keeping fumbled separate from dodgedByOpponent/blockedByOpponent is the
+	// whole point: a high miss rate points at the attacker's own weapon skill, while a high
+	// dodge/block rate against them is about the opponent's evasion, not something more weapon
+	// skill fixes.
+	function classifyAttackOutcome(category) {
+		if (category.includes('partial_miss')) return 'fumbled';
+		if (category === 'miss' || category === 'ranged_miss') return 'fumbled';
+		if (category === 'dodge') return 'dodgedByOpponent';
+		if (category === 'weapon_block' || category === 'shield_block' || category === 'shield_absorb') return 'blockedByOpponent';
+		if (category === 'ranged' || category.startsWith('attack')) return 'landed';
+		return null;
+	}
+
+	function computeOwnAttackOutcomes(battle, fighterName) {
+		const outcomes = { landed: 0, fumbled: 0, dodgedByOpponent: 0, blockedByOpponent: 0 };
+		let total = 0;
+		(battle.rounds || []).forEach((round) => (round.text || []).forEach((entry) => {
+			const bucket = classifyAttackOutcome(entry.key.split('.')[1]);
+			if (!bucket || !entry.args || stripSideTags(entry.args.player_one) !== fighterName) return;
+			outcomes[bucket]++;
+			total++;
+		}));
+		return total ? { ...outcomes, total } : null;
+	}
+
+	// Same resolved-attack categories as computeOwnAttackOutcomes, but reading the *enemy* side's
+	// weapon field instead of tallying an outcome for our own - args.weapon is the name of
+	// whatever the attacker (args.player_one) is wielding for that attack, already present in
+	// data this script fetches anyway, so a per-battle "which weapons did I face" set costs zero
+	// extra requests. Deduplicated per battle (a Set) since a weapon used 10 times in one fight
+	// should count once toward that fight's win/loss, not 10 times.
+	function computeOpponentWeapons(battle, enemyNames) {
+		const weapons = new Set();
+		(battle.rounds || []).forEach((round) => (round.text || []).forEach((entry) => {
+			if (!classifyAttackOutcome(entry.key.split('.')[1])) return;
+			if (!entry.args || !entry.args.weapon || entry.args.weapon === 'N/A') return;
+			if (!enemyNames.has(stripSideTags(entry.args.player_one))) return;
+			// Confirmed live: some weapon names carry stray leading/trailing whitespace in the
+			// server's own text (e.g. " Skallslaga ") - untrimmed, that would fragment one weapon
+			// into two separate tally entries.
+			weapons.add(entry.args.weapon.trim());
+		}));
+		return Array.from(weapons);
+	}
+
+	// battle_tactic_name (e.g. "OFFENSIVE_LIGHT") is a primary tactic (NORMAL/OFFENSIVE/DEFENSIVE/
+	// BERSERK) plus a secondary one (NORMAL/HEAVY/LIGHT) joined with "_" - shown per-match in the
+	// analyzer table so a reader can judge a low dodge or accuracy rate against the tactic that
+	// produced it themselves (a Bärsärk match with low Undvika Anfall is the tactic working as
+	// intended, not a build gap - see the tactics summary the user supplied), rather than this
+	// script presuming to know which stats fit someone's intended playstyle.
+	const TACTIC_LABELS = { NORMAL: 'Normal', OFFENSIVE: 'Offensiv', DEFENSIVE: 'Defensiv', BERSERK: 'Bärsärk', HEAVY: 'Tung', LIGHT: 'Lätt' };
+
+	function formatTacticName(name) {
+		if (!name) return '-';
+		const [primary, secondary] = name.split('_');
+		const primaryLabel = TACTIC_LABELS[primary] || primary;
+		const secondaryLabel = TACTIC_LABELS[secondary];
+		return secondaryLabel && secondaryLabel !== 'Normal' ? `${primaryLabel}, ${secondaryLabel}` : primaryLabel;
+	}
+
 	// /api/battles/{id}'s per-round "participant_data" (used by scanBattlePage above) is scoped
 	// to whichever avatar is currently logged in, not to whoever's battle list it was reached
 	// through - confirmed live by fetching a battle the logged-in avatar wasn't part of at all,
@@ -1139,6 +1219,22 @@
 	// "battle.stats.stats_text_1" text entry the game emits once per fighter in the battle's
 	// final round - present for duels, team battles and monster hunts alike (confirmed against
 	// one live example of each), and unlike round_stats it isn't tied to the viewer's session.
+	// participant_data.fightable_hp/fightable_max_hp is scoped to the logged-in avatar (see the
+	// comment on findOwnBattleStats below) and present per round, so the lowest ratio across the
+	// battle is exactly how close this avatar came to whatever give_up_percentage was set for that
+	// fight - a direct read on how much margin a give-up setting actually left, rather than this
+	// script guessing whether it should be raised.
+	function computeLowestHpPercent(battle) {
+		let lowest = null;
+		(battle.rounds || []).forEach((round) => {
+			const data = round.participant_data;
+			if (!data || !data.fightable_max_hp) return;
+			const ratio = data.fightable_hp / data.fightable_max_hp;
+			if (lowest === null || ratio < lowest) lowest = ratio;
+		});
+		return lowest;
+	}
+
 	function findOwnBattleStats(battle, avatarId) {
 		const participant = (battle.participants || []).find((entry) => entry.unique_id === `avatar_${avatarId}`);
 		if (!participant) return null;
@@ -1167,6 +1263,16 @@
 			.filter((args) => enemyNames.has(stripSideTags(args.name)))
 			.reduce((total, args) => total + Math.max(0, args.attacks_against - args.dodges - args.blocks - args.misses), 0);
 
+		// "Who did I actually face and how did that go" only means something with exactly one
+		// named opponent - a team battle's several simultaneous opponents have no single profile
+		// to read a max hit or fumble rate off of, same reasoning as computeAttackedFirst being
+		// duel-only. enemyStats.max_damage_done/damage_done are the same exact, server-computed
+		// battle.stats entry this avatar's own numbers above come from, just for the opponent's
+		// name instead - not an estimate from round-text parsing.
+		const isDuel = (battle.participants || []).length === 2;
+		const opponentName = isDuel ? Array.from(enemyNames)[0] : null;
+		const enemyStats = opponentName ? statsArgs.find((args) => stripSideTags(args.name) === opponentName) : null;
+
 		return {
 			id: battle.id,
 			createdAt: battle.created_at,
@@ -1174,6 +1280,20 @@
 			won: participant.won,
 			fighterName: participant.fighter.name,
 			opponents: Array.from(enemyNames),
+			opponentWeapons: computeOpponentWeapons(battle, enemyNames),
+			// unique_id is "avatar_{id}" for a real gladiator or "npc_{id}_{hash}" for a monster/NPC
+			// (confirmed live) - only the former has a race worth looking up via /api/avatars/{id},
+			// so monster-hunt opponents are simply excluded here rather than attempted and failing.
+			opponentAvatarIds: (battle.participants || [])
+				.filter((entry) => entry.team !== participant.team)
+				.map((entry) => (/^avatar_(\d+)$/.exec(entry.unique_id) || [])[1])
+				.filter(Boolean),
+			roundCount: (battle.rounds || []).length,
+			// participant_data is scoped to the logged-in avatar (see comment above), which on the
+			// page this analyzer is reached from is always this same avatarId, so the first round
+			// that carries one is this avatar's own tactic for the match (the pre-battle "setup"
+			// round, order -1, already carries it in every example seen).
+			tacticName: (battle.rounds || []).find((round) => round.participant_data)?.participant_data?.battle_tactic_name || null,
 			damageDone: own.damage_done,
 			maxDamageDone: own.max_damage_done,
 			damageTaken: own.damage_taken,
@@ -1183,7 +1303,13 @@
 			dodges: own.dodges,
 			blocks: own.blocks,
 			misses: own.misses,
-			attackedFirst: computeAttackedFirst(battle, participant.fighter.name)
+			attackedFirst: computeAttackedFirst(battle, participant.fighter.name),
+			ownAttackOutcomes: computeOwnAttackOutcomes(battle, participant.fighter.name),
+			isDuel,
+			opponentDamageDone: enemyStats ? enemyStats.damage_done : null,
+			opponentMaxDamageDone: enemyStats ? enemyStats.max_damage_done : null,
+			opponentAttackOutcomes: opponentName ? computeOwnAttackOutcomes(battle, opponentName) : null,
+			lowestHpPercent: computeLowestHpPercent(battle)
 		};
 	}
 
@@ -1222,6 +1348,30 @@
 		state.winRates = response && response.ok ? await response.json().catch(() => null) : null;
 	}
 
+	// name_display on /api/avatars/{id}'s race object is "singular|plural" (confirmed live, e.g.
+	// "ork|orker", "alv|alver") - only the singular half is useful here, capitalized to match how
+	// the site's own UI writes race names ("Ras: Ork" on the info tab).
+	function formatRaceName(nameDisplay) {
+		const singular = (nameDisplay || '').split('|')[0];
+		return singular ? singular.charAt(0).toUpperCase() + singular.slice(1) : null;
+	}
+
+	// One extra request per *unique* opponent avatar id not already in opponentRaceCache - the
+	// only piece of this analyzer that isn't free, since race appears nowhere in the battle
+	// payload or its round text (unlike tactic and weapon, see their own comments). Runs through
+	// the same throttledFetch as everything else, so it's still 100ms-spaced from the battle
+	// fetches that preceded it, not a burst on top of them.
+	async function ensureOpponentRaces(state, avatarIds, onProgress) {
+		const unresolved = Array.from(new Set(avatarIds)).filter((id) => !opponentRaceCache.has(id));
+		for (let index = 0; index < unresolved.length; index++) {
+			onProgress(index + 1, unresolved.length);
+			const id = unresolved[index];
+			const response = await throttledFetch(state, `/api/avatars/${id}`);
+			const avatar = response && response.ok ? await response.json().catch(() => null) : null;
+			opponentRaceCache.set(id, (avatar && formatRaceName(avatar.race && avatar.race.name_display)) || null);
+		}
+	}
+
 	async function ensureQueuedBattleIds(state, count) {
 		while (state.idQueue.length < count && !state.listExhausted) {
 			if (!state.nextListUrl) {
@@ -1251,9 +1401,9 @@
 	// Battles the avatar hasn't finished yet (or ones too old/odd-shaped to carry a
 	// battle.stats entry) are simply skipped rather than surfaced as errors - a partial result
 	// from N of the requested battles is more useful than failing the whole batch over one.
-	async function loadMoreBattles(state, onProgress) {
-		await ensureQueuedBattleIds(state, RECENT_BATTLES_COUNT);
-		const ids = state.idQueue.splice(0, RECENT_BATTLES_COUNT);
+	async function loadMoreBattles(state, batchSize, onProgress) {
+		await ensureQueuedBattleIds(state, batchSize);
+		const ids = state.idQueue.splice(0, batchSize);
 		for (let index = 0; index < ids.length; index++) {
 			onProgress(index + 1, ids.length);
 			const response = await throttledFetch(state, `/api/battles/${ids[index]}`);
@@ -1271,6 +1421,11 @@
 		// Only 1v1s carry an attackedFirst (see computeAttackedFirst) - a team battle/monster
 		// hunt mixed into the same batch of matches just doesn't contribute rounds either way.
 		const duels = battles.filter((battle) => battle.attackedFirst);
+		// ownAttackOutcomes is null for a battle where the fighter never landed a resolved attack
+		// of its own (see computeOwnAttackOutcomes) - excluded here rather than counted as zeroes,
+		// same reasoning as duels above.
+		const withOwnAttacks = battles.filter((battle) => battle.ownAttackOutcomes);
+		const sumOwnAttacks = (key) => withOwnAttacks.reduce((total, battle) => total + battle.ownAttackOutcomes[key], 0);
 		return {
 			count: battles.length,
 			maxDamageDone: Math.max(...battles.map((battle) => battle.maxDamageDone)),
@@ -1283,10 +1438,98 @@
 			totalBlocks: sum('blocks'),
 			totalAttackedFirstCount: duels.reduce((total, battle) => total + battle.attackedFirst.count, 0),
 			totalAttackedFirstRounds: duels.reduce((total, battle) => total + battle.attackedFirst.total, 0),
+			totalOwnAttempts: sumOwnAttacks('total'),
+			totalOwnLanded: sumOwnAttacks('landed'),
+			totalOwnFumbled: sumOwnAttacks('fumbled'),
+			totalOwnDodgedByOpponent: sumOwnAttacks('dodgedByOpponent'),
+			totalOwnBlockedByOpponent: sumOwnAttacks('blockedByOpponent'),
+			totalRounds: sum('roundCount'),
 			avgDamageDone: sum('damageDone') / battles.length,
 			wins,
 			decided: decided.length
 		};
+	}
+
+	// Scoped to duels only - "what tactic works against what I actually face" only means
+	// something with one well-defined opponent per fight (a team battle's several simultaneous
+	// opponents have no single profile), same reasoning as findOwnBattleStats' own isDuel gate.
+	// Each tactic's group accumulates both sides of the fight - this avatar's own damage/fumbles
+	// and the opponent's - so the two can be read side by side per tactic rather than only in
+	// aggregate across every tactic at once.
+	function aggregateByTacticForDuels(battles) {
+		const byTactic = new Map();
+		battles.filter((battle) => battle.isDuel).forEach((battle) => {
+			const key = battle.tacticName || 'OKÄND';
+			const entry = byTactic.get(key) || {
+				tacticName: battle.tacticName,
+				// Kept alongside the accumulated sums below (not instead of them) so the renderer
+				// can run tallyByKeys(battles, ...) per tactic for the opponent-race breakdown,
+				// without this function needing to know anything about races itself.
+				battles: [],
+				count: 0,
+				wins: 0,
+				decided: 0,
+				ownDamageDone: 0,
+				ownMaxDamageDone: 0,
+				ownLanded: 0,
+				ownFumbled: 0,
+				ownAttempts: 0,
+				dodgedOrBlockedByOpponent: 0,
+				opponentDamageDone: 0,
+				opponentMaxDamageDone: 0,
+				opponentLanded: 0,
+				opponentFumbled: 0,
+				opponentAttempts: 0,
+				lowestHpPercentSum: 0,
+				lowestHpPercentCount: 0
+			};
+			entry.battles.push(battle);
+			entry.count++;
+			if (battle.won === true || battle.won === false) {
+				entry.decided++;
+				if (battle.won) entry.wins++;
+			}
+			entry.ownDamageDone += battle.damageDone;
+			entry.ownMaxDamageDone = Math.max(entry.ownMaxDamageDone, battle.maxDamageDone);
+			if (battle.ownAttackOutcomes) {
+				entry.ownLanded += battle.ownAttackOutcomes.landed;
+				entry.ownFumbled += battle.ownAttackOutcomes.fumbled;
+				entry.ownAttempts += battle.ownAttackOutcomes.total;
+				entry.dodgedOrBlockedByOpponent += battle.ownAttackOutcomes.dodgedByOpponent + battle.ownAttackOutcomes.blockedByOpponent;
+			}
+			if (battle.opponentDamageDone != null) entry.opponentDamageDone += battle.opponentDamageDone;
+			if (battle.opponentMaxDamageDone != null) entry.opponentMaxDamageDone = Math.max(entry.opponentMaxDamageDone, battle.opponentMaxDamageDone);
+			if (battle.opponentAttackOutcomes) {
+				entry.opponentLanded += battle.opponentAttackOutcomes.landed;
+				entry.opponentFumbled += battle.opponentAttackOutcomes.fumbled;
+				entry.opponentAttempts += battle.opponentAttackOutcomes.total;
+			}
+			if (battle.lowestHpPercent != null) {
+				entry.lowestHpPercentSum += battle.lowestHpPercent;
+				entry.lowestHpPercentCount++;
+			}
+			byTactic.set(key, entry);
+		});
+		return Array.from(byTactic.values()).sort((a, b) => b.count - a.count);
+	}
+
+	// Shared shape for "which of these battles involved X, and what was the win rate when they
+	// did" - used for both the opponent weapon and opponent race breakdowns. keysForBattle can
+	// return several keys per battle (e.g. a team fight against two differently-armed foes), each
+	// counted once per battle via the Set, same reasoning as computeOpponentWeapons' own dedup.
+	function tallyByKeys(battles, keysForBattle) {
+		const byKey = new Map();
+		battles.forEach((battle) => {
+			if (battle.won !== true && battle.won !== false) return;
+			new Set(keysForBattle(battle)).forEach((key) => {
+				if (!key) return;
+				const entry = byKey.get(key) || { key, wins: 0, total: 0 };
+				entry.total++;
+				if (battle.won) entry.wins++;
+				byKey.set(key, entry);
+			});
+		});
+		return Array.from(byKey.values()).sort((a, b) => b.total - a.total);
 	}
 
 	function formatBattleDate(iso) {
@@ -1361,7 +1604,7 @@
 				triggerButton.textContent = 'Hämtar fler matcher...';
 			}
 			ensureWinRates(state)
-				.then(() => loadMoreBattles(state, (done, total) => {
+				.then(() => loadMoreBattles(state, RECENT_BATTLES_COUNT, (done, total) => {
 					const progressText = `Hämtar match ${done} av ${total}...`;
 					if (isFirstLoad) showStatus(progressText);
 					else if (triggerButton) triggerButton.textContent = progressText;
@@ -1504,6 +1747,609 @@
 			const avatarName = link.textContent.trim().replace(/\s*\([^)]*\)\s*$/, '');
 			wrapper.parentNode.insertBefore(createStatsTriggerButton(avatarId, avatarName), link);
 		});
+	}
+
+	function getOwnAvatarInfo() {
+		if (!ownAvatarInfoPromise) {
+			ownAvatarInfoPromise = fetch('/api/avatars/me')
+				.then((response) => response.ok ? response.json() : null)
+				.then((avatar) => avatar ? { id: avatar.id, name: avatar.name } : null)
+				.catch(() => null);
+		}
+		return ownAvatarInfoPromise;
+	}
+
+	function buildAnalyzerEntryCard(avatarId, avatarName) {
+		const card = document.createElement('div');
+		card.dataset.lanistaAnalyzerEntry = 'true';
+		card.className = 'bg-card text-card-foreground flex flex-wrap items-center justify-between gap-3 rounded border p-3 shadow-xl border-border/70';
+
+		const text = document.createElement('div');
+		const heading = document.createElement('p');
+		heading.className = 'font-semibold';
+		heading.textContent = '📊 Analysera dina strider';
+		const sub = document.createElement('p');
+		sub.className = 'text-muted-foreground text-xs';
+		sub.textContent = 'Se statistik, taktik och trender för dina senaste matcher.';
+		text.append(heading, sub);
+
+		const button = document.createElement('button');
+		button.type = 'button';
+		button.textContent = 'Analysera';
+		button.className = 'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md border bg-background px-3 py-1.5 text-xs font-medium shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground';
+		button.addEventListener('click', () => openAnalyzerModal(avatarId, avatarName));
+
+		card.append(text, button);
+		return card;
+	}
+
+	function findAnalyzerEntryCard(tableRoot) {
+		return tableRoot.parentElement.querySelector(':scope > [data-lanista-analyzer-entry]');
+	}
+
+	let ownHistoryScanning = false;
+	let nativeTableClasses = null;
+
+	// surface-table-header/surface-row (confirmed live) aren't plain color classes - each applies
+	// its own background-image: linear-gradient(...), and the two gradients are tinted
+	// differently by design (the header's is neutral blue-gray, the row's is warm amber/brown -
+	// confirmed by reading getComputedStyle(...).backgroundImage on both). That split is
+	// invisible on the real data-table pages because everything around it shares the same warm
+	// undertone, but this analyzer's own cards are plain neutral bg-muted/20 - dropped into that
+	// context, the warm row gradient reads as a jarring, oddly-lit table rather than blending in.
+	// Stripped out here rather than reproduced.
+	function stripSurfaceClasses(classes) {
+		return classes.split(' ').filter((cls) => cls !== 'surface-row' && cls !== 'surface-table-header').join(' ');
+	}
+
+	// Clones the rest of the real match table's own classes instead of hand-reconstructing
+	// equivalents - a live diff against the actual DOM turned up a border opacity
+	// (border-border/55) and checkbox-column arbitrary-variant selectors a guessed reconstruction
+	// had no way to know about. Cloning at read time means buildMatchTable can never drift from
+	// the site's real component again, even if it changes later. Refreshed on every scan rather
+	// than cached once, since it's cheap and the table only needs to exist, not any particular row
+	// count.
+	function refreshNativeTableClasses() {
+		const table = document.querySelector('.data-table-root table');
+		if (!table || !table.tHead || !table.tHead.rows[0] || !table.tBodies[0] || !table.tBodies[0].rows[0]) return;
+		nativeTableClasses = {
+			table: table.className,
+			thead: stripSurfaceClasses(table.tHead.className),
+			th: table.tHead.rows[0].cells[0].className,
+			tr: stripSurfaceClasses(table.tBodies[0].rows[0].className),
+			td: table.tBodies[0].rows[0].cells[0].className
+		};
+	}
+
+	// "/game/avatar/me/history" (the tab labeled "Historia" on the logged-in player's own
+	// gladiator) reuses the same generic data-table component as the bank page's deposits table -
+	// .data-table-root is that component's own wrapper class, confirmed live, so this anchors to
+	// it the same way ensureBankChartCard does rather than guessing at page-specific markup that
+	// could shift with the table's own contents (pagination, empty state). Deliberately a second,
+	// more prominent entry point alongside the small 📊 icon scanAvatarInspectButtons already adds
+	// next to every avatar link site-wide - that one stays a quick glance at anyone's record, this
+	// one is specifically "look at my own build" and gets a full table+chart+suggestions view.
+	async function scanOwnHistoryPage() {
+		refreshNativeTableClasses();
+		if (ownHistoryScanning) return;
+		const tableRoot = document.querySelector('.data-table-root');
+		if (!tableRoot || findAnalyzerEntryCard(tableRoot)) return;
+		ownHistoryScanning = true;
+		try {
+			const info = await getOwnAvatarInfo();
+			const freshRoot = document.querySelector('.data-table-root');
+			if (!info || !freshRoot || findAnalyzerEntryCard(freshRoot)) return;
+			freshRoot.parentElement.insertBefore(buildAnalyzerEntryCard(info.id, info.name), freshRoot);
+		} finally {
+			ownHistoryScanning = false;
+		}
+	}
+
+	// Sampled the same way as getThemeColors/getBankColors (see their own comments) -
+	// text-green-600/text-red-600 are the exact classes the history table itself uses for its
+	// "Ja"/"Nej" Vinst column (confirmed live), so anything this popup colors for win/loss agrees
+	// with how the site already colors the very table it's inserted next to.
+	function getResultColors() {
+		return {
+			win: sampleThemeColor('text-green-600', 'color'),
+			loss: sampleThemeColor('text-red-600', 'color')
+		};
+	}
+
+	function closeAnalyzerModal(backdrop) {
+		backdrop.remove();
+		document.removeEventListener('keydown', backdrop.lanistaKeyHandler);
+	}
+
+	function openAnalyzerModal(avatarId, avatarName) {
+		const backdrop = document.createElement('div');
+		backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+
+		const modal = document.createElement('div');
+		// Matches the real .data-table-shell wrapper's own classes verbatim (confirmed live) -
+		// border-border with no opacity modifier, not border-border/70.
+		modal.className = 'bg-card text-card-foreground rounded border border-border shadow-xl';
+		modal.style.cssText = 'max-width:800px;width:100%;max-height:88vh;overflow-y:auto;position:relative;';
+		backdrop.appendChild(modal);
+
+		const closeButton = document.createElement('button');
+		closeButton.type = 'button';
+		closeButton.textContent = '✕';
+		closeButton.style.cssText = 'position:absolute;top:8px;right:8px;cursor:pointer;background:none;border:none;font-size:14px;line-height:1;padding:4px;';
+		closeButton.addEventListener('click', () => closeAnalyzerModal(backdrop));
+		modal.appendChild(closeButton);
+
+		const body = document.createElement('div');
+		body.className = 'px-3 md:px-5 py-3 space-y-3';
+		modal.appendChild(body);
+
+		const heading = document.createElement('p');
+		heading.className = 'font-semibold';
+		heading.textContent = `${avatarName} - analys av senaste matcherna`;
+		body.appendChild(heading);
+
+		// A plain client-side view filter over whatever's already been fetched, not a re-fetch -
+		// "Visa fler" still pulls real, unfiltered matches (so the fetched count matches what was
+		// asked for), this just hides odjur/lagspel (odjur) fights from every card below when
+		// checked. type_display is "Odjur" for a solo monster hunt and "Lagspel (Odjur)" for a
+		// team one (both confirmed live) - matching on "odjur" case-insensitively covers both
+		// without needing to enumerate every team-battle label the server might use.
+		const excludeBotsLabel = document.createElement('label');
+		excludeBotsLabel.className = 'flex items-center gap-1.5 text-xs text-muted-foreground';
+		const excludeBotsCheckbox = document.createElement('input');
+		excludeBotsCheckbox.type = 'checkbox';
+		excludeBotsLabel.append(excludeBotsCheckbox, document.createTextNode('Exkludera strider mot odjur'));
+		body.appendChild(excludeBotsLabel);
+
+		const resultsContainer = document.createElement('div');
+		resultsContainer.className = 'space-y-3';
+		body.appendChild(resultsContainer);
+
+		excludeBotsCheckbox.addEventListener('change', () => {
+			state.excludeBots = excludeBotsCheckbox.checked;
+			renderAnalyzerResults(resultsContainer, state, loadMore);
+		});
+
+		backdrop.lanistaKeyHandler = (event) => {
+			if (event.key === 'Escape') closeAnalyzerModal(backdrop);
+		};
+		document.addEventListener('keydown', backdrop.lanistaKeyHandler);
+		backdrop.addEventListener('click', (event) => {
+			if (event.target === backdrop) closeAnalyzerModal(backdrop);
+		});
+
+		document.body.appendChild(backdrop);
+
+		const state = createBattleState(avatarId);
+		state.excludeBots = false;
+
+		function showStatus(text) {
+			resultsContainer.innerHTML = '';
+			const status = document.createElement('div');
+			status.className = 'text-muted-foreground text-xs';
+			status.textContent = text;
+			resultsContainer.appendChild(status);
+		}
+
+		function loadMore(triggerButton) {
+			const isFirstLoad = !state.battles.length;
+			if (isFirstLoad) showStatus(`Hämtar dina senaste ${ANALYZER_BATCH_COUNT} matcher...`);
+			else if (triggerButton) {
+				triggerButton.disabled = true;
+				triggerButton.textContent = 'Hämtar fler matcher...';
+			}
+			ensureWinRates(state)
+				.then(() => loadMoreBattles(state, ANALYZER_BATCH_COUNT, (done, total) => {
+					const progressText = `Hämtar match ${done} av ${total}...`;
+					if (isFirstLoad) showStatus(progressText);
+					else if (triggerButton) triggerButton.textContent = progressText;
+				}))
+				.then(() => {
+					const avatarIds = state.battles.flatMap((battle) => battle.opponentAvatarIds);
+					return ensureOpponentRaces(state, avatarIds, (done, total) => {
+						const progressText = `Hämtar motståndarraser ${done} av ${total}...`;
+						if (isFirstLoad) showStatus(progressText);
+						else if (triggerButton) triggerButton.textContent = progressText;
+					});
+				})
+				.then(() => {
+					if (!backdrop.isConnected) return;
+					renderAnalyzerResults(resultsContainer, state, loadMore);
+				})
+				.catch((error) => {
+					console.error('lanista analyzer error', error);
+					if (!backdrop.isConnected) return;
+					if (isFirstLoad) showStatus('Kunde inte hämta matchdata.');
+					else if (triggerButton) {
+						triggerButton.disabled = false;
+						triggerButton.textContent = 'Visa fler (misslyckades, försök igen)';
+					}
+				});
+		}
+
+		loadMore();
+	}
+
+	function buildFormStrip(battles, summary, colors) {
+		const wrap = document.createElement('div');
+		wrap.className = 'space-y-1';
+
+		const dots = document.createElement('div');
+		dots.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+		battles.forEach((battle) => {
+			const dot = document.createElement('span');
+			const label = battle.won === true ? 'Vinst' : battle.won === false ? 'Förlust' : 'Oavgjort';
+			dot.title = `${formatBattleDate(battle.createdAt)} · ${label}`;
+			const dotColor = battle.won === true ? colors.win : battle.won === false ? colors.loss : colors.muted;
+			dot.style.cssText = `display:inline-block;width:9px;height:9px;border-radius:50%;background:${dotColor};`;
+			dots.appendChild(dot);
+		});
+		wrap.appendChild(dots);
+
+		const line = document.createElement('p');
+		line.className = 'text-muted-foreground text-xs';
+		line.textContent = summary.decided
+			? `${summary.wins} vinster, ${summary.decided - summary.wins} förluster av ${summary.decided} avgjorda (${formatPercent(summary.wins, summary.decided)}) · senaste ${summary.count} matcherna, nyast först`
+			: `Senaste ${summary.count} matcherna, nyast först`;
+		wrap.appendChild(line);
+
+		return wrap;
+	}
+
+	function statTile(label, value, detail) {
+		const tile = document.createElement('div');
+		tile.className = 'rounded border border-border/60 bg-muted/20 p-2';
+		const labelEl = document.createElement('p');
+		labelEl.className = 'text-muted-foreground text-[11px]';
+		labelEl.textContent = label;
+		const valueEl = document.createElement('p');
+		valueEl.className = 'text-sm font-semibold';
+		valueEl.textContent = value;
+		tile.append(labelEl, valueEl);
+		if (detail) {
+			const detailEl = document.createElement('p');
+			detailEl.className = 'text-muted-foreground text-[11px]';
+			detailEl.textContent = detail;
+			tile.appendChild(detailEl);
+		}
+		return tile;
+	}
+
+	// Every rate the battle data can answer, laid out plainly with no recommendation attached -
+	// this used to score these into ranked "spend points here" suggestions, but that judged
+	// someone's build/tactic choices for them (a Bärsärk player's low Undvika Anfall rate is the
+	// tactic working as intended, not a gap - see the Taktik column in the match table below,
+	// and the tactics summary the user supplied). Showing the numbers plainly instead lets a
+	// reader weigh them against their own intended playstyle. Only tiles with enough underlying
+	// data to mean anything are shown - a rate over 0 attempts is just noise.
+	function buildStatsGrid(summary) {
+		const grid = document.createElement('div');
+		grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:6px;';
+
+		if (summary.decided) {
+			grid.appendChild(statTile('Vinstprocent', formatPercent(summary.wins, summary.decided), `${summary.wins}/${summary.decided}`));
+		}
+		if (summary.totalAttackedFirstRounds) {
+			grid.appendChild(statTile('Anföll först', formatPercent(summary.totalAttackedFirstCount, summary.totalAttackedFirstRounds), `${summary.totalAttackedFirstCount}/${summary.totalAttackedFirstRounds} ronder`));
+		}
+		if (summary.totalOwnAttempts) {
+			grid.appendChild(statTile('Landade attacker', formatPercent(summary.totalOwnLanded, summary.totalOwnAttempts), `${summary.totalOwnLanded}/${summary.totalOwnAttempts}`));
+			grid.appendChild(statTile('Fumlade attacker', formatPercent(summary.totalOwnFumbled, summary.totalOwnAttempts), `${summary.totalOwnFumbled}/${summary.totalOwnAttempts}`));
+		}
+		if (summary.totalAttacksAgainst) {
+			grid.appendChild(statTile('Undvek/blockerade', formatPercent(summary.totalDodges + summary.totalBlocks, summary.totalAttacksAgainst), `${summary.totalDodges + summary.totalBlocks}/${summary.totalAttacksAgainst} attacker mot dig`));
+		}
+		if (summary.totalHitsLandedByOwnSide) {
+			grid.appendChild(statTile('Perfekta träffar', formatPercent(summary.totalCriticalHits, summary.totalHitsLandedByOwnSide), `${summary.totalCriticalHits}/${summary.totalHitsLandedByOwnSide} · styrs av Tunga/Lätta attacker`));
+		}
+		if (summary.totalRounds) {
+			grid.appendChild(statTile('Rondar per match', (summary.totalRounds / summary.count).toFixed(1), `${summary.totalRounds} ronder totalt`));
+			grid.appendChild(statTile('Skada per rond', (summary.totalDamageDone / summary.totalRounds).toFixed(1), null));
+		}
+
+		return grid;
+	}
+
+	// One <details> per tactic actually played, sorted by how often - collapsed by default so the
+	// card stays short with few tactics tried, but a click reveals the per-tactic averages needed
+	// to compare "how did Bärsärk actually go for me" against another tactic, without this script
+	// judging which one is right.
+	// One row of small text lines under a label ("Du" / "Motståndaren") - shared by both sides of
+	// each tactic panel below so the two stay visually identical, which is what makes them
+	// readable as a comparison rather than two unrelated lists.
+	function tacticSideBlock(label, lines) {
+		const block = document.createElement('div');
+		const labelEl = document.createElement('p');
+		labelEl.className = 'text-muted-foreground mb-0.5 text-xs font-medium';
+		labelEl.textContent = label;
+		block.appendChild(labelEl);
+		lines.filter(Boolean).forEach((line) => {
+			const p = document.createElement('p');
+			p.className = 'text-xs';
+			p.textContent = line;
+			block.appendChild(p);
+		});
+		return block;
+	}
+
+	// A duel is inherently two-sided, so each tactic gets one panel with a "Du"/"Motståndaren"
+	// pair rather than a flat table row - the split is the actual insight (what a tactic scores
+	// against, not just what it scores), and reads as a comparison instead of a wall of columns.
+	// No suggestion is drawn from these numbers (see the earlier removal of scored suggestions) -
+	// they're grouped by the tactic actually played, not judged.
+	function buildTacticScoutingReport(battles) {
+		const groups = aggregateByTacticForDuels(battles);
+		if (!groups.length) return null;
+
+		const wrap = document.createElement('div');
+		wrap.className = 'space-y-2';
+
+		const heading = document.createElement('p');
+		heading.className = 'text-sm font-semibold';
+		heading.textContent = 'Per taktik (dueller)';
+		wrap.appendChild(heading);
+
+		groups.forEach((group) => {
+			const panel = document.createElement('div');
+			panel.className = 'rounded border p-3 border-border/60 bg-muted/20 space-y-2';
+
+			const titleRow = document.createElement('div');
+			titleRow.style.cssText = 'display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;';
+			const title = document.createElement('p');
+			title.className = 'text-sm font-semibold';
+			title.textContent = formatTacticName(group.tacticName);
+			const record = document.createElement('p');
+			record.className = 'text-muted-foreground text-xs';
+			record.textContent = group.decided
+				? `${group.count} dueller · ${formatPercent(group.wins, group.decided)} vinst (${group.wins}/${group.decided})`
+				: `${group.count} dueller`;
+			titleRow.append(title, record);
+			panel.appendChild(titleRow);
+
+			const sides = document.createElement('div');
+			sides.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px;';
+
+			const ownAvgHit = group.ownLanded ? (group.ownDamageDone / group.ownLanded).toFixed(1) : '-';
+			const opponentAvgHit = group.opponentLanded ? (group.opponentDamageDone / group.opponentLanded).toFixed(1) : '-';
+
+			sides.appendChild(tacticSideBlock('Du', [
+				`Skada: ${ownAvgHit} snitt / ${group.ownMaxDamageDone} max`,
+				group.ownAttempts ? `Fumlade: ${formatPercent(group.ownFumbled, group.ownAttempts)}` : null,
+				group.lowestHpPercentCount ? `Lägsta KP: ${Math.round((group.lowestHpPercentSum / group.lowestHpPercentCount) * 100)}% (snitt)` : null
+			]));
+			sides.appendChild(tacticSideBlock('Motståndaren', [
+				`Skada: ${opponentAvgHit} snitt / ${group.opponentMaxDamageDone || '-'} max`,
+				group.opponentAttempts ? `Fumlade: ${formatPercent(group.opponentFumbled, group.opponentAttempts)}` : null,
+				group.ownAttempts ? `Undvek dig: ${formatPercent(group.dodgedOrBlockedByOpponent, group.ownAttempts)}` : null
+			]));
+
+			// Same tallyByKeys used for the overall "Vinst mot ras" card, just scoped to this
+			// tactic's own duels - answers "does this tactic hold up against every race I've
+			// faced with it, or only some", which the overall race card can't show on its own
+			// since it mixes every tactic together.
+			const raceTally = tallyByKeys(group.battles, (battle) => battle.opponentAvatarIds.map((id) => opponentRaceCache.get(id)));
+			if (raceTally.length) {
+				sides.appendChild(tacticSideBlock('Mot ras', raceTally.slice(0, 5).map((entry) =>
+					`${entry.key}: ${formatPercent(entry.wins, entry.total)} (${entry.wins}/${entry.total})`
+				)));
+			}
+
+			panel.appendChild(sides);
+			wrap.appendChild(panel);
+		});
+
+		return wrap;
+	}
+
+	// Shared renderer for the opponent-weapon and opponent-race breakdowns (see tallyByKeys) -
+	// capped to the 8 most-faced keys so a long tail of one-off weapon names doesn't turn this
+	// into a wall of text; the underlying tally still covers everything fetched, just not all
+	// displayed. collapsed renders behind a closed <details> instead of an always-open card, for
+	// a breakdown that's useful to have but shouldn't compete for attention with the tactic
+	// scouting report above it.
+	function buildTallyCard(title, entries, collapsed) {
+		if (!entries.length) return null;
+
+		const list = document.createElement('div');
+		list.className = 'text-xs space-y-0.5';
+		entries.slice(0, 8).forEach((entry) => {
+			const line = document.createElement('p');
+			line.textContent = `${entry.key}: ${formatPercent(entry.wins, entry.total)} vinst (${entry.wins}/${entry.total})`;
+			list.appendChild(line);
+		});
+
+		if (collapsed) {
+			const details = document.createElement('details');
+			details.className = 'rounded border p-3 border-border/60 bg-muted/20';
+			const summary = document.createElement('summary');
+			summary.className = 'cursor-pointer text-sm font-semibold';
+			summary.textContent = title;
+			list.classList.add('mt-2');
+			details.append(summary, list);
+			return details;
+		}
+
+		const card = document.createElement('div');
+		card.className = 'rounded border p-3 border-border/60 bg-muted/20 space-y-1';
+		const heading = document.createElement('p');
+		heading.className = 'text-sm font-semibold';
+		heading.textContent = title;
+		card.append(heading, list);
+		return card;
+	}
+
+	// Bars read oldest-to-newest, left to right (the opposite order from the dot strip and table
+	// below, which both stay in the API's own newest-first order) - a trend is only readable as a
+	// trend if time runs left to right, the same convention buildRoundTimelineSvg already uses for
+	// a single battle's round-by-round chart.
+	function buildDamageBarsSvg(battles, colors) {
+		const chronological = battles.slice().reverse();
+		const width = 640;
+		const height = 120;
+		const midY = height / 2;
+		const maxValue = Math.max(1, ...chronological.map((battle) => Math.max(battle.damageDone, battle.damageTaken)));
+		const barGap = 3;
+		const barWidth = Math.max(2, (width - barGap * (chronological.length - 1)) / chronological.length);
+		const scale = (midY - 6) / maxValue;
+
+		const bars = chronological.map((battle, index) => {
+			const x = index * (barWidth + barGap);
+			const doneHeight = battle.damageDone * scale;
+			const takenHeight = battle.damageTaken * scale;
+			return `<rect x="${x.toFixed(1)}" y="${(midY - doneHeight).toFixed(1)}" width="${barWidth.toFixed(1)}" height="${doneHeight.toFixed(1)}" class="text-green-600" fill="currentColor" />` +
+				`<rect x="${x.toFixed(1)}" y="${midY.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${takenHeight.toFixed(1)}" class="text-red-600" fill="currentColor" />`;
+		}).join('');
+
+		return `<svg viewBox="0 0 ${width} ${height}" style="width:100%;height:${height}px;display:block;">` +
+			`<line x1="0" y1="${midY}" x2="${width}" y2="${midY}" stroke="${colors.border}" stroke-width="1" />` +
+			bars +
+			`</svg>`;
+	}
+
+	function buildDamageChartCard(battles, colors) {
+		const card = document.createElement('div');
+		card.className = 'rounded border p-2 border-border/60 bg-muted/20';
+
+		const label = document.createElement('p');
+		label.className = 'text-muted-foreground mb-1 text-xs';
+		label.textContent = 'Skada utdelad (grönt) och mottagen (rött) per match, äldst till vänster';
+		card.appendChild(label);
+
+		const chart = document.createElement('div');
+		chart.innerHTML = buildDamageBarsSvg(battles, colors);
+		card.appendChild(chart);
+
+		return card;
+	}
+
+	function buildMatchTable(battles) {
+		// Falls back to a best-guess reconstruction only if the native table couldn't be found
+		// (shouldn't normally happen - this page always has one), so the table still renders
+		// something reasonable rather than nothing at all.
+		const classes = nativeTableClasses || {
+			table: 'w-full caption-bottom text-sm',
+			thead: '',
+			th: 'text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap',
+			tr: 'border-b border-border/40',
+			td: 'p-2 align-middle whitespace-nowrap'
+		};
+
+		const wrap = document.createElement('div');
+		wrap.className = 'overflow-x-auto rounded border border-border/60';
+
+		const table = document.createElement('table');
+		table.className = classes.table;
+		wrap.appendChild(table);
+
+		const thead = document.createElement('thead');
+		thead.className = classes.thead;
+		const headerRow = document.createElement('tr');
+		// A bare <tr> inside a <thead> has its own default gradient too (confirmed live -
+		// rgb(54,44,28) -> rgb(43,34,20), warm like tbody's own default, just lighter) -
+		// stripping surface-table-header off the <thead> element itself doesn't touch this
+		// <tr>, which is a separate element with its own default. Same fix as the body rows:
+		// an inline override, since no class can beat a bare-element selector.
+		headerRow.style.backgroundImage = 'none';
+		['Datum', 'Typ', 'Motståndare', 'Taktik', 'Resultat', 'Skada (ut/in)', 'Motst. max', 'Lägsta KP', 'Anföll först', 'Fumlade'].forEach((label) => {
+			const th = document.createElement('th');
+			th.className = classes.th;
+			th.textContent = label;
+			headerRow.appendChild(th);
+		});
+		thead.appendChild(headerRow);
+		table.appendChild(thead);
+
+		const tbody = document.createElement('tbody');
+		battles.forEach((battle) => {
+			const row = document.createElement('tr');
+			row.className = classes.tr;
+			// Confirmed live: a bare, classless <tr> inside any <tbody> on this site already
+			// renders with this same warm linear-gradient by default (a global tbody tr style,
+			// not something surface-row itself sets - unlike thead's gradient, which really was
+			// tied to surface-table-header and went away when that class was dropped). No class
+			// removal can beat that, so this overrides it directly - inline styles win against
+			// any stylesheet selector regardless of specificity.
+			row.style.backgroundImage = 'none';
+
+			const cell = (content) => {
+				const td = document.createElement('td');
+				td.className = classes.td;
+				if (content instanceof Node) td.appendChild(content);
+				else td.textContent = content;
+				return td;
+			};
+
+			row.appendChild(cell(formatBattleDate(battle.createdAt)));
+			row.appendChild(cell(battle.typeDisplay || '-'));
+			row.appendChild(cell(battle.opponents.join(', ') || '-'));
+			row.appendChild(cell(formatTacticName(battle.tacticName)));
+
+			const resultSpan = document.createElement('span');
+			resultSpan.className = battle.won === true ? 'capitalize text-green-600' : battle.won === false ? 'capitalize text-red-600' : '';
+			resultSpan.textContent = battle.won === true ? 'vinst' : battle.won === false ? 'förlust' : '-';
+			row.appendChild(cell(resultSpan));
+
+			row.appendChild(cell(`${battle.damageDone} / ${battle.damageTaken}`));
+			row.appendChild(cell(battle.opponentMaxDamageDone != null ? String(battle.opponentMaxDamageDone) : '-'));
+			row.appendChild(cell(battle.lowestHpPercent != null ? `${Math.round(battle.lowestHpPercent * 100)}%` : '-'));
+			row.appendChild(cell(battle.attackedFirst ? `${battle.attackedFirst.count}/${battle.attackedFirst.total}` : '-'));
+			row.appendChild(cell(battle.ownAttackOutcomes ? `${battle.ownAttackOutcomes.fumbled}/${battle.ownAttackOutcomes.total}` : '-'));
+
+			tbody.appendChild(row);
+		});
+		table.appendChild(tbody);
+
+		return wrap;
+	}
+
+	function renderAnalyzerResults(container, state, loadMore) {
+		container.innerHTML = '';
+		if (!state.battles.length) {
+			const empty = document.createElement('div');
+			empty.className = 'text-muted-foreground text-xs';
+			empty.textContent = 'Ingen matchdata hittades.';
+			container.appendChild(empty);
+			return;
+		}
+
+		const battles = state.excludeBots
+			? state.battles.filter((battle) => !/odjur/i.test(battle.typeDisplay || ''))
+			: state.battles;
+		if (!battles.length) {
+			const empty = document.createElement('div');
+			empty.className = 'text-muted-foreground text-xs';
+			empty.textContent = 'Alla hämtade matcher var mot odjur - avmarkera filtret eller hämta fler matcher.';
+			container.appendChild(empty);
+			return;
+		}
+
+		const summary = aggregateBattleStats(battles);
+		const colors = { ...getThemeColors(), ...getResultColors() };
+
+		container.appendChild(buildFormStrip(battles, summary, colors));
+
+		const tacticReport = buildTacticScoutingReport(battles);
+		if (tacticReport) container.appendChild(tacticReport);
+
+		container.appendChild(buildStatsGrid(summary));
+		container.appendChild(buildDamageChartCard(battles, colors));
+
+		const weaponCard = buildTallyCard('Vinst mot vapen', tallyByKeys(battles, (battle) => battle.opponentWeapons), true);
+		if (weaponCard) container.appendChild(weaponCard);
+
+		const raceCard = buildTallyCard('Vinst mot ras', tallyByKeys(battles, (battle) => battle.opponentAvatarIds.map((id) => opponentRaceCache.get(id))), false);
+		if (raceCard) container.appendChild(raceCard);
+
+		container.appendChild(buildMatchTable(battles));
+
+		if (hasMoreBattles(state)) {
+			const loadMoreButton = document.createElement('button');
+			loadMoreButton.type = 'button';
+			loadMoreButton.textContent = 'Visa fler';
+			loadMoreButton.className = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md border bg-background px-3 py-1 text-xs font-medium shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground';
+			loadMoreButton.addEventListener('click', () => loadMore(loadMoreButton));
+			container.appendChild(loadMoreButton);
+		}
 	}
 
 	const MS_PER_DAY = 86400000;
@@ -2069,6 +2915,10 @@
 		{
 			paths: ['/game/bank'],
 			run: scanBankPage
+		},
+		{
+			paths: ['/game/avatar/me/history'],
+			run: scanOwnHistoryPage
 		}
 	];
 
