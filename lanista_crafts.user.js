@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.15.0
+// @version     1.16.0
 //
 // @match       https://lanista.se/game/*
 // @match       https://lanista.se/
@@ -1720,6 +1720,26 @@
 	}
 
 	let ownHistoryScanning = false;
+	let nativeTableClasses = null;
+
+	// Clones the real match table's own classes instead of hand-reconstructing equivalents - a
+	// live diff against the actual DOM turned up custom classes (surface-table-header,
+	// surface-row) alongside the expected Tailwind/shadcn ones that a guessed reconstruction had
+	// no way to know about, and a border opacity (border-border/55) that didn't match what was
+	// guessed either. Cloning at read time means buildMatchTable can never drift from the site's
+	// real component again, even if it changes later. Refreshed on every scan rather than cached
+	// once, since it's cheap and the table only needs to exist, not any particular row count.
+	function refreshNativeTableClasses() {
+		const table = document.querySelector('.data-table-root table');
+		if (!table || !table.tHead || !table.tHead.rows[0] || !table.tBodies[0] || !table.tBodies[0].rows[0]) return;
+		nativeTableClasses = {
+			table: table.className,
+			thead: table.tHead.className,
+			th: table.tHead.rows[0].cells[0].className,
+			tr: table.tBodies[0].rows[0].className,
+			td: table.tBodies[0].rows[0].cells[0].className
+		};
+	}
 
 	// "/game/avatar/me/history" (the tab labeled "Historia" on the logged-in player's own
 	// gladiator) reuses the same generic data-table component as the bank page's deposits table -
@@ -1730,6 +1750,7 @@
 	// next to every avatar link site-wide - that one stays a quick glance at anyone's record, this
 	// one is specifically "look at my own build" and gets a full table+chart+suggestions view.
 	async function scanOwnHistoryPage() {
+		refreshNativeTableClasses();
 		if (ownHistoryScanning) return;
 		const tableRoot = document.querySelector('.data-table-root');
 		if (!tableRoot || findAnalyzerEntryCard(tableRoot)) return;
@@ -1765,7 +1786,9 @@
 		backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
 
 		const modal = document.createElement('div');
-		modal.className = 'bg-card text-card-foreground rounded border shadow-xl border-border/70';
+		// Matches the real .data-table-shell wrapper's own classes verbatim (confirmed live) -
+		// border-border with no opacity modifier, not border-border/70.
+		modal.className = 'bg-card text-card-foreground rounded border border-border shadow-xl';
 		modal.style.cssText = 'max-width:800px;width:100%;max-height:88vh;overflow-y:auto;position:relative;';
 		backdrop.appendChild(modal);
 
@@ -2055,18 +2078,30 @@
 	}
 
 	function buildMatchTable(battles) {
+		// Falls back to a best-guess reconstruction only if the native table couldn't be found
+		// (shouldn't normally happen - this page always has one), so the table still renders
+		// something reasonable rather than nothing at all.
+		const classes = nativeTableClasses || {
+			table: 'w-full caption-bottom text-sm',
+			thead: '',
+			th: 'text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap',
+			tr: 'border-b border-border/40',
+			td: 'p-2 align-middle whitespace-nowrap'
+		};
+
 		const wrap = document.createElement('div');
 		wrap.className = 'overflow-x-auto rounded border border-border/60';
 
 		const table = document.createElement('table');
-		table.className = 'w-full caption-bottom text-sm';
+		table.className = classes.table;
 		wrap.appendChild(table);
 
 		const thead = document.createElement('thead');
+		thead.className = classes.thead;
 		const headerRow = document.createElement('tr');
 		['Datum', 'Typ', 'Motståndare', 'Taktik', 'Resultat', 'Skada (ut/in)', 'Anföll först', 'Fumlade'].forEach((label) => {
 			const th = document.createElement('th');
-			th.className = 'text-foreground h-8 px-2 text-left align-middle text-xs font-medium whitespace-nowrap';
+			th.className = classes.th;
 			th.textContent = label;
 			headerRow.appendChild(th);
 		});
@@ -2076,11 +2111,11 @@
 		const tbody = document.createElement('tbody');
 		battles.forEach((battle) => {
 			const row = document.createElement('tr');
-			row.className = 'border-b border-border/40';
+			row.className = classes.tr;
 
 			const cell = (content) => {
 				const td = document.createElement('td');
-				td.className = 'p-2 align-middle text-xs whitespace-nowrap';
+				td.className = classes.td;
 				if (content instanceof Node) td.appendChild(content);
 				else td.textContent = content;
 				return td;
