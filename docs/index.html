@@ -139,6 +139,45 @@
             height: 16px;
         }
 
+        .stat-filters label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .stat-filter-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .stat-filter-row .stat-filter-label {
+            flex: 3;
+        }
+
+        .stat-filter-row .stat-filter-min,
+        .stat-filter-row .stat-filter-max {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .stat-filter-row .stat-filter-remove {
+            flex: 0 0 auto;
+            padding: 10px 14px;
+            background: #ddd;
+            color: #333;
+        }
+
+        .stat-filter-row .stat-filter-remove:hover {
+            background: #ccc;
+        }
+
+        .stat-filter-add {
+            font-size: 0.9em;
+            padding: 8px 14px;
+        }
+
         .comparison-bar {
             background: #e8dcc8;
             padding: 15px 20px;
@@ -886,10 +925,17 @@
                             <option value="weapon">Vapen</option>
                             <option value="armor">Rustning</option>
                             <option value="shield">Sköld</option>
-                            <option value="trinket">Smycke</option>
+                            <option value="trinket">Föremål</option>
                             <option value="consumable">Förbrukningsvara</option>
                             <option value="enchantment">Förtrollning</option>
                             <option value="material">Material</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>Undertyp</label>
+                        <select id="subtypeFilter" disabled>
+                            <option value="">Alla undertyper</option>
                         </select>
                     </div>
 
@@ -919,6 +965,13 @@
                             <option value="sell_value">Försäljningsvärde</option>
                         </select>
                     </div>
+                </div>
+
+                <div class="stat-filters">
+                    <label>Statfilter</label>
+                    <div id="statFilterRows"></div>
+                    <button type="button" class="secondary stat-filter-add" onclick="addStatFilterRow()">+ Lägg till statfilter</button>
+                    <datalist id="statLabelOptions"></datalist>
                 </div>
 
                 <div class="view-toggle">
@@ -1012,12 +1065,15 @@
         let currentModalItemId = null;
         let restoringFromURL = false;
         const DEFAULT_TITLE = 'Lanista Item Browser';
+        // Each row: { label: '<stat name>', min: '<string>', max: '<string>' }. An empty
+        // label means the row is still being filled in and is ignored by applyFilters.
+        let statFilters = [];
 
         const typeNames = {
             'weapon': 'Vapen',
             'armor': 'Rustning',
             'shield': 'Sköld',
-            'trinket': 'Smycke',
+            'trinket': 'Föremål',
             'consumable': 'Förbrukningsvara',
             'enchantment': 'Förtrollning',
             'material': 'Material'
@@ -1127,6 +1183,9 @@
                     (itemsByName[item.name] = itemsByName[item.name] || []).push(item);
                 });
                 buildRecipeIndex();
+                document.getElementById('statLabelOptions').innerHTML =
+                    getAllStatLabels().map(label => `<option value="${label.replace(/"/g, '&quot;')}">`).join('');
+                subtypesByType = computeSubtypesByType();
                 loadStateFromURL();
             })
             .catch(error => {
@@ -1159,12 +1218,117 @@
             return min === max ? `${max}` : `${min}-${max}`;
         }
 
+        // Single source of truth for every structured (non-bonus) numeric stat an item can
+        // carry. The detail modal, the item comparison table, and the stat search filter all
+        // render from this one list instead of each re-deriving "which field means what" per
+        // item shape - that duplication is exactly how the PT-potential/crit_rate bugs
+        // happened before. `category` picks which section of the detail modal a stat lands
+        // in (combat/defense/bonus/other); 'Värde' has no category since level/value are
+        // handled specially there alongside the "Övrigt" section's summary line.
+        const STAT_ROWS = [
+            { label: 'Skada', category: 'combat',
+                numeric: item => item.base_damage_max || item.max_damage || null,
+                display: item => item.base_damage_max
+                    ? formatRange(item.base_damage_min, item.base_damage_max)
+                    : (item.min_damage || item.max_damage) ? formatRange(item.min_damage || 0, item.max_damage || 0) : null },
+            { label: 'Skadepotential', category: 'combat', numeric: item => item.damage_potential || null, display: item => item.damage_potential || null },
+            { label: 'Kritisk skada', category: 'combat',
+                numeric: item => item.crit_damage_max || item.crit_damage_multiplier || null,
+                display: item => item.crit_damage || (item.crit_damage_multiplier ? `+${item.crit_damage_multiplier}%` : null) },
+            { label: 'PT-potential', category: 'combat', numeric: item => item.max_crit_rate || null, display: item => item.max_crit_rate ? `+${item.max_crit_rate}%` : null },
+            { label: 'Perfekt träff', category: 'bonus', numeric: item => item.crit_rate || null, display: item => item.crit_rate ? `+${item.crit_rate}%` : null },
+            { label: 'Blockering', category: 'defense',
+                numeric: item => item.base_block || item.absorption || null,
+                display: item => {
+                    const block = item.base_block || item.absorption;
+                    if (!block) return null;
+                    return block + (item.percentage_block ? ` (${item.percentage_block}%)` : '');
+                } },
+            { label: 'Block/runda', category: 'defense', numeric: item => item.is_shield ? (item.max_blocks_per_round || null) : null, display: item => item.is_shield ? (item.max_blocks_per_round || null) : null },
+            { label: 'Blockchans', category: 'defense', numeric: item => item.block_rate || null, display: item => item.block_rate ? `${item.block_rate > 0 ? '+' : ''}${item.block_rate}%` : null },
+            { label: 'Träffchans', category: 'defense', numeric: item => item.increased_hit_rate || null, display: item => item.increased_hit_rate ? `+${item.increased_hit_rate}` : null },
+            { label: 'Hållbarhet', category: 'other', numeric: item => item.durability || null, display: item => item.durability || null },
+            { label: 'Förtrollningsplatser', category: 'other', numeric: item => item.max_enchants || null, display: item => item.max_enchants || null },
+            { label: 'Vikt', category: 'other', numeric: item => item.weight || null, display: item => item.weight || null, higherIsBetter: false },
+            { label: 'Värde', numeric: getSellValue, display: getSellValue }
+        ];
+
+        // Every (label, numeric value) pair a single item carries: the structured stats above,
+        // plus that item's own freeform bonuses/enchant modifiers (Styrka, Uthållighet,
+        // vapenfärdigheten svärd, ...). Used both to populate the stat search picker and to
+        // test an item against the chosen stat filters.
+        function parseStatNumeric(displayValue) {
+            const n = parseFloat(String(displayValue).replace(',', '.'));
+            return isNaN(n) ? null : n;
+        }
+
+        function getItemStatEntries(item) {
+            const entries = [];
+            STAT_ROWS.forEach(row => {
+                const n = row.numeric ? row.numeric(item) : null;
+                if (n !== null && n !== undefined && n !== '' && !isNaN(n)) {
+                    entries.push({ label: row.label, numeric: Number(n) });
+                }
+            });
+            (item.bonuses || []).forEach(b => {
+                entries.push({ label: b.bonusable_name, numeric: parseStatNumeric(b.bonus_value_display) });
+            });
+            (item.enchant_modifiers || []).forEach(m => {
+                entries.push({ label: m.enchantable_name, numeric: parseStatNumeric(m.enchant_value_display) });
+            });
+            return entries;
+        }
+
+        function getAllStatLabels() {
+            const labels = new Set();
+            allItems.forEach(item => getItemStatEntries(item).forEach(e => labels.add(e.label)));
+            return [...labels].sort((a, b) => a.localeCompare(b, 'sv'));
+        }
+
+        // Which type_name values actually occur within each Typ, so the Undertyp picker only
+        // ever offers subtypes that exist for the chosen type (e.g. Vapen -> Svärd/Yxor/...,
+        // Föremål -> Ring/Armband/...). Types with no type_name at all (consumable, material,
+        // enchantment) or only one value (shield) simply get no options, since a picker with
+        // nothing (or only one thing) to narrow down isn't useful.
+        let subtypesByType = {};
+
+        function computeSubtypesByType() {
+            const byType = {};
+            allItems.forEach(item => {
+                if (!item.type_name) return;
+                if (!byType[item.type]) byType[item.type] = new Set();
+                byType[item.type].add(item.type_name);
+            });
+            const result = {};
+            Object.keys(byType).forEach(type => {
+                if (byType[type].size < 2) return;
+                result[type] = [...byType[type]]
+                    .map(name => ({ value: name, label: subtypeNames[name] || name }))
+                    .sort((a, b) => a.label.localeCompare(b.label, 'sv'));
+            });
+            return result;
+        }
+
+        // Rebuilds the Undertyp options for the currently selected Typ and resets its value -
+        // called whenever Typ changes, since a subtype from the old type would be meaningless
+        // (or simply absent) under the new one.
+        function updateSubtypeOptions() {
+            const type = document.getElementById('typeFilter').value;
+            const select = document.getElementById('subtypeFilter');
+            const subtypes = subtypesByType[type] || [];
+            select.innerHTML = '<option value="">Alla undertyper</option>' +
+                subtypes.map(s => `<option value="${s.value}">${s.label}</option>`).join('');
+            select.disabled = subtypes.length === 0;
+        }
+
         function applyFilters() {
             const searchText = document.getElementById('searchInput').value.toLowerCase();
             const typeFilter = document.getElementById('typeFilter').value;
+            const subtypeFilter = document.getElementById('subtypeFilter').value;
             const minLevel = parseInt(document.getElementById('minLevelFilter').value) || 0;
             const maxLevel = parseInt(document.getElementById('maxLevelFilter').value) || 999;
             const craftableOnly = document.getElementById('craftableFilter').checked;
+            const activeStatFilters = statFilters.filter(f => f.label);
 
             filteredItems = allItems.filter(item => {
                 // Search - split by spaces, ALL must match (AND logic)
@@ -1187,6 +1351,11 @@
                     return false;
                 }
 
+                // Subtype (only meaningful once a Typ is chosen - see updateSubtypeOptions)
+                if (subtypeFilter && item.type_name !== subtypeFilter) {
+                    return false;
+                }
+
                 // Level
                 const level = getItemLevel(item);
                 if (level < minLevel || level > maxLevel) {
@@ -1196,6 +1365,22 @@
                 // Craftable
                 if (craftableOnly && !isCraftable(item)) {
                     return false;
+                }
+
+                // Stat filters - every active row must match (AND), and a row matches if
+                // ANY of the item's entries for that stat name falls within its min/max
+                // (an item can carry a stat more than once, e.g. two different bonuses)
+                if (activeStatFilters.length > 0) {
+                    const entries = getItemStatEntries(item);
+                    for (const f of activeStatFilters) {
+                        const matches = entries.filter(e => e.label === f.label);
+                        const inRange = matches.some(e => {
+                            if (f.min !== '' && (e.numeric === null || e.numeric < parseFloat(f.min))) return false;
+                            if (f.max !== '' && (e.numeric === null || e.numeric > parseFloat(f.max))) return false;
+                            return true;
+                        });
+                        if (!inRange) return false;
+                    }
                 }
 
                 return true;
@@ -1224,12 +1409,45 @@
             updateURL();
         }
 
+        // Renders the current statFilters array as rows of (stat picker, min, max, remove).
+        // Rebuilt from scratch on every change rather than patched in place, since rows are
+        // added/removed and the index-based onclick/oninput handlers need to stay in sync.
+        function renderStatFilterRows() {
+            const container = document.getElementById('statFilterRows');
+            container.innerHTML = statFilters.map((f, i) => `
+                <div class="stat-filter-row">
+                    <input type="text" class="stat-filter-label" list="statLabelOptions" placeholder="Sök stat..."
+                        value="${f.label.replace(/"/g, '&quot;')}" oninput="updateStatFilterRow(${i}, 'label', this.value)">
+                    <input type="number" class="stat-filter-min" placeholder="Min" value="${f.min}" oninput="updateStatFilterRow(${i}, 'min', this.value)">
+                    <input type="number" class="stat-filter-max" placeholder="Max" value="${f.max}" oninput="updateStatFilterRow(${i}, 'max', this.value)">
+                    <button type="button" class="stat-filter-remove" onclick="removeStatFilterRow(${i})">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function addStatFilterRow() {
+            statFilters.push({ label: '', min: '', max: '' });
+            renderStatFilterRows();
+        }
+
+        function removeStatFilterRow(index) {
+            statFilters.splice(index, 1);
+            renderStatFilterRows();
+            applyFilters();
+        }
+
+        function updateStatFilterRow(index, field, value) {
+            statFilters[index][field] = value;
+            applyFilters();
+        }
+
         function updateURL(push) {
             if (restoringFromURL) return;
 
             const params = new URLSearchParams();
             const search = document.getElementById('searchInput').value;
             const type = document.getElementById('typeFilter').value;
+            const subtype = document.getElementById('subtypeFilter').value;
             const minLevel = document.getElementById('minLevelFilter').value;
             const maxLevel = document.getElementById('maxLevelFilter').value;
             const craftable = document.getElementById('craftableFilter').checked;
@@ -1237,10 +1455,12 @@
 
             if (search) params.set('q', search);
             if (type) params.set('type', type);
+            if (subtype) params.set('subtype', subtype);
             if (minLevel) params.set('min', minLevel);
             if (maxLevel) params.set('max', maxLevel);
             if (craftable) params.set('craftable', '1');
             if (sort && sort !== 'name') params.set('sort', sort);
+            statFilters.filter(f => f.label).forEach(f => params.append('stat', `${f.label}|${f.min}|${f.max}`));
             if (currentDisplayMode !== 'grid') params.set('view', currentDisplayMode);
             if (currentPage > 1) params.set('page', currentPage);
             if (currentModalItemId) params.set('item', currentModalItemId);
@@ -1263,10 +1483,18 @@
             const params = new URLSearchParams(window.location.search);
             document.getElementById('searchInput').value = params.get('q') || '';
             document.getElementById('typeFilter').value = params.get('type') || '';
+            updateSubtypeOptions();
+            document.getElementById('subtypeFilter').value = params.get('subtype') || '';
             document.getElementById('minLevelFilter').value = params.get('min') || '';
             document.getElementById('maxLevelFilter').value = params.get('max') || '';
             document.getElementById('craftableFilter').checked = params.get('craftable') === '1';
             document.getElementById('sortFilter').value = params.get('sort') || 'name';
+
+            statFilters = params.getAll('stat').map(s => {
+                const [label, min, max] = s.split('|');
+                return { label: label || '', min: min || '', max: max || '' };
+            });
+            renderStatFilterRows();
 
             currentDisplayMode = params.get('view') === 'table' ? 'table' : 'grid';
             document.getElementById('gridContainer').style.display = currentDisplayMode === 'grid' ? 'grid' : 'none';
@@ -1633,87 +1861,17 @@
             const otherStats = [];
             const bonusStats = [];
 
-            // Categorize weapon stats (crit_damage/crit_rate/durability apply to shields too,
-            // since shields share the weapon item shape - base_damage_max is 0 for them)
-            if (item.is_weapon || item.is_shield) {
-                if (item.base_damage_max) {
-                    const potential = item.damage_potential ? ` | ${item.damage_potential}` : '';
-                    combatStats.push(`<div class="stat-item"><div class="stat-label">Skada</div><div class="stat-value">${formatRange(item.base_damage_min, item.base_damage_max)}${potential}</div></div>`);
-                    if (item.crit_damage) {
-                        combatStats.push(`<div class="stat-item"><div class="stat-label">Kritisk skada</div><div class="stat-value">${item.crit_damage}</div></div>`);
-                    }
-                }
-                if (item.durability) {
-                    otherStats.push(`<div class="stat-item"><div class="stat-label">Hållbarhet</div><div class="stat-value">${item.durability}</div></div>`);
-                }
-                // max_blocks_per_round is a fixed constant (2) on every weapon regardless of
-                // type - it only actually varies (and is worth showing) on shields
-                if (item.is_shield && item.max_blocks_per_round) {
-                    defenseStats.push(`<div class="stat-item"><div class="stat-label">Block/runda</div><div class="stat-value">${item.max_blocks_per_round}</div></div>`);
-                }
-            }
-
-            // Enchant slots apply to weapons and shields
-            if (item.max_enchants) {
-                otherStats.push(`<div class="stat-item"><div class="stat-label">Förtrollningsplatser</div><div class="stat-value">${item.max_enchants}</div></div>`);
-            }
-
-            // Enchantments carry their own bonus fields instead of the weapon/armor ones
-            // above (min_damage/max_damage instead of base_damage_min/max,
-            // crit_damage_multiplier instead of the weapon's formatted crit_damage string,
-            // block_rate instead of base_block, etc.), since an enchant's bonuses apply to
-            // whatever it's socketed into rather than being scoped to one item category.
-            if (item.is_enchant) {
-                if (item.min_damage || item.max_damage) {
-                    combatStats.push(`<div class="stat-item"><div class="stat-label">Skada</div><div class="stat-value">${formatRange(item.min_damage || 0, item.max_damage || 0)}</div></div>`);
-                }
-                if (item.damage_potential) {
-                    combatStats.push(`<div class="stat-item"><div class="stat-label">Skadepotential</div><div class="stat-value">${item.damage_potential}</div></div>`);
-                }
-                if (item.crit_damage_multiplier) {
-                    combatStats.push(`<div class="stat-item"><div class="stat-label">Kritisk skada</div><div class="stat-value">+${item.crit_damage_multiplier}%</div></div>`);
-                }
-                if (item.absorption) {
-                    defenseStats.push(`<div class="stat-item"><div class="stat-label">Blockering</div><div class="stat-value">${item.absorption}</div></div>`);
-                }
-                if (item.block_rate) {
-                    defenseStats.push(`<div class="stat-item"><div class="stat-label">Blockchans</div><div class="stat-value">${item.block_rate > 0 ? '+' : ''}${item.block_rate}%</div></div>`);
-                }
-                if (item.durability) {
-                    otherStats.push(`<div class="stat-item"><div class="stat-label">Hållbarhet</div><div class="stat-value">${item.durability}</div></div>`);
-                }
-            }
-
-            // Categorize armor/shield stats (armor uses base_block, shields use absorption)
-            if (item.is_armor || item.is_shield) {
-                const block = item.base_block || item.absorption;
-                if (block > 0) {
-                    const percent = item.percentage_block ? ` (${item.percentage_block}%)` : '';
-                    defenseStats.push(`<div class="stat-item"><div class="stat-label">Blockering</div><div class="stat-value">${block}${percent}</div></div>`);
-                }
-            }
-
-            // max_crit_rate (PT-potential), increased_hit_rate (Träffchans) and crit_rate
-            // (Perfekt träff) can all appear on any item shape - weapons, shields, enchants,
-            // armor/trinkets, and consumables alike - so they're checked once here rather
-            // than per branch. max_crit_rate isn't a min-max range despite the field name:
-            // it's the ceiling that raises how high your total "chans till perfekt träff"
-            // can reach (min_crit_rate is always 0 in the data), distinct from crit_rate's
-            // flat bonus to that same chance - matching the game's own "PT-potential" stat.
-            if (item.max_crit_rate) {
-                combatStats.push(`<div class="stat-item"><div class="stat-label">PT-potential</div><div class="stat-value">+${item.max_crit_rate}%</div></div>`);
-            }
-            if (item.increased_hit_rate) {
-                defenseStats.push(`<div class="stat-item"><div class="stat-label">Träffchans</div><div class="stat-value">+${item.increased_hit_rate}</div></div>`);
-            }
-            if (item.crit_rate) {
-                bonusStats.push(`<div class="stat-item"><div class="stat-label">Perfekt träff</div><div class="stat-value">+${item.crit_rate}%</div></div>`);
-            }
-
-            // Weight applies to all
-            if (item.weight !== undefined && item.weight > 0) {
-                otherStats.push(`<div class="stat-item"><div class="stat-label">Vikt</div><div class="stat-value">${item.weight}</div></div>`);
-            }
+            // Every structured stat an item can carry, drawn from the same STAT_ROWS list the
+            // comparison table and the stat search filter use - keeping one definition per
+            // stat is what prevents a stat being handled differently (or dropped entirely, as
+            // PT-potential/crit_rate once were) in one of these three places but not another.
+            const statBuckets = { combat: combatStats, defense: defenseStats, bonus: bonusStats, other: otherStats };
+            STAT_ROWS.forEach(row => {
+                if (!row.category) return; // 'Värde' has no category - handled specially below
+                const displayValue = row.display(item);
+                if (displayValue === null || displayValue === undefined || displayValue === '') return;
+                statBuckets[row.category].push(`<div class="stat-item"><div class="stat-label">${row.label}</div><div class="stat-value">${displayValue}</div></div>`);
+            });
 
             // Bonuses
             if (item.bonuses && item.bonuses.length > 0) {
@@ -1947,28 +2105,14 @@
             const comparisonContent = document.getElementById('comparisonContent');
             const level = item => { const l = getItemLevel(item); return l === '' ? null : l; };
 
-            // Same stat shapes and labels as the detail modal's Statistik section, so a
-            // stat means the same thing in both places. Each row is skipped entirely if no
-            // compared item has a value for it.
+            // Typ/Nivå aren't part of STAT_ROWS (they're not something you'd filter by stat
+            // value - Nivå already has its own min/max level filter), so they're prepended
+            // here. Everything else reuses STAT_ROWS - the same list the stat search filter
+            // and the detail modal draw from - so a stat means the same thing everywhere.
             const rows = [
                 { label: 'Typ', display: item => subtypeNames[item.type_name] || item.type_name || typeNames[item.type] || null },
                 { label: 'Nivå', display: level, numeric: level },
-                { label: 'Skada', display: item => item.base_damage_max ? formatRange(item.base_damage_min, item.base_damage_max) : null, numeric: item => item.base_damage_max || null },
-                { label: 'Skadepotential', display: item => item.damage_potential || null, numeric: item => item.damage_potential || null },
-                { label: 'Kritisk skada', display: item => item.crit_damage || null },
-                { label: 'PT-potential', display: item => item.max_crit_rate ? `+${item.max_crit_rate}%` : null, numeric: item => item.max_crit_rate || null },
-                { label: 'Perfekt träff', display: item => item.crit_rate ? `+${item.crit_rate}%` : null, numeric: item => item.crit_rate || null },
-                { label: 'Blockering', display: item => {
-                    const block = item.base_block || item.absorption;
-                    if (!block) return null;
-                    return block + (item.percentage_block ? ` (${item.percentage_block}%)` : '');
-                }, numeric: item => item.base_block || item.absorption || null },
-                { label: 'Block/runda', display: item => item.is_shield ? (item.max_blocks_per_round || null) : null, numeric: item => item.is_shield ? (item.max_blocks_per_round || null) : null },
-                { label: 'Träffchans', display: item => item.increased_hit_rate ? `+${item.increased_hit_rate}` : null, numeric: item => item.increased_hit_rate || null },
-                { label: 'Hållbarhet', display: item => item.durability || null, numeric: item => item.durability || null },
-                { label: 'Förtrollningsplatser', display: item => item.max_enchants || null, numeric: item => item.max_enchants || null },
-                { label: 'Vikt', display: item => item.weight || null, numeric: item => item.weight || null, higherIsBetter: false },
-                { label: 'Värde', display: getSellValue, numeric: getSellValue }
+                ...STAT_ROWS
             ];
 
             function renderRow(label, values, higherIsBetter = true) {
@@ -2069,10 +2213,13 @@
         function resetFilters() {
             document.getElementById('searchInput').value = '';
             document.getElementById('typeFilter').value = '';
+            updateSubtypeOptions();
             document.getElementById('minLevelFilter').value = '';
             document.getElementById('maxLevelFilter').value = '';
             document.getElementById('craftableFilter').checked = false;
             document.getElementById('sortFilter').value = 'name';
+            statFilters = [];
+            renderStatFilterRows();
             applyFilters();
         }
 
@@ -2090,7 +2237,8 @@
 
         // Event listeners
         document.getElementById('searchInput').addEventListener('input', applyFilters);
-        document.getElementById('typeFilter').addEventListener('change', applyFilters);
+        document.getElementById('typeFilter').addEventListener('change', () => { updateSubtypeOptions(); applyFilters(); });
+        document.getElementById('subtypeFilter').addEventListener('change', applyFilters);
         document.getElementById('minLevelFilter').addEventListener('change', applyFilters);
         document.getElementById('maxLevelFilter').addEventListener('change', applyFilters);
         document.getElementById('craftableFilter').addEventListener('change', applyFilters);
