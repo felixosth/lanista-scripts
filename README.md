@@ -17,10 +17,13 @@ An interactive browser for browsing and comparing items in the Lanista game. Fea
 ### Local Development
 
 1. Clone or download this repository
-2. Open `index.html` in your web browser
-3. The browser will load `lanista_items_detailed.json` automatically
+2. Start a local server (opening `index.html` directly via `file://` doesn't work - browsers block the `fetch()` call that loads `lanista_items_detailed.json`):
+   ```powershell
+   .\serve-docs.ps1
+   ```
+   This serves `docs/` at `http://localhost:8080/` and opens it in your browser. Use `-Port` to pick a different port or `-NoBrowser` to skip auto-opening.
 
-No build process or server required - it's pure static HTML/CSS/JavaScript.
+No build process required otherwise - it's pure static HTML/CSS/JavaScript.
 
 ### Deploy to GitHub Pages
 
@@ -32,8 +35,9 @@ No build process or server required - it's pure static HTML/CSS/JavaScript.
 
 ## Files
 
-- `index.html` - Main application (all CSS and JavaScript embedded)
-- `lanista_items_detailed.json` - Item data (1,739 items with full stats and crafting info)
+- `docs/index.html` - Main application (all CSS and JavaScript embedded)
+- `docs/lanista_items_detailed.json` - Item data (1,739 items with full stats and crafting info)
+- `serve-docs.ps1` - Local dev server for the `docs/` folder above
 - `README.md` - This file
 
 ## Usage
