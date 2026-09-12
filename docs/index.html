@@ -51,6 +51,22 @@
             opacity: 0.9;
         }
 
+        .header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .header-inner h1,
+        .header-inner p {
+            text-align: left;
+        }
+
+        .header-inner button {
+            flex-shrink: 0;
+        }
+
         .controls {
             background: white;
             padding: 20px;
@@ -877,6 +893,195 @@
             font-size: 0.95em;
         }
 
+        .build-panel {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .build-panel h3 {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: #2c2416;
+            border-bottom: 2px solid #e8dcc8;
+            padding-bottom: 10px;
+        }
+
+        .build-basics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .build-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+        }
+
+        .build-stat-input label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.85em;
+            color: #555;
+        }
+
+        .build-slots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        .build-slot {
+            background: #f9f7f4;
+            border: 2px dashed #d8d0c2;
+            border-radius: 6px;
+            padding: 12px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-height: 90px;
+        }
+
+        .build-slot:hover {
+            border-color: #8b7355;
+        }
+
+        .build-slot.filled {
+            border-style: solid;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        }
+
+        .build-slot.unmet {
+            border-color: #b5482f;
+        }
+
+        .build-slot.blocked {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-style: dotted;
+        }
+
+        .build-slot-label {
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #8b7355;
+            font-weight: 600;
+        }
+
+        .build-slot-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .build-slot-item img {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+            background: #f0ede8;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .build-slot-empty {
+            color: #999;
+            font-size: 0.9em;
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+
+        .build-slot-remove {
+            align-self: flex-end;
+            background: none;
+            border: none;
+            color: #b5482f;
+            cursor: pointer;
+            font-size: 0.8em;
+            padding: 2px 4px;
+        }
+
+        .build-slot-warning {
+            font-size: 0.78em;
+            color: #b5482f;
+        }
+
+        .stat-breakdown-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .stat-breakdown-table th,
+        .stat-breakdown-table td {
+            padding: 8px 10px;
+            text-align: right;
+            font-size: 0.88em;
+            border-bottom: 1px solid #eee;
+        }
+
+        .stat-breakdown-table th:first-child,
+        .stat-breakdown-table td:first-child {
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .stat-breakdown-table td.total {
+            font-weight: 700;
+            color: #2c2416;
+        }
+
+        .stat-breakdown-table td.capped {
+            color: #b5482f;
+        }
+
+        .race-ability-card {
+            background: #f9f7f4;
+            padding: 12px 15px;
+            border-radius: 4px;
+            border-left: 3px solid #8b7355;
+            margin-bottom: 10px;
+        }
+
+        .race-ability-card h5 {
+            font-size: 0.95em;
+            margin-bottom: 4px;
+            color: #2c2416;
+        }
+
+        .race-ability-card p {
+            font-size: 0.85em;
+            color: #555;
+        }
+
+        .info-note {
+            font-size: 0.85em;
+            color: #777;
+            margin-top: 8px;
+        }
+
+        .build-toolbar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .build-toolbar select {
+            flex: none;
+            width: auto;
+            min-width: 160px;
+        }
+
         @media (max-width: 768px) {
             .detail-header {
                 grid-template-columns: 1fr;
@@ -897,14 +1102,27 @@
             .filters {
                 grid-template-columns: 1fr;
             }
+
+            .header-inner {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .header-inner h1,
+            .header-inner p {
+                text-align: center;
+            }
         }
     </style>
 </head>
 <body>
     <header>
-        <div class="container">
-            <h1>Lanista grejer</h1>
-            <p>Sök, jämför och utforska</p>
+        <div class="container header-inner">
+            <div>
+                <h1>Lanista grejer</h1>
+                <p>Sök, jämför och utforska</p>
+            </div>
+            <button id="buildSimBtn" class="secondary" onclick="openBuildView()">Bygg-simulator</button>
         </div>
     </header>
 
@@ -1029,6 +1247,12 @@
             <button class="back-button" onclick="backToList()">← Tillbaka</button>
             <div id="comparisonContent"></div>
         </div>
+
+        <!-- Build simulator view -->
+        <div id="buildView" style="display: none;">
+            <button class="back-button" onclick="backToList()">← Tillbaka</button>
+            <div id="buildContent"></div>
+        </div>
     </div>
 
     <!-- Item Detail Modal -->
@@ -1039,6 +1263,17 @@
                 <button class="modal-close-btn" onclick="closeModal()">×</button>
             </div>
             <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- Slot Picker Modal -->
+    <div id="slotPickerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-close">
+                <h2 id="slotPickerModalTitle">Välj föremål</h2>
+                <button class="modal-close-btn" onclick="closeSlotPicker()">×</button>
+            </div>
+            <div class="modal-body" id="slotPickerModalBody"></div>
         </div>
     </div>
 
@@ -1191,6 +1426,18 @@
             .catch(error => {
                 console.error('Fel vid inläsning av data:', error);
                 document.getElementById('gridContainer').innerHTML = '<div class="empty-state"><p>Kunde inte ladda föremål. Kontrollera att lanista_items_detailed.json finns.</p></div>';
+            });
+
+        let raceData = null;
+        let racesById = {};
+        fetch('lanista_races.json')
+            .then(response => response.json())
+            .then(data => {
+                raceData = data;
+                data.races.forEach(race => { racesById[race.id] = race; });
+            })
+            .catch(error => {
+                console.error('Fel vid inläsning av rasdata:', error);
             });
 
         function getItemType(item) {
@@ -2088,10 +2335,17 @@
             }
         });
 
+        document.getElementById('slotPickerModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSlotPicker();
+            }
+        });
+
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeModal();
                 closeCraftPlanModal();
+                closeSlotPicker();
             }
         });
 
@@ -2233,6 +2487,563 @@
             document.getElementById('listView').style.display = currentView === 'list' ? 'block' : 'none';
             document.getElementById('detailView').style.display = currentView === 'detail' ? 'block' : 'none';
             document.getElementById('comparisonView').style.display = currentView === 'comparison' ? 'block' : 'none';
+            document.getElementById('buildView').style.display = currentView === 'build' ? 'block' : 'none';
+        }
+
+        function openBuildView() {
+            currentView = 'build';
+            updateViewVisibility();
+            renderBuildView();
+            window.scrollTo(0, 0);
+        }
+
+        // ===== Build simulator =====
+
+        const BUILD_SLOTS = [
+            { slot: 'weapon', label: 'Vapen', itemType: 'weapon' },
+            { slot: 'shield', label: 'Sköld', itemType: 'shield' },
+            { slot: 'head', label: 'Huvud', itemType: 'armor', typeName: 'head' },
+            { slot: 'shoulders', label: 'Axlar', itemType: 'armor', typeName: 'shoulders' },
+            { slot: 'chest', label: 'Harnesk', itemType: 'armor', typeName: 'chest' },
+            { slot: 'hands', label: 'Händer', itemType: 'armor', typeName: 'hands' },
+            { slot: 'legs', label: 'Ben', itemType: 'armor', typeName: 'legs' },
+            { slot: 'feet', label: 'Fötter', itemType: 'armor', typeName: 'feet' },
+            { slot: 'back', label: 'Mantel', itemType: 'armor', typeName: 'back' },
+            { slot: 'neck', label: 'Halsband', itemType: 'armor', typeName: 'neck' },
+            { slot: 'finger1', label: 'Ring 1', itemType: 'armor', typeName: 'finger' },
+            { slot: 'finger2', label: 'Ring 2', itemType: 'armor', typeName: 'finger' },
+            { slot: 'amulet', label: 'Amulett', itemType: 'armor', typeName: 'amulet' },
+            { slot: 'bracelet', label: 'Armband', itemType: 'armor', typeName: 'bracelet' },
+            { slot: 'trinket', label: 'Ornament', itemType: 'trinket' }
+        ];
+
+        const WEAPON_SKILL_KEYS = ['sword', 'axe', 'mace', 'stave', 'spear', 'chain', 'shield'];
+        const BUILD_STORAGE_KEY = 'lanista_saved_builds';
+
+        let buildState = {
+            race: null,
+            level: 1,
+            lifeStage: 'Ung',
+            baseStats: {},
+            weaponSkills: {},
+            equipped: {}
+        };
+
+        let activeSlotPicker = null;
+
+        function getSelectedRace() {
+            return buildState.race ? racesById[buildState.race] : null;
+        }
+
+        function getAgeStage(race) {
+            if (!race || !race.ageStages || race.ageStages.length === 0) {
+                return { name: 'Ung', statMods: {}, weaponModAll: 0 };
+            }
+            return race.ageStages.find(s => s.name === buildState.lifeStage) || race.ageStages[0];
+        }
+
+        // Equipment bonuses reference stats/weapon skills by their Swedish display label
+        // (e.g. "Initiativstyrka", "vapenfärdigheten svärd") rather than our internal keys,
+        // so these maps translate label -> key, built from lanista_races.json's label lists.
+        function statBonusKeyMap() {
+            const map = {};
+            if (raceData) Object.entries(raceData.statLabels).forEach(([key, label]) => { map[label.toLowerCase()] = key; });
+            return map;
+        }
+
+        function weaponBonusKeyMap() {
+            const map = {};
+            if (raceData) Object.entries(raceData.weaponSkillLabels).forEach(([key, label]) => { map[label.toLowerCase()] = key; });
+            return map;
+        }
+
+        function isShieldBlocked() {
+            const weaponKey = buildState.equipped.weapon;
+            const weapon = weaponKey ? itemsByKey[weaponKey] : null;
+            return !!(weapon && weapon.is_two_handed);
+        }
+
+        function collectEquipmentBonuses() {
+            const statTotals = {};
+            const weaponTotals = {};
+            let weight = 0;
+            const combat = { damageMin: 0, damageMax: 0, block: 0, critRate: 0, maxCritRate: 0 };
+            const statMap = statBonusKeyMap();
+            const weaponMap = weaponBonusKeyMap();
+
+            Object.entries(buildState.equipped).forEach(([slot, itemKey]) => {
+                if (slot === 'shield' && isShieldBlocked()) return;
+                const item = itemsByKey[itemKey];
+                if (!item) return;
+                weight += item.weight || 0;
+
+                (item.bonuses || []).forEach(bonus => {
+                    const name = (bonus.bonusable_name || '').toLowerCase().trim();
+                    const value = parseFloat(bonus.bonus_value_display) || 0;
+                    if (name.startsWith('vapenfärdigheten ')) {
+                        const key = weaponMap[name.replace('vapenfärdigheten ', '').trim()];
+                        if (key) weaponTotals[key] = (weaponTotals[key] || 0) + value;
+                        return;
+                    }
+                    const key = statMap[name];
+                    if (key) statTotals[key] = (statTotals[key] || 0) + value;
+                });
+
+                if (item.is_weapon) {
+                    combat.damageMin += item.base_damage_min || 0;
+                    combat.damageMax += item.base_damage_max || 0;
+                    combat.critRate += item.crit_rate || 0;
+                    combat.maxCritRate += item.max_crit_rate || 0;
+                }
+                if (item.is_shield || item.is_armor) {
+                    combat.block += item.base_block || item.absorption || 0;
+                }
+            });
+
+            return { statTotals, weaponTotals, weight, combat };
+        }
+
+        function computeEffectiveStats() {
+            const race = getSelectedRace();
+            const ageStage = race ? getAgeStage(race) : null;
+            const equip = collectEquipmentBonuses();
+            const stats = {};
+
+            (raceData ? Object.keys(raceData.statLabels) : []).forEach(key => {
+                const base = buildState.baseStats[key] || 0;
+                const racePct = race ? (race.statMods[key] || 0) : 0;
+                const agePct = ageStage ? (ageStage.statMods[key] || 0) : 0;
+                let levelPct = 0;
+                if (race && race.levelBonus && race.levelBonus.perLevel[key] && buildState.level > race.levelBonus.aboveLevel) {
+                    levelPct = (buildState.level - race.levelBonus.aboveLevel) * race.levelBonus.perLevel[key];
+                }
+                const afterMod = base * (1 + (racePct + agePct + levelPct) / 100);
+                const equipFlat = equip.statTotals[key] || 0;
+                stats[key] = { base, racePct, agePct, levelPct, equipFlat, total: afterMod + equipFlat, capped: false };
+            });
+
+            // Bashälsa (HP) can never exceed 5.5x effective Styrka - the one exact formula
+            // the game's own wiki documents (wiki.lanista.se/en/skills-and-attributes/attributes).
+            if (stats.bashalsa && stats.styrka) {
+                const cap = stats.styrka.total * 5.5;
+                if (stats.bashalsa.total > cap) {
+                    stats.bashalsa.total = cap;
+                    stats.bashalsa.capped = true;
+                }
+            }
+
+            const weaponSkills = {};
+            WEAPON_SKILL_KEYS.forEach(key => {
+                const base = buildState.weaponSkills[key] || 0;
+                const racePct = race ? (race.weaponMods[key] || 0) : 0;
+                const agePct = ageStage ? (ageStage.weaponModAll || 0) : 0;
+                const afterMod = base * (1 + (racePct + agePct) / 100);
+                const equipFlat = equip.weaponTotals[key] || 0;
+                weaponSkills[key] = { base, racePct, agePct, equipFlat, total: afterMod + equipFlat };
+            });
+
+            const totalWeight = (race ? race.baseWeight : 0) + equip.weight;
+            return { stats, weaponSkills, combat: equip.combat, totalWeight, race, ageStage };
+        }
+
+        // Item requirement_text is already a fully rendered Swedish sentence with the
+        // operative numbers/names in <strong> tags, so warnings are parsed straight off
+        // that text rather than the requirementable_id scheme (see docs/index.html history
+        // of stat-model bugs from re-deriving "what field means what" per item shape).
+        function checkRequirements(item, effective) {
+            const warnings = [];
+            const level = getItemLevel(item);
+            if (level && buildState.level < level) {
+                warnings.push({ text: `Nivå: kräver ${level}, du är ${buildState.level}`, hard: true });
+            }
+
+            // An item can list several race requirements at once (e.g. "ork", "troll" and
+            // "goblin" on the same item) - that's the game's way of saying "restricted to
+            // any of these races", not "must be all of these races", so they're collected
+            // and only flagged as one combined warning if the current race matches none.
+            const allowedRaces = [];
+            let raceRequirementIsHard = false;
+
+            (item.requirements || []).forEach(req => {
+                const text = req.requirement_text || '';
+                const soft = /\bbör\b/i.test(text);
+
+                const statMatch = text.match(/minst\s*<strong>(\d+)<\/strong>\s*i egenskapen\s*<strong>([^<]+)<\/strong>/i);
+                if (statMatch) {
+                    const needed = parseInt(statMatch[1], 10);
+                    const label = statMatch[2].trim();
+                    const key = statBonusKeyMap()[label.toLowerCase()];
+                    const have = key && effective.stats[key] ? effective.stats[key].total : 0;
+                    if (have < needed) warnings.push({ text: `${label}: kräver ${needed}, har ${Math.round(have)}`, hard: !soft });
+                    return;
+                }
+
+                const weaponMatch = text.match(/minst\s*<strong>(\d+)<\/strong>\s*i vapenfärdigheten\s*<strong>([^<]+)<\/strong>/i);
+                if (weaponMatch) {
+                    const needed = parseInt(weaponMatch[1], 10);
+                    const label = weaponMatch[2].trim();
+                    const key = weaponBonusKeyMap()[label.toLowerCase()];
+                    const have = key && effective.weaponSkills[key] ? effective.weaponSkills[key].total : 0;
+                    if (have < needed) warnings.push({ text: `${label}: kräver ${needed}, har ${Math.round(have)}`, hard: !soft });
+                    return;
+                }
+
+                const raceMatch = text.match(/rasen\s*<strong>([^<]+)<\/strong>/i);
+                if (raceMatch) {
+                    allowedRaces.push(raceMatch[1].trim());
+                    if (!soft) raceRequirementIsHard = true;
+                }
+            });
+
+            if (allowedRaces.length > 0) {
+                const currentRace = getSelectedRace();
+                const currentName = currentRace ? currentRace.name.toLowerCase() : '';
+                const matches = allowedRaces.some(r => r.toLowerCase() === currentName);
+                if (!matches) {
+                    warnings.push({ text: `Kräver ras: ${allowedRaces.join(' eller ')}`, hard: raceRequirementIsHard });
+                }
+            }
+
+            return warnings;
+        }
+
+        function setBuildRace(raceId) {
+            buildState.race = raceId;
+            const race = getSelectedRace();
+            buildState.lifeStage = race.ageStages[0].name;
+            renderBuildView();
+        }
+
+        function setBuildLevel(value) {
+            buildState.level = Math.max(1, Math.min(50, parseInt(value, 10) || 1));
+            renderBuildView();
+        }
+
+        function setBuildLifeStage(name) {
+            buildState.lifeStage = name;
+            renderBuildView();
+        }
+
+        function setBaseStat(key, value) {
+            buildState.baseStats[key] = Math.max(0, parseInt(value, 10) || 0);
+            renderBuildView();
+        }
+
+        function setWeaponSkill(key, value) {
+            buildState.weaponSkills[key] = Math.max(0, parseInt(value, 10) || 0);
+            renderBuildView();
+        }
+
+        function equipItem(slot, itemKey) {
+            const item = itemsByKey[itemKey];
+            if (!item) return;
+            buildState.equipped[slot] = itemKey;
+            if (slot === 'weapon' && item.is_two_handed) {
+                delete buildState.equipped.shield;
+            }
+            closeSlotPicker();
+            renderBuildView();
+        }
+
+        function unequipItem(slot) {
+            delete buildState.equipped[slot];
+            renderBuildView();
+        }
+
+        function openSlotPicker(slot) {
+            if (slot === 'shield' && isShieldBlocked()) return;
+            activeSlotPicker = slot;
+            const def = BUILD_SLOTS.find(s => s.slot === slot);
+            document.getElementById('slotPickerModalTitle').textContent = 'Välj: ' + def.label;
+            const body = document.getElementById('slotPickerModalBody');
+            body.innerHTML = `
+                <input type="text" id="slotPickerSearch" placeholder="Sök föremål..." oninput="renderSlotPickerResults(this.value)">
+                <div id="slotPickerResults" style="margin-top: 15px;"></div>
+            `;
+            renderSlotPickerResults('');
+            document.getElementById('slotPickerModal').classList.add('active');
+            document.getElementById('slotPickerSearch').focus();
+        }
+
+        function closeSlotPicker() {
+            document.getElementById('slotPickerModal').classList.remove('active');
+            activeSlotPicker = null;
+        }
+
+        function renderSlotPickerResults(search) {
+            const def = BUILD_SLOTS.find(s => s.slot === activeSlotPicker);
+            if (!def) return;
+            const term = (search || '').toLowerCase().trim();
+            const matches = allItems.filter(item => {
+                if (item.type !== def.itemType) return false;
+                if (def.typeName && item.type_name !== def.typeName) return false;
+                if (term && !item.name.toLowerCase().includes(term)) return false;
+                return true;
+            }).sort((a, b) => getItemLevel(a) - getItemLevel(b));
+            const shown = matches.slice(0, 200);
+
+            document.getElementById('slotPickerResults').innerHTML = `
+                <div class="items-grid">
+                    ${shown.map(item => `
+                        <div class="item-card" onclick="equipItem('${activeSlotPicker}', '${item.key}')">
+                            <div class="item-image">${item.asset?.url ? `<img src="${item.asset.url}" alt="${item.name}">` : ''}</div>
+                            <div class="item-info">
+                                <div class="item-name">${item.name}</div>
+                                <div class="item-type">${subtypeNames[item.type_name] || item.type_name || typeNames[item.type] || item.type}</div>
+                                <div class="item-stats">${getItemStatsHTML(item)}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                ${shown.length === 0 ? '<div class="empty-state"><p>Inga föremål hittades.</p></div>' : ''}
+                ${matches.length > shown.length ? `<p class="info-note">Visar ${shown.length} av ${matches.length} träffar - skärp sökningen för fler.</p>` : ''}
+            `;
+        }
+
+        function renderBuildSlot(def, effective) {
+            if (def.slot === 'shield' && isShieldBlocked()) {
+                return `
+                    <div class="build-slot blocked">
+                        <div class="build-slot-label">${def.label}</div>
+                        <div class="build-slot-empty">Blockerad (tvåhandsvapen)</div>
+                    </div>
+                `;
+            }
+
+            const itemKey = buildState.equipped[def.slot];
+            const item = itemKey ? itemsByKey[itemKey] : null;
+
+            if (!item) {
+                return `
+                    <div class="build-slot" onclick="openSlotPicker('${def.slot}')">
+                        <div class="build-slot-label">${def.label}</div>
+                        <div class="build-slot-empty">Klicka för att välja</div>
+                    </div>
+                `;
+            }
+
+            const warnings = checkRequirements(item, effective);
+            const hardUnmet = warnings.some(w => w.hard);
+            return `
+                <div class="build-slot filled ${hardUnmet ? 'unmet' : ''}">
+                    <div class="build-slot-label">${def.label}</div>
+                    <div class="build-slot-item" onclick="openSlotPicker('${def.slot}')">
+                        ${item.asset?.url ? `<img src="${item.asset.url}" alt="${item.name}">` : ''}
+                        <span>${item.name}</span>
+                    </div>
+                    ${warnings.map(w => `<div class="build-slot-warning">${w.hard ? '⚠' : 'ℹ'} ${w.text}</div>`).join('')}
+                    <button class="build-slot-remove" onclick="event.stopPropagation(); unequipItem('${def.slot}')">Ta bort</button>
+                </div>
+            `;
+        }
+
+        function renderStatBreakdownTable(effective) {
+            const statRows = Object.keys(raceData.statLabels).map(key => {
+                const s = effective.stats[key];
+                return `
+                    <tr>
+                        <td>${raceData.statLabels[key]}</td>
+                        <td>${s.base}</td>
+                        <td>${s.racePct >= 0 ? '+' : ''}${s.racePct}%</td>
+                        <td>${s.agePct >= 0 ? '+' : ''}${s.agePct}%${s.levelPct ? ` (+${s.levelPct} niv.)` : ''}</td>
+                        <td>${s.equipFlat >= 0 ? '+' : ''}${Math.round(s.equipFlat * 10) / 10}</td>
+                        <td class="total ${s.capped ? 'capped' : ''}">${Math.round(s.total * 10) / 10}${s.capped ? ' (max)' : ''}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const weaponRows = WEAPON_SKILL_KEYS.map(key => {
+                const s = effective.weaponSkills[key];
+                return `
+                    <tr>
+                        <td>${raceData.weaponSkillLabels[key]}</td>
+                        <td>${s.base}</td>
+                        <td>${s.racePct >= 0 ? '+' : ''}${s.racePct}%</td>
+                        <td>${s.agePct >= 0 ? '+' : ''}${s.agePct}%</td>
+                        <td>${s.equipFlat >= 0 ? '+' : ''}${Math.round(s.equipFlat * 10) / 10}</td>
+                        <td class="total">${Math.round(s.total * 10) / 10}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            return `
+                <div style="overflow-x: auto;">
+                    <table class="stat-breakdown-table">
+                        <thead><tr><th>Egenskap</th><th>Bas</th><th>Ras %</th><th>Ålder %</th><th>Utrustning</th><th>Totalt</th></tr></thead>
+                        <tbody>${statRows}</tbody>
+                    </table>
+                    <h4 style="margin: 15px 0 8px; color: #8b7355; font-size: 0.9em; text-transform: uppercase;">Vapenfärdigheter</h4>
+                    <table class="stat-breakdown-table">
+                        <thead><tr><th>Färdighet</th><th>Bas</th><th>Ras %</th><th>Ålder %</th><th>Utrustning</th><th>Totalt</th></tr></thead>
+                        <tbody>${weaponRows}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function getSavedBuilds() {
+            try {
+                return JSON.parse(localStorage.getItem(BUILD_STORAGE_KEY) || '{}');
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function saveCurrentBuild() {
+            const name = prompt('Namn på bygget:');
+            if (!name) return;
+            try {
+                const saved = getSavedBuilds();
+                saved[name] = JSON.parse(JSON.stringify(buildState));
+                localStorage.setItem(BUILD_STORAGE_KEY, JSON.stringify(saved));
+                renderBuildView();
+            } catch (e) {
+                alert('Kunde inte spara bygget (lagringen kan vara full eller avstängd).');
+            }
+        }
+
+        function loadSavedBuild(name) {
+            const saved = getSavedBuilds();
+            if (!saved[name]) return;
+            buildState = Object.assign({ race: null, level: 1, lifeStage: 'Ung', baseStats: {}, weaponSkills: {}, equipped: {} }, JSON.parse(JSON.stringify(saved[name])));
+            renderBuildView();
+        }
+
+        function deleteSavedBuild(name) {
+            try {
+                const saved = getSavedBuilds();
+                delete saved[name];
+                localStorage.setItem(BUILD_STORAGE_KEY, JSON.stringify(saved));
+                renderBuildView();
+            } catch (e) {
+                // Ignore - nothing meaningful to recover from a blocked localStorage here.
+            }
+        }
+
+        function renderBuildToolbar() {
+            const names = Object.keys(getSavedBuilds());
+            return `
+                <div class="build-toolbar">
+                    <button onclick="saveCurrentBuild()">Spara bygge</button>
+                    ${names.length > 0 ? `
+                        <select onchange="if (this.value) loadSavedBuild(this.value); this.value = '';">
+                            <option value="">Ladda bygge...</option>
+                            ${names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('')}
+                        </select>
+                        <select onchange="if (this.value) deleteSavedBuild(this.value); this.value = '';">
+                            <option value="">Ta bort bygge...</option>
+                            ${names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('')}
+                        </select>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function renderBuildView() {
+            const container = document.getElementById('buildContent');
+            if (!raceData || allItems.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>Laddar data...</p></div>';
+                setTimeout(() => { if (currentView === 'build') renderBuildView(); }, 300);
+                return;
+            }
+
+            if (!buildState.race) {
+                const firstPlayable = raceData.races.find(r => r.playable) || raceData.races[0];
+                buildState.race = firstPlayable.id;
+            }
+            const race = getSelectedRace();
+            if (!race.ageStages.some(s => s.name === buildState.lifeStage)) {
+                buildState.lifeStage = race.ageStages[0].name;
+            }
+
+            const effective = computeEffectiveStats();
+
+            container.innerHTML = `
+                ${renderBuildToolbar()}
+
+                <div class="build-panel">
+                    <h3>Karaktär</h3>
+                    <div class="build-basics-grid">
+                        <div class="filter-group">
+                            <label>Ras</label>
+                            <select onchange="setBuildRace(this.value)">
+                                ${raceData.races.map(r => `<option value="${r.id}" ${r.id === buildState.race ? 'selected' : ''}>${r.name}${r.playable ? '' : ' (endast via döden)'}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Nivå</label>
+                            <input type="number" min="1" max="50" value="${buildState.level}" onchange="setBuildLevel(this.value)">
+                        </div>
+                        <div class="filter-group">
+                            <label>Livsstadium</label>
+                            <select onchange="setBuildLifeStage(this.value)">
+                                ${race.ageStages.map(s => `<option value="${s.name}" ${s.name === buildState.lifeStage ? 'selected' : ''}>${s.name}${s.days ? ` (${s.days}+ dagar)` : ''}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                    <p class="info-note">Startmynt: ${race.startingCoins ?? 'ej tillämpligt'} · Grundvikt: ${race.baseWeight} · Bas-chans perfekt träff: ${race.critMin}% till ${race.critMax}% · Skada i sköldhand: ${race.offhandDamagePct}%</p>
+                    ${race.playableNote ? `<p class="info-note">${race.playableNote}</p>` : ''}
+                    ${race.agingNote ? `<p class="info-note">${race.agingNote}</p>` : ''}
+                    ${race.levelBonus ? `<p class="info-note">${race.levelBonus.note}</p>` : ''}
+                </div>
+
+                <div class="build-panel">
+                    <h3>Rasförmågor</h3>
+                    ${race.abilities.map(a => `<div class="race-ability-card"><h5>${a.name}</h5><p>${a.text}</p></div>`).join('')}
+                </div>
+
+                <div class="build-panel">
+                    <h3>Grundegenskaper</h3>
+                    <p class="info-note">Fyll i poängen du faktiskt spenderat på din karaktär - spelet exponerar ingen formel för nivå → poäng, så det här replikerar din riktiga karaktär i stället för att räkna ut den.</p>
+                    <div class="build-stats-grid">
+                        ${Object.keys(raceData.statLabels).map(key => `
+                            <div class="build-stat-input">
+                                <label>${raceData.statLabels[key]}</label>
+                                <input type="number" min="0" value="${buildState.baseStats[key] || 0}" onchange="setBaseStat('${key}', this.value)">
+                            </div>
+                        `).join('')}
+                    </div>
+                    <h3 style="margin-top: 20px;">Vapenfärdigheter</h3>
+                    <div class="build-stats-grid">
+                        ${WEAPON_SKILL_KEYS.map(key => `
+                            <div class="build-stat-input">
+                                <label>${raceData.weaponSkillLabels[key]}</label>
+                                <input type="number" min="0" value="${buildState.weaponSkills[key] || 0}" onchange="setWeaponSkill('${key}', this.value)">
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="build-panel">
+                    <h3>Utrustning</h3>
+                    <div class="build-slots-grid">
+                        ${BUILD_SLOTS.map(def => renderBuildSlot(def, effective)).join('')}
+                    </div>
+                </div>
+
+                <div class="build-panel">
+                    <h3>Resulterande egenskaper</h3>
+                    ${renderStatBreakdownTable(effective)}
+                </div>
+
+                <div class="build-panel">
+                    <h3>Stridsvärden från utrustning</h3>
+                    <div class="stat-grid">
+                        <div class="stat-item"><div class="stat-label">Vapenskada</div><div class="stat-value">${effective.combat.damageMax ? formatRange(effective.combat.damageMin, effective.combat.damageMax) : '-'}</div></div>
+                        <div class="stat-item"><div class="stat-label">Blockering</div><div class="stat-value">${effective.combat.block || '-'}</div></div>
+                        <div class="stat-item"><div class="stat-label">Perfekt träff (utrustning)</div><div class="stat-value">${effective.combat.critRate ? '+' + effective.combat.critRate + '%' : '-'}</div></div>
+                        <div class="stat-item"><div class="stat-label">PT-potential</div><div class="stat-value">${effective.combat.maxCritRate ? '+' + effective.combat.maxCritRate + '%' : '-'}</div></div>
+                        <div class="stat-item"><div class="stat-label">Total vikt</div><div class="stat-value">${effective.totalWeight}</div></div>
+                    </div>
+                    <p class="info-note">Träffchans, undvikande, kritisk chans och skadepotentialens avtagande är enligt spelets egen wiki inte offentliga formler - de påverkas av värdena ovan men visas inte som en beräknad siffra här. Styrka mildrar viktens negativa effekt med upp till 25, men den exakta kurvan är inte publik.</p>
+                </div>
+            `;
         }
 
         // Event listeners

@@ -9,6 +9,7 @@ An interactive browser for browsing and comparing items in the Lanista game. Fea
 - 📊 **Multiple Views** - Switch between grid and table views
 - 📈 **Sorting** - Sort by name, level, sell value, and more
 - ⚖️ **Item Comparison** - Compare 2-4 items side-by-side with stat highlighting
+- 🧮 **Build Simulator** - Pick a race, level and life stage, enter your character's actual stat points, equip gear, and see the resulting totals
 - 📱 **Responsive Design** - Works on desktop, tablet, and mobile
 - 🗂️ **Pagination** - Smooth navigation through 1,700+ items
 
@@ -37,6 +38,7 @@ No build process required otherwise - it's pure static HTML/CSS/JavaScript.
 
 - `docs/index.html` - Main application (all CSS and JavaScript embedded)
 - `docs/lanista_items_detailed.json` - Item data (1,739 items with full stats and crafting info)
+- `docs/lanista_races.json` - Race data for the build simulator (stat/weapon-skill modifiers, abilities, aging), transcribed from wiki.lanista.se
 - `serve-docs.ps1` - Local dev server for the `docs/` folder above
 - `README.md` - This file
 
@@ -59,6 +61,18 @@ Type in the search box to filter items by name - updates in real-time.
 2. Click **Jämför** to see stats side-by-side
 3. Best values are highlighted in each stat column
 4. Click **Tillbaka** to return to browsing
+
+### Build Simulator
+Click **Bygg-simulator** in the header to open it.
+
+1. Pick a race, level and life stage (Ung/Vuxen/Medelålders/Gammal/Uråldrig - options vary per race).
+2. Enter the stat points and weapon skills you've actually put on your character - the game doesn't publish a level → points formula, so this replicates your real character instead of calculating it.
+3. Click a slot to equip an item in it; a two-handed weapon blocks the shield slot automatically.
+4. The results panel shows each stat as base → race % → age % → equipment bonus → total, race/age modifiers coming from `lanista_races.json` and equipment bonuses from each item's own data.
+5. Slots flag unmet item requirements (level, stat, weapon skill, race) - soft "bör ha" recommendations are shown as info, hard "Kräver" requirements as warnings.
+6. **Spara bygge** saves the current build to your browser's local storage so you can load or delete it later; builds aren't shared between devices or browsers.
+
+Bashälsa (HP) is capped at 5.5× your effective Styrka - the one exact formula the game's own wiki documents. Hit chance, dodge, critical-hit chance, damage-potential taper and the "total fysik/smidighet" bonus system are intentionally undocumented by the game itself, so they're shown as reference text rather than a calculated number.
 
 ## Browser Support
 

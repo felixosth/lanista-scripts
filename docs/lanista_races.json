@@ -1,0 +1,212 @@
+{
+  "_source": "Transcribed from wiki.lanista.se/en/races/* (fetched 2026-09-12). Percentages are race/age modifiers to a player's self-allocated base stat points, not flat bonuses like equipment.",
+  "statLabels": {
+    "bashalsa": "Bashälsa",
+    "styrka": "Styrka",
+    "uthallighet": "Uthållighet",
+    "initiativ": "Initiativstyrka",
+    "undvika": "Undvika anfall",
+    "tur": "Tur",
+    "larande": "Inlärningsförmåga",
+    "disciplin": "Disciplin",
+    "ledarskap": "Ledarskap",
+    "provokation": "Provokation",
+    "intellekt": "Intellekt"
+  },
+  "weaponSkillLabels": {
+    "sword": "Svärd",
+    "axe": "Yxor",
+    "mace": "Hammare",
+    "stave": "Stavar",
+    "spear": "Stickvapen",
+    "chain": "Kättingvapen",
+    "shield": "Sköldar"
+  },
+  "races": [
+    {
+      "id": "manniska",
+      "name": "Människa",
+      "playable": true,
+      "startingCoins": 120,
+      "baseWeight": 5,
+      "critMin": 4,
+      "critMax": 4,
+      "offhandDamagePct": 90,
+      "statMods": { "bashalsa": 10, "styrka": 10, "uthallighet": 10, "initiativ": 10, "undvika": 10, "tur": 10, "larande": 10, "disciplin": 10 },
+      "weaponMods": { "axe": 15, "sword": 15, "mace": 10, "stave": 10, "spear": 15, "chain": 10, "shield": 20 },
+      "abilities": [
+        { "name": "Ökad chans för kritisk träff", "text": "Högre grundchans för kritisk träff (min/max) än andra raser." },
+        { "name": "Ledarskapsvrål", "text": "30% chans per runda att höja lagets ledarskap och initiativ med 15% (minst +15 ledarskap, +10 initiativ)." }
+      ],
+      "ageStages": [
+        { "name": "Ung", "days": 0, "statMods": {}, "weaponModAll": 0 },
+        { "name": "Vuxen", "days": 16, "statMods": { "bashalsa": 7, "styrka": 7, "uthallighet": 7, "initiativ": 6, "undvika": 6, "ledarskap": 10, "larande": 10, "provokation": 10 }, "weaponModAll": 0 },
+        { "name": "Medelålders", "days": 29, "statMods": { "bashalsa": -5, "styrka": -5, "uthallighet": -5, "initiativ": -5, "undvika": -5, "ledarskap": 10 }, "weaponModAll": 0 },
+        { "name": "Gammal", "days": 39, "statMods": { "bashalsa": -8, "styrka": -8, "uthallighet": -8, "initiativ": -9, "undvika": -9, "ledarskap": 15 }, "weaponModAll": -5 },
+        { "name": "Uråldrig", "days": 50, "statMods": { "bashalsa": -12, "styrka": -12, "uthallighet": -12, "initiativ": -12, "undvika": -12, "ledarskap": -30, "larande": -30, "provokation": -30 }, "weaponModAll": -10 }
+      ]
+    },
+    {
+      "id": "alv",
+      "name": "Alv",
+      "playable": true,
+      "startingCoins": 120,
+      "baseWeight": 0,
+      "critMin": 1,
+      "critMax": 3,
+      "offhandDamagePct": 90,
+      "statMods": { "bashalsa": -10, "styrka": -10, "uthallighet": 30, "initiativ": 25, "undvika": 55, "tur": 10, "larande": 20, "disciplin": 0 },
+      "weaponMods": { "axe": 5, "sword": 20, "mace": 5, "stave": 25, "spear": 25, "chain": 10, "shield": 25 },
+      "abilities": [
+        { "name": "Undvikande Rop", "text": "Efter 2 undvikna attacker (4 i dödsmatcher) i en strid ökar styrkan med 15% av totalt Undvika anfall-värde, resten av striden." }
+      ],
+      "ageStages": [
+        { "name": "Ung", "days": 0, "statMods": {}, "weaponModAll": 0 },
+        { "name": "Vuxen", "days": 18, "statMods": { "bashalsa": 7, "styrka": 8, "uthallighet": 8, "initiativ": 5, "undvika": 5, "ledarskap": 10, "larande": 10, "provokation": 10 }, "weaponModAll": 0 },
+        { "name": "Medelålders", "days": 35, "statMods": { "bashalsa": -5, "styrka": -5, "uthallighet": -5, "initiativ": -5, "undvika": -5, "ledarskap": 10 }, "weaponModAll": 0 },
+        { "name": "Gammal", "days": 50, "statMods": { "bashalsa": -6, "styrka": -6, "uthallighet": -6, "initiativ": -8, "undvika": -8, "ledarskap": 15 }, "weaponModAll": -5 }
+      ],
+      "agingNote": "Alver blir aldrig \"urgamla\" - Gammal är sista åldersstadiet."
+    },
+    {
+      "id": "dvarg",
+      "name": "Dvärg",
+      "playable": true,
+      "startingCoins": 120,
+      "baseWeight": 8,
+      "critMin": 0,
+      "critMax": 4,
+      "offhandDamagePct": 100,
+      "statMods": { "bashalsa": 30, "styrka": 15, "uthallighet": -15, "initiativ": -15, "undvika": -40, "tur": 0, "larande": 10, "disciplin": 20 },
+      "weaponMods": { "axe": 20, "sword": 0, "mace": 20, "stave": -15, "spear": 0, "chain": 0, "shield": 10 },
+      "abilities": [
+        { "name": "Ökad absorption", "text": "Börjar med 1 i extra absorption, ökar med 1 var 10:e nivå." },
+        { "name": "Vässa vapen", "text": "50% chans att vässa vapnet i första ronden, vilket ger +75% kritisk träffchans på nästa attack." }
+      ],
+      "ageStages": [
+        { "name": "Ung", "days": 0, "statMods": {}, "weaponModAll": 0 },
+        { "name": "Vuxen", "days": 16, "statMods": { "bashalsa": 8, "styrka": 6, "uthallighet": 9, "initiativ": 6, "undvika": 9, "ledarskap": 10, "provokation": 20 }, "weaponModAll": 0 },
+        { "name": "Medelålders", "days": 29, "statMods": { "bashalsa": -5, "styrka": -5, "uthallighet": -5, "initiativ": -5, "undvika": -5, "ledarskap": 10 }, "weaponModAll": 0 },
+        { "name": "Gammal", "days": 39, "statMods": { "bashalsa": -8, "styrka": -8, "uthallighet": -8, "initiativ": -9, "undvika": -9, "ledarskap": 15 }, "weaponModAll": -5 },
+        { "name": "Uråldrig", "days": 50, "statMods": { "bashalsa": -12, "styrka": -12, "uthallighet": -12, "initiativ": -12, "undvika": -12, "ledarskap": 20, "provokation": -30 }, "weaponModAll": -10 }
+      ]
+    },
+    {
+      "id": "goblin",
+      "name": "Goblin",
+      "playable": true,
+      "startingCoins": 120,
+      "baseWeight": 2,
+      "critMin": 1,
+      "critMax": 1,
+      "offhandDamagePct": 95,
+      "statMods": { "bashalsa": -15, "styrka": 20, "uthallighet": 0, "initiativ": 10, "undvika": 30, "tur": 20, "larande": 0, "disciplin": 0 },
+      "weaponMods": { "axe": 10, "sword": 0, "mace": 20, "stave": 20, "spear": 20, "chain": 10, "shield": 0 },
+      "abilities": [
+        { "name": "Ökad bonus från total fysik", "text": "Får större bonus än andra raser från summan av basvärden i de fysiska statsen (Hälsa/Styrka/Uthållighet)." },
+        { "name": "Smutsiga stridstrick", "text": "20% chans att vid attack kasta sand i ögonen på angriparen, vilket ökar dennes risk att missa nästa anfall med 5%." }
+      ],
+      "ageStages": [
+        { "name": "Ung", "days": 0, "statMods": {}, "weaponModAll": 0 },
+        { "name": "Vuxen", "days": 14, "statMods": { "bashalsa": 14, "styrka": 9, "uthallighet": 7, "initiativ": 5, "undvika": 5, "ledarskap": 5, "larande": 5, "provokation": 5 }, "weaponModAll": 0 },
+        { "name": "Medelålders", "days": 26, "statMods": { "bashalsa": -5, "styrka": -5, "uthallighet": -5, "initiativ": -5, "undvika": -5, "ledarskap": 10 }, "weaponModAll": 0 },
+        { "name": "Gammal", "days": 39, "statMods": { "bashalsa": -8, "styrka": -8, "uthallighet": -8, "initiativ": -9, "undvika": -9, "ledarskap": 15 }, "weaponModAll": -5 },
+        { "name": "Uråldrig", "days": 47, "statMods": { "bashalsa": -12, "styrka": -12, "uthallighet": -12, "initiativ": -12, "undvika": -12, "ledarskap": 20, "provokation": -30 }, "weaponModAll": -10 }
+      ]
+    },
+    {
+      "id": "ork",
+      "name": "Ork",
+      "playable": true,
+      "startingCoins": 120,
+      "baseWeight": 7,
+      "critMin": 1,
+      "critMax": 2,
+      "offhandDamagePct": 110,
+      "statMods": { "bashalsa": 20, "styrka": 30, "uthallighet": 0, "initiativ": 0, "undvika": -30, "tur": 5, "larande": -10, "disciplin": 15 },
+      "weaponMods": { "axe": 10, "sword": 0, "mace": 10, "stave": -5, "spear": 0, "chain": 15, "shield": -5 },
+      "abilities": [
+        { "name": "Ökad kritisk skada", "text": "+7% kritisk skada vid kritisk träff." },
+        { "name": "Berserk", "text": "När HP faller under 90% av max-HP ökar styrkan med 10% (skada kan ändå inte överskrida vapnets skadepotential) resten av striden." }
+      ],
+      "ageStages": [
+        { "name": "Ung", "days": 0, "statMods": {}, "weaponModAll": 0 },
+        { "name": "Vuxen", "days": 15, "statMods": { "bashalsa": 6, "styrka": 8, "uthallighet": 6, "initiativ": 9, "undvika": 6, "ledarskap": 10, "larande": 5, "provokation": 10 }, "weaponModAll": 0 },
+        { "name": "Medelålders", "days": 28, "statMods": { "bashalsa": -5, "styrka": -5, "uthallighet": -5, "initiativ": -5, "undvika": -5, "ledarskap": 10 }, "weaponModAll": 0 },
+        { "name": "Gammal", "days": 39, "statMods": { "bashalsa": -8, "styrka": -8, "uthallighet": -8, "initiativ": -9, "undvika": -9, "ledarskap": 15 }, "weaponModAll": -5 },
+        { "name": "Uråldrig", "days": 47, "statMods": { "bashalsa": -12, "styrka": -12, "uthallighet": -12, "initiativ": -12, "undvika": -12, "ledarskap": -30, "larande": -30, "provokation": -30 }, "weaponModAll": -10 }
+      ]
+    },
+    {
+      "id": "salamanth",
+      "name": "Salamanth",
+      "playable": true,
+      "startingCoins": 120,
+      "baseWeight": 3,
+      "critMin": -3,
+      "critMax": -3,
+      "offhandDamagePct": 100,
+      "statMods": { "bashalsa": 25, "styrka": -10, "uthallighet": 10, "initiativ": 20, "undvika": 10, "tur": 30, "larande": -100, "disciplin": 0 },
+      "weaponMods": { "axe": 0, "sword": 0, "mace": 10, "stave": 10, "spear": 10, "chain": -10, "shield": -10 },
+      "abilities": [
+        { "name": "Vulkanandens kraft (aktiv)", "text": "Chans varje runda (20% -> 15% efter första aktivering -> 10% efter två) att slumpa en av fyra effekter (skada fienden, återhämta hälsa, +30% vapenfärdighet, skada sig själv) med storlek beroende på grad." },
+        { "name": "Ingen bonus-XP", "text": "Kan aldrig få bonuserfarenhet från strider - Inlärningsförmåga är irrelevant för salamanths." }
+      ],
+      "ageStages": [
+        { "name": "Ung", "days": 0, "statMods": {}, "weaponModAll": 0 },
+        { "name": "Vuxen", "days": 14, "statMods": { "bashalsa": 7, "styrka": 12, "uthallighet": 7, "initiativ": 3, "undvika": 2, "ledarskap": 5, "larande": 0, "provokation": 5 }, "weaponModAll": 0 },
+        { "name": "Medelålders", "days": 26, "statMods": { "bashalsa": -5, "styrka": -5, "uthallighet": -5, "initiativ": -5, "undvika": -5, "ledarskap": 10 }, "weaponModAll": 0 },
+        { "name": "Gammal", "days": 39, "statMods": { "bashalsa": -8, "styrka": -8, "uthallighet": -8, "initiativ": -9, "undvika": -9, "ledarskap": 15 }, "weaponModAll": -5 },
+        { "name": "Uråldrig", "days": 47, "statMods": { "bashalsa": -12, "styrka": -12, "uthallighet": -12, "initiativ": -12, "undvika": -12, "ledarskap": 20, "provokation": -30 }, "weaponModAll": -10 }
+      ],
+      "levelBonus": {
+        "note": "För varje nivå över 30 får Salamanths +1% undvika anfall och +1% initiativ (dokumenterat under Vuxen-stadiet).",
+        "aboveLevel": 30,
+        "perLevel": { "undvika": 1, "initiativ": 1 }
+      }
+    },
+    {
+      "id": "troll",
+      "name": "Troll",
+      "playable": true,
+      "startingCoins": 120,
+      "baseWeight": 14,
+      "critMin": 0,
+      "critMax": 0,
+      "offhandDamagePct": 90,
+      "statMods": { "bashalsa": 50, "styrka": 50, "uthallighet": -20, "initiativ": -40, "undvika": -60, "tur": 15, "larande": -20, "disciplin": 5 },
+      "weaponMods": { "axe": -20, "sword": -30, "mace": -15, "stave": -35, "spear": -25, "chain": -15, "shield": -20 },
+      "abilities": [
+        { "name": "Förtrollande skräck", "text": "65% chans att skrämma motståndaren i första ronden, vilket gör att denne inte kan undvika anfallet." },
+        { "name": "Ökat skadetak med vapen", "text": "Vapnens skadepotential är 15% högre än för andra raser." }
+      ],
+      "ageStages": [
+        { "name": "Ung", "days": 0, "statMods": {}, "weaponModAll": 0 },
+        { "name": "Vuxen", "days": 15, "statMods": { "bashalsa": 6, "styrka": 7, "uthallighet": 8, "initiativ": 9, "undvika": 0, "ledarskap": 5, "provokation": 20 }, "weaponModAll": 0 },
+        { "name": "Medelålders", "days": 28, "statMods": { "bashalsa": -5, "styrka": -5, "uthallighet": -5, "initiativ": -5, "undvika": -5, "ledarskap": 10 }, "weaponModAll": 0 },
+        { "name": "Gammal", "days": 39, "statMods": { "bashalsa": -8, "styrka": -8, "uthallighet": -8, "initiativ": -9, "undvika": -9, "ledarskap": 15 }, "weaponModAll": -5 },
+        { "name": "Uråldrig", "days": 47, "statMods": { "bashalsa": -12, "styrka": -12, "uthallighet": -12, "initiativ": -12, "undvika": -12, "ledarskap": -30, "larande": -30, "provokation": -30 }, "weaponModAll": -10 }
+      ]
+    },
+    {
+      "id": "odod",
+      "name": "Odöd",
+      "playable": false,
+      "playableNote": "Går inte att välja vid skapande - man förvandlas till Odöd efter döden (kräver byggnaden Två nya köpmän).",
+      "startingCoins": null,
+      "baseWeight": 4,
+      "critMin": 1,
+      "critMax": 2,
+      "offhandDamagePct": 90,
+      "statMods": { "bashalsa": 10, "styrka": 0, "uthallighet": 100, "initiativ": -10, "undvika": 5, "tur": -20, "larande": -40, "disciplin": 30 },
+      "weaponMods": { "axe": 5, "sword": 5, "mace": 5, "stave": 5, "spear": 5, "chain": 5, "shield": 5 },
+      "abilities": [
+        { "name": "Livsdränering", "text": "10% chans vid attack att stjäla 5% av motståndarens aktuella HP, max 2 gånger per runda." }
+      ],
+      "ageStages": [
+        { "name": "Odöd", "days": 0, "statMods": {}, "weaponModAll": 0 }
+      ],
+      "agingNote": "Odöda åldras inte - de behåller den ålder de dog i, utan modifierare."
+    }
+  ]
+}
