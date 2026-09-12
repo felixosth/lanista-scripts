@@ -2578,7 +2578,10 @@
             const statTotals = {};
             const weaponTotals = {};
             let weight = 0;
-            const combat = { damageMin: 0, damageMax: 0, block: 0, critRate: 0, maxCritRate: 0, hitRate: 0, rangedDamageMin: 0, rangedDamageMax: 0 };
+            const combat = {
+                damageMin: 0, damageMax: 0, block: 0, critRate: 0, maxCritRate: 0, hitRate: 0,
+                rangedDamageMin: 0, rangedDamageMax: 0, rangedHitRate: 0, rangedCritRate: 0, rangedMaxCritRate: 0
+            };
             const statMap = statBonusKeyMap();
             const weaponMap = weaponBonusKeyMap();
 
@@ -2608,18 +2611,30 @@
                     combat.block += item.base_block || item.absorption || 0;
                 }
                 if (slot === 'ranged') {
+                    // A ranged item fires its own separate attack (its own proc_chance,
+                    // damage range, crit/hit fields) rather than boosting your primary
+                    // weapon's attack - every one of the 24 restrict_to_distance items has
+                    // increased_hit_rate set and crit_rate/max_crit_rate at 0, confirming
+                    // these describe that item's own roll, not a character-wide bonus. Keep
+                    // them scoped to the ranged item instead of pooling into combat.critRate/
+                    // maxCritRate/hitRate below.
                     combat.rangedDamageMin += item.min_damage || 0;
                     combat.rangedDamageMax += item.max_damage || 0;
+                    combat.rangedHitRate += item.increased_hit_rate || 0;
+                    combat.rangedCritRate += item.crit_rate || 0;
+                    combat.rangedMaxCritRate += item.max_crit_rate || 0;
+                } else {
+                    // crit_rate ("Perfekt träff"), max_crit_rate ("PT-potential") and
+                    // increased_hit_rate ("Träffchans") can appear on any non-ranged item
+                    // shape - weapons, shields, enchants and armor/trinkets (e.g. Smidesring)
+                    // alike - so they're read once here rather than per branch above. Gating
+                    // these behind is_weapon/slot checks was the exact bug docs/index.html's
+                    // own showDetail() was fixed for previously (see commit "Fix missing/
+                    // mislabeled item stats").
+                    combat.critRate += item.crit_rate || 0;
+                    combat.maxCritRate += item.max_crit_rate || 0;
+                    combat.hitRate += item.increased_hit_rate || 0;
                 }
-                // crit_rate ("Perfekt träff"), max_crit_rate ("PT-potential") and
-                // increased_hit_rate ("Träffchans") can appear on any item shape - weapons,
-                // shields, enchants and armor/trinkets (e.g. Smidesring) alike - so they're
-                // read once here rather than per branch above. Gating these behind
-                // is_weapon/slot checks was the exact bug docs/index.html's own showDetail()
-                // was fixed for previously (see commit "Fix missing/mislabeled item stats").
-                combat.critRate += item.crit_rate || 0;
-                combat.maxCritRate += item.max_crit_rate || 0;
-                combat.hitRate += item.increased_hit_rate || 0;
             });
 
             return { statTotals, weaponTotals, weight, combat };
@@ -2845,7 +2860,7 @@
 
             const warnings = checkRequirements(item, effective);
             const hardUnmet = warnings.some(w => w.hard);
-            const procNote = def.slot === 'ranged' ? describeRangedProc(item) : '';
+            const rangedNotes = def.slot === 'ranged' ? [describeRangedAttack(item), describeRangedProc(item)].filter(Boolean) : [];
             return `
                 <div class="build-slot filled ${hardUnmet ? 'unmet' : ''}">
                     <div class="build-slot-label">${def.label}</div>
@@ -2853,22 +2868,37 @@
                         ${item.asset?.url ? `<img src="${item.asset.url}" alt="${item.name}">` : ''}
                         <span>${item.name}</span>
                     </div>
-                    ${procNote ? `<div class="build-slot-warning">${procNote}</div>` : ''}
+                    ${rangedNotes.map(n => `<div class="build-slot-warning">${n}</div>`).join('')}
                     ${warnings.map(w => `<div class="build-slot-warning">${w.hard ? '⚠' : 'ℹ'} ${w.text}</div>`).join('')}
                     <button class="build-slot-remove" onclick="event.stopPropagation(); unequipItem('${def.slot}')">Ta bort</button>
                 </div>
             `;
         }
 
-        // Ranged "weapons" are proc enchants in the game's own data model: on top of any
-        // flat combat stats (folded into the combat readouts elsewhere), they apply a
-        // chance-based debuff to the OPPONENT on hit rather than a static bonus to your own
-        // sheet, so that part is only ever shown as reference text, never added into totals.
+        // A ranged item fires its own separate attack rather than boosting your primary
+        // weapon's - its damage/hit-rate/crit fields describe that attack specifically, so
+        // they're labeled with the item's own name instead of folded into the shared
+        // "Träffchans (utrustning)"/"Perfekt träff (utrustning)" totals (see
+        // collectEquipmentBonuses' 'ranged' branch for why).
+        function describeRangedAttack(item) {
+            const parts = [];
+            if (item.max_damage) parts.push(`${formatRange(item.min_damage || 0, item.max_damage)} skada`);
+            if (item.increased_hit_rate) parts.push(`+${item.increased_hit_rate} träffchans`);
+            if (item.crit_rate) parts.push(`+${item.crit_rate}% perfekt träff`);
+            if (item.max_crit_rate) parts.push(`+${item.max_crit_rate}% PT-potential`);
+            if (parts.length === 0) return '';
+            return `ℹ ${item.name}s egen attack (${item.proc_chance || 0}% chans/runda): ${parts.join(', ')}`;
+        }
+
+        // Ranged "weapons" are proc enchants in the game's own data model: on top of the
+        // attack described above, most also apply a chance-based debuff to the OPPONENT on
+        // hit rather than a bonus to your own sheet, so that part is only ever shown as
+        // reference text, never added into totals.
         function describeRangedProc(item) {
             const mods = item.enchant_modifiers || [];
             if (mods.length === 0) return '';
             const parts = mods.map(m => `${m.enchantable_name} ${m.enchant_value_display}`).join(', ');
-            return `ℹ Vid träff (${item.proc_chance || 0}% chans): ${parts} på motståndaren`;
+            return `ℹ Vid träff: ${parts} på motståndaren`;
         }
 
         function renderStatBreakdownTable(effective) {
