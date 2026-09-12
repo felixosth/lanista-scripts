@@ -2578,7 +2578,7 @@
             const statTotals = {};
             const weaponTotals = {};
             let weight = 0;
-            const combat = { damageMin: 0, damageMax: 0, block: 0, critRate: 0, maxCritRate: 0, rangedDamageMin: 0, rangedDamageMax: 0 };
+            const combat = { damageMin: 0, damageMax: 0, block: 0, critRate: 0, maxCritRate: 0, hitRate: 0, rangedDamageMin: 0, rangedDamageMax: 0 };
             const statMap = statBonusKeyMap();
             const weaponMap = weaponBonusKeyMap();
 
@@ -2603,8 +2603,6 @@
                 if (item.is_weapon) {
                     combat.damageMin += item.base_damage_min || 0;
                     combat.damageMax += item.base_damage_max || 0;
-                    combat.critRate += item.crit_rate || 0;
-                    combat.maxCritRate += item.max_crit_rate || 0;
                 }
                 if (item.is_shield || item.is_armor) {
                     combat.block += item.base_block || item.absorption || 0;
@@ -2612,9 +2610,16 @@
                 if (slot === 'ranged') {
                     combat.rangedDamageMin += item.min_damage || 0;
                     combat.rangedDamageMax += item.max_damage || 0;
-                    combat.critRate += item.crit_rate || 0;
-                    combat.maxCritRate += item.max_crit_rate || 0;
                 }
+                // crit_rate ("Perfekt träff"), max_crit_rate ("PT-potential") and
+                // increased_hit_rate ("Träffchans") can appear on any item shape - weapons,
+                // shields, enchants and armor/trinkets (e.g. Smidesring) alike - so they're
+                // read once here rather than per branch above. Gating these behind
+                // is_weapon/slot checks was the exact bug docs/index.html's own showDetail()
+                // was fixed for previously (see commit "Fix missing/mislabeled item stats").
+                combat.critRate += item.crit_rate || 0;
+                combat.maxCritRate += item.max_crit_rate || 0;
+                combat.hitRate += item.increased_hit_rate || 0;
             });
 
             return { statTotals, weaponTotals, weight, combat };
@@ -3069,6 +3074,7 @@
                         <div class="stat-item"><div class="stat-label">Blockering</div><div class="stat-value">${effective.combat.block || '-'}</div></div>
                         <div class="stat-item"><div class="stat-label">Perfekt träff (utrustning)</div><div class="stat-value">${effective.combat.critRate ? '+' + effective.combat.critRate + '%' : '-'}</div></div>
                         <div class="stat-item"><div class="stat-label">PT-potential</div><div class="stat-value">${effective.combat.maxCritRate ? '+' + effective.combat.maxCritRate + '%' : '-'}</div></div>
+                        <div class="stat-item"><div class="stat-label">Träffchans (utrustning)</div><div class="stat-value">${effective.combat.hitRate ? '+' + effective.combat.hitRate : '-'}</div></div>
                         <div class="stat-item"><div class="stat-label">Total vikt</div><div class="stat-value">${effective.totalWeight}</div></div>
                     </div>
                     <p class="info-note">Träffchans, undvikande, kritisk chans och skadepotentialens avtagande är enligt spelets egen wiki inte offentliga formler - de påverkas av värdena ovan men visas inte som en beräknad siffra här. Styrka mildrar viktens negativa effekt med upp till 25, men den exakta kurvan är inte publik.</p>
