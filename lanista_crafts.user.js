@@ -2,12 +2,12 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.22.0
+// @version     1.23.0
 //
 // @match       https://lanista.se/game/*
 // @match       https://lanista.se/
 // @grant       GM_getResourceURL
-// @resource    lanistaFxPunch      https://github.com/felixosth/lanista-scripts/raw/refs/heads/main/sounds/punch.mp3
+// @resource    lanistaFxWhip       https://github.com/felixosth/lanista-scripts/raw/refs/heads/main/sounds/whip.mp3
 // @resource    lanistaFxChurchBell https://github.com/felixosth/lanista-scripts/raw/refs/heads/main/sounds/church_bell.mp3
 //
 // @downloadURL https://github.com/felixosth/lanista-scripts/raw/refs/heads/main/lanista_crafts.user.js
@@ -2970,9 +2970,9 @@
 		const style = document.createElement('style');
 		style.dataset.lanistaBattlefxStyle = 'true';
 		style.textContent = `
-			@keyframes lanista-fx-pop { 0% { transform: scale(0.2) rotate(var(--lanista-fx-rot, 0deg)); opacity: 0; } 25% { transform: scale(1.15) rotate(var(--lanista-fx-rot, 0deg)); opacity: 1; } 40% { transform: scale(1) rotate(var(--lanista-fx-rot, 0deg)); opacity: 1; } 75% { transform: scale(1) rotate(var(--lanista-fx-rot, 0deg)); opacity: 1; } 100% { transform: scale(0.85) rotate(var(--lanista-fx-rot, 0deg)); opacity: 0; } }
+			@keyframes lanista-fx-pop { 0% { transform: scale(0.2) rotate(var(--lanista-fx-rot, 0deg)); opacity: 0; } 20% { transform: scale(1.15) rotate(var(--lanista-fx-rot, 0deg)); opacity: 1; } 30% { transform: scale(1) rotate(var(--lanista-fx-rot, 0deg)); opacity: 1; } 85% { transform: scale(1) rotate(var(--lanista-fx-rot, 0deg)); opacity: 1; } 100% { transform: scale(0.85) rotate(var(--lanista-fx-rot, 0deg)); opacity: 0; } }
 			@keyframes lanista-fx-drift { 0% { transform: translateY(-10px) rotate(var(--lanista-fx-rot, 0deg)); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(40vh) rotate(var(--lanista-fx-rot, 0deg)); opacity: 0; } }
-			@keyframes lanista-fx-impact-flash { 0% { opacity: 0; } 12% { opacity: 0.85; } 100% { opacity: 0; } }
+			@keyframes lanista-fx-impact-flash { 0% { opacity: 0; } 25% { opacity: 0.4; } 100% { opacity: 0; } }
 			@keyframes lanista-fx-shake {
 				0% { transform: translate(0, 0); }
 				20% { transform: translate(-6px, 3px); }
@@ -3062,20 +3062,20 @@
 		return audio;
 	}
 
-	// A punch sound is one instant hit, not a lingering wail, so the visual reads as a single
-	// comic-panel "impact" (flash + shake) with the ambulance emoji scattering as its aftermath,
-	// rather than the old gradual siren-synced trickle-in. Kept snappy (~1.2s total) to match.
+	// A whip crack is one instant hit, so the visual still opens with a comic-panel "impact"
+	// (flash + shake), but the ambulance emoji aftermath lingers rather than clearing immediately -
+	// total effect is roughly 2.4s, softer/slower flash than the initial snappy-but-too-fast pass.
 	function showHospitalFx() {
 		ensureBattleFxStyles();
-		playResourceSound('lanistaFxPunch');
+		playResourceSound('lanistaFxWhip', 0.4);
 
 		const impactFlash = document.createElement('div');
 		impactFlash.style.cssText = 'position:fixed;inset:0;z-index:2147483646;pointer-events:none;background:#fff6dd;' +
-			'animation:lanista-fx-impact-flash 200ms ease-out both;';
+			'animation:lanista-fx-impact-flash 450ms ease-out both;';
 		document.body.appendChild(impactFlash);
-		setTimeout(() => impactFlash.remove(), 250);
+		setTimeout(() => impactFlash.remove(), 500);
 
-		spawnEmojiBurst('🚨', 40, { animationName: 'lanista-fx-pop', durationMs: 550, maxDelayMs: 450, shake: true });
+		spawnEmojiBurst('🚨', 40, { animationName: 'lanista-fx-pop', durationMs: 1500, maxDelayMs: 700, shake: true });
 	}
 
 	// The vignette/church-icon animation duration is sized off the real audio clip's own length
