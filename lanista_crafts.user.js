@@ -146,7 +146,7 @@
 			if (item.crit_damage) parts.push(`Krit ${item.crit_damage}`);
 		}
 		if (item.absorption) parts.push(`Absorption ${item.absorption}`);
-		if (item.max_crit_rate) parts.push(`Kritchans ${formatNumberRange(item.min_crit_rate, item.max_crit_rate)}%`);
+		if (item.max_crit_rate) parts.push(`PT-potential +${item.max_crit_rate}%`);
 		if (item.durability) parts.push(`Hållbarhet ${item.durability}`);
 		if (item.max_blocks_per_round) parts.push(`Block/runda ${item.max_blocks_per_round}`);
 		if (item.is_two_handed) parts.push('2H');
@@ -164,7 +164,7 @@
 			const percent = item.percentage_block ? ` (${item.percentage_block}%)` : '';
 			parts.push(`Block ${item.base_block}${percent}`);
 		}
-		if (item.max_crit_rate) parts.push(`Kritchans ${formatNumberRange(item.min_crit_rate, item.max_crit_rate)}%`);
+		if (item.max_crit_rate) parts.push(`PT-potential +${item.max_crit_rate}%`);
 		if (item.increased_hit_rate) parts.push(`Träffchans +${item.increased_hit_rate}`);
 		if (item.weight) parts.push(`Vikt ${item.weight}`);
 		if (item.max_enchants) parts.push(`Ench ${item.max_enchants}`);

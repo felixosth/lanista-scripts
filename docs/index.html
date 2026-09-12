@@ -1643,9 +1643,6 @@
                         combatStats.push(`<div class="stat-item"><div class="stat-label">Kritisk skada</div><div class="stat-value">${item.crit_damage}</div></div>`);
                     }
                 }
-                if (item.max_crit_rate) {
-                    combatStats.push(`<div class="stat-item"><div class="stat-label">Kritchans</div><div class="stat-value">${formatRange(item.min_crit_rate, item.max_crit_rate)}%</div></div>`);
-                }
                 if (item.durability) {
                     otherStats.push(`<div class="stat-item"><div class="stat-label">Hållbarhet</div><div class="stat-value">${item.durability}</div></div>`);
                 }
@@ -1653,11 +1650,6 @@
                 // type - it only actually varies (and is worth showing) on shields
                 if (item.is_shield && item.max_blocks_per_round) {
                     defenseStats.push(`<div class="stat-item"><div class="stat-label">Block/runda</div><div class="stat-value">${item.max_blocks_per_round}</div></div>`);
-                }
-                // crit_rate is a flat perfect-hit-chance bonus baked onto the item itself,
-                // distinct from the min/max_crit_rate range shown as Kritchans above
-                if (item.crit_rate) {
-                    bonusStats.push(`<div class="stat-item"><div class="stat-label">Perfekt träff</div><div class="stat-value">+${item.crit_rate}%</div></div>`);
                 }
             }
 
@@ -1681,20 +1673,11 @@
                 if (item.crit_damage_multiplier) {
                     combatStats.push(`<div class="stat-item"><div class="stat-label">Kritisk skada</div><div class="stat-value">+${item.crit_damage_multiplier}%</div></div>`);
                 }
-                if (item.max_crit_rate) {
-                    combatStats.push(`<div class="stat-item"><div class="stat-label">Kritchans</div><div class="stat-value">${formatRange(item.min_crit_rate, item.max_crit_rate)}%</div></div>`);
-                }
-                if (item.crit_rate) {
-                    bonusStats.push(`<div class="stat-item"><div class="stat-label">Perfekt träff</div><div class="stat-value">+${item.crit_rate}%</div></div>`);
-                }
                 if (item.absorption) {
                     defenseStats.push(`<div class="stat-item"><div class="stat-label">Blockering</div><div class="stat-value">${item.absorption}</div></div>`);
                 }
                 if (item.block_rate) {
                     defenseStats.push(`<div class="stat-item"><div class="stat-label">Blockchans</div><div class="stat-value">${item.block_rate > 0 ? '+' : ''}${item.block_rate}%</div></div>`);
-                }
-                if (item.increased_hit_rate) {
-                    defenseStats.push(`<div class="stat-item"><div class="stat-label">Träffchans</div><div class="stat-value">+${item.increased_hit_rate}</div></div>`);
                 }
                 if (item.durability) {
                     otherStats.push(`<div class="stat-item"><div class="stat-label">Hållbarhet</div><div class="stat-value">${item.durability}</div></div>`);
@@ -1708,13 +1691,23 @@
                     const percent = item.percentage_block ? ` (${item.percentage_block}%)` : '';
                     defenseStats.push(`<div class="stat-item"><div class="stat-label">Blockering</div><div class="stat-value">${block}${percent}</div></div>`);
                 }
-                // Shields already got Kritchans above (they share the weapon item shape)
-                if (item.is_armor && item.max_crit_rate) {
-                    combatStats.push(`<div class="stat-item"><div class="stat-label">Kritchans</div><div class="stat-value">${formatRange(item.min_crit_rate, item.max_crit_rate)}%</div></div>`);
-                }
-                if (item.increased_hit_rate) {
-                    defenseStats.push(`<div class="stat-item"><div class="stat-label">Träffchans</div><div class="stat-value">+${item.increased_hit_rate}</div></div>`);
-                }
+            }
+
+            // max_crit_rate (PT-potential), increased_hit_rate (Träffchans) and crit_rate
+            // (Perfekt träff) can all appear on any item shape - weapons, shields, enchants,
+            // armor/trinkets, and consumables alike - so they're checked once here rather
+            // than per branch. max_crit_rate isn't a min-max range despite the field name:
+            // it's the ceiling that raises how high your total "chans till perfekt träff"
+            // can reach (min_crit_rate is always 0 in the data), distinct from crit_rate's
+            // flat bonus to that same chance - matching the game's own "PT-potential" stat.
+            if (item.max_crit_rate) {
+                combatStats.push(`<div class="stat-item"><div class="stat-label">PT-potential</div><div class="stat-value">+${item.max_crit_rate}%</div></div>`);
+            }
+            if (item.increased_hit_rate) {
+                defenseStats.push(`<div class="stat-item"><div class="stat-label">Träffchans</div><div class="stat-value">+${item.increased_hit_rate}</div></div>`);
+            }
+            if (item.crit_rate) {
+                bonusStats.push(`<div class="stat-item"><div class="stat-label">Perfekt träff</div><div class="stat-value">+${item.crit_rate}%</div></div>`);
             }
 
             // Weight applies to all
@@ -1963,7 +1956,7 @@
                 { label: 'Skada', display: item => item.base_damage_max ? formatRange(item.base_damage_min, item.base_damage_max) : null, numeric: item => item.base_damage_max || null },
                 { label: 'Skadepotential', display: item => item.damage_potential || null, numeric: item => item.damage_potential || null },
                 { label: 'Kritisk skada', display: item => item.crit_damage || null },
-                { label: 'Kritchans', display: item => item.max_crit_rate ? `${formatRange(item.min_crit_rate, item.max_crit_rate)}%` : null, numeric: item => item.max_crit_rate || null },
+                { label: 'PT-potential', display: item => item.max_crit_rate ? `+${item.max_crit_rate}%` : null, numeric: item => item.max_crit_rate || null },
                 { label: 'Perfekt träff', display: item => item.crit_rate ? `+${item.crit_rate}%` : null, numeric: item => item.crit_rate || null },
                 { label: 'Blockering', display: item => {
                     const block = item.base_block || item.absorption;
