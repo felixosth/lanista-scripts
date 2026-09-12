@@ -67,7 +67,7 @@ Click **Bygg-simulator** in the header to open it.
 
 1. Pick a race, level and life stage (Ung/Vuxen/Medelålders/Gammal/Uråldrig - options vary per race).
 2. Enter the stat points and weapon skills you've actually put on your character - the game doesn't publish a level → points formula, so this replicates your real character instead of calculating it.
-3. Click a slot to equip an item in it; a two-handed weapon blocks the shield slot automatically.
+3. Click a slot to equip an item in it; a two-handed weapon blocks the shield slot automatically. The **Distansvapen** slot holds ranged weapons (Slunga, Kastyxa, Ryttarbåge, ...) - the game models these as enchantments internally, so their on-hit effect on the opponent is shown as reference text rather than added to your stats.
 4. The results panel shows each stat as base → race % → age % → equipment bonus → total, race/age modifiers coming from `lanista_races.json` and equipment bonuses from each item's own data.
 5. Slots flag unmet item requirements (level, stat, weapon skill, race) - soft "bör ha" recommendations are shown as info, hard "Kräver" requirements as warnings.
 6. **Spara bygge** saves the current build to your browser's local storage so you can load or delete it later; builds aren't shared between devices or browsers.

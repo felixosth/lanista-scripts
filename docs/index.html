@@ -2499,22 +2499,33 @@
 
         // ===== Build simulator =====
 
+        // Slots are matched purely by item.type_name, not item.type - jewelry items
+        // (finger/neck/amulet/bracelet) carry both is_armor:true and is_trinket:true, and
+        // getItemType() checks is_trinket first, so they end up typed 'trinket' rather than
+        // 'armor' despite having a proper armor-slot type_name. type_name is unambiguous
+        // across the whole dataset, so it's the only thing slot matching relies on.
+        const WEAPON_TYPE_NAMES = ['sword', 'axe', 'mace', 'spear', 'stave', 'chain'];
+
         const BUILD_SLOTS = [
-            { slot: 'weapon', label: 'Vapen', itemType: 'weapon' },
-            { slot: 'shield', label: 'Sköld', itemType: 'shield' },
-            { slot: 'head', label: 'Huvud', itemType: 'armor', typeName: 'head' },
-            { slot: 'shoulders', label: 'Axlar', itemType: 'armor', typeName: 'shoulders' },
-            { slot: 'chest', label: 'Harnesk', itemType: 'armor', typeName: 'chest' },
-            { slot: 'hands', label: 'Händer', itemType: 'armor', typeName: 'hands' },
-            { slot: 'legs', label: 'Ben', itemType: 'armor', typeName: 'legs' },
-            { slot: 'feet', label: 'Fötter', itemType: 'armor', typeName: 'feet' },
-            { slot: 'back', label: 'Mantel', itemType: 'armor', typeName: 'back' },
-            { slot: 'neck', label: 'Halsband', itemType: 'armor', typeName: 'neck' },
-            { slot: 'finger1', label: 'Ring 1', itemType: 'armor', typeName: 'finger' },
-            { slot: 'finger2', label: 'Ring 2', itemType: 'armor', typeName: 'finger' },
-            { slot: 'amulet', label: 'Amulett', itemType: 'armor', typeName: 'amulet' },
-            { slot: 'bracelet', label: 'Armband', itemType: 'armor', typeName: 'bracelet' },
-            { slot: 'trinket', label: 'Ornament', itemType: 'trinket' }
+            { slot: 'weapon', label: 'Vapen', typeNames: WEAPON_TYPE_NAMES },
+            { slot: 'shield', label: 'Sköld', typeNames: ['shield'] },
+            { slot: 'head', label: 'Huvud', typeNames: ['head'] },
+            { slot: 'shoulders', label: 'Axlar', typeNames: ['shoulders'] },
+            { slot: 'chest', label: 'Harnesk', typeNames: ['chest'] },
+            { slot: 'hands', label: 'Händer', typeNames: ['hands'] },
+            { slot: 'legs', label: 'Ben', typeNames: ['legs'] },
+            { slot: 'feet', label: 'Fötter', typeNames: ['feet'] },
+            { slot: 'back', label: 'Mantel', typeNames: ['back'] },
+            { slot: 'neck', label: 'Halsband', typeNames: ['neck'] },
+            { slot: 'finger', label: 'Ring', typeNames: ['finger'] },
+            { slot: 'amulet', label: 'Amulett', typeNames: ['amulet'] },
+            { slot: 'bracelet', label: 'Armband', typeNames: ['bracelet'] },
+            { slot: 'trinket', label: 'Ornament', typeNames: ['trinket'] },
+            // Ranged weapons (Slunga, Kastyxa, Ryttarbåge, Chakram, ...) are modeled in the
+            // game's own data as enchantments (item.type === 'enchantment') flagged
+            // restrict_to_distance, not as a weapon type_name - there's no bow/sling
+            // type_name anywhere in the dataset. They're matched by that flag instead.
+            { slot: 'ranged', label: 'Distansvapen', matcher: item => item.type === 'enchantment' && item.restrict_to_distance === true }
         ];
 
         const WEAPON_SKILL_KEYS = ['sword', 'axe', 'mace', 'stave', 'spear', 'chain', 'shield'];
@@ -2567,7 +2578,7 @@
             const statTotals = {};
             const weaponTotals = {};
             let weight = 0;
-            const combat = { damageMin: 0, damageMax: 0, block: 0, critRate: 0, maxCritRate: 0 };
+            const combat = { damageMin: 0, damageMax: 0, block: 0, critRate: 0, maxCritRate: 0, rangedDamageMin: 0, rangedDamageMax: 0 };
             const statMap = statBonusKeyMap();
             const weaponMap = weaponBonusKeyMap();
 
@@ -2597,6 +2608,12 @@
                 }
                 if (item.is_shield || item.is_armor) {
                     combat.block += item.base_block || item.absorption || 0;
+                }
+                if (slot === 'ranged') {
+                    combat.rangedDamageMin += item.min_damage || 0;
+                    combat.rangedDamageMax += item.max_damage || 0;
+                    combat.critRate += item.crit_rate || 0;
+                    combat.maxCritRate += item.max_crit_rate || 0;
                 }
             });
 
@@ -2775,8 +2792,7 @@
             if (!def) return;
             const term = (search || '').toLowerCase().trim();
             const matches = allItems.filter(item => {
-                if (item.type !== def.itemType) return false;
-                if (def.typeName && item.type_name !== def.typeName) return false;
+                if (def.matcher ? !def.matcher(item) : !def.typeNames.includes(item.type_name)) return false;
                 if (term && !item.name.toLowerCase().includes(term)) return false;
                 return true;
             }).sort((a, b) => getItemLevel(a) - getItemLevel(b));
@@ -2824,6 +2840,7 @@
 
             const warnings = checkRequirements(item, effective);
             const hardUnmet = warnings.some(w => w.hard);
+            const procNote = def.slot === 'ranged' ? describeRangedProc(item) : '';
             return `
                 <div class="build-slot filled ${hardUnmet ? 'unmet' : ''}">
                     <div class="build-slot-label">${def.label}</div>
@@ -2831,10 +2848,22 @@
                         ${item.asset?.url ? `<img src="${item.asset.url}" alt="${item.name}">` : ''}
                         <span>${item.name}</span>
                     </div>
+                    ${procNote ? `<div class="build-slot-warning">${procNote}</div>` : ''}
                     ${warnings.map(w => `<div class="build-slot-warning">${w.hard ? '⚠' : 'ℹ'} ${w.text}</div>`).join('')}
                     <button class="build-slot-remove" onclick="event.stopPropagation(); unequipItem('${def.slot}')">Ta bort</button>
                 </div>
             `;
+        }
+
+        // Ranged "weapons" are proc enchants in the game's own data model: on top of any
+        // flat combat stats (folded into the combat readouts elsewhere), they apply a
+        // chance-based debuff to the OPPONENT on hit rather than a static bonus to your own
+        // sheet, so that part is only ever shown as reference text, never added into totals.
+        function describeRangedProc(item) {
+            const mods = item.enchant_modifiers || [];
+            if (mods.length === 0) return '';
+            const parts = mods.map(m => `${m.enchantable_name} ${m.enchant_value_display}`).join(', ');
+            return `ℹ Vid träff (${item.proc_chance || 0}% chans): ${parts} på motståndaren`;
         }
 
         function renderStatBreakdownTable(effective) {
@@ -3036,6 +3065,7 @@
                     <h3>Stridsvärden från utrustning</h3>
                     <div class="stat-grid">
                         <div class="stat-item"><div class="stat-label">Vapenskada</div><div class="stat-value">${effective.combat.damageMax ? formatRange(effective.combat.damageMin, effective.combat.damageMax) : '-'}</div></div>
+                        <div class="stat-item"><div class="stat-label">Distansskada</div><div class="stat-value">${effective.combat.rangedDamageMax ? formatRange(effective.combat.rangedDamageMin, effective.combat.rangedDamageMax) : '-'}</div></div>
                         <div class="stat-item"><div class="stat-label">Blockering</div><div class="stat-value">${effective.combat.block || '-'}</div></div>
                         <div class="stat-item"><div class="stat-label">Perfekt träff (utrustning)</div><div class="stat-value">${effective.combat.critRate ? '+' + effective.combat.critRate + '%' : '-'}</div></div>
                         <div class="stat-item"><div class="stat-label">PT-potential</div><div class="stat-value">${effective.combat.maxCritRate ? '+' + effective.combat.maxCritRate + '%' : '-'}</div></div>
