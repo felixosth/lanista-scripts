@@ -6,7 +6,9 @@
 //
 // @match       https://lanista.se/game/*
 // @match       https://lanista.se/
-// @grant       none
+// @grant       GM_getResourceURL
+// @resource    lanistaFxPunch      https://github.com/felixosth/lanista-scripts/raw/refs/heads/main/sounds/punch.mp3
+// @resource    lanistaFxChurchBell https://github.com/felixosth/lanista-scripts/raw/refs/heads/main/sounds/church_bell.mp3
 //
 // @downloadURL https://github.com/felixosth/lanista-scripts/raw/refs/heads/main/lanista_crafts.user.js
 // @updateURL   https://github.com/felixosth/lanista-scripts/raw/refs/heads/main/lanista_crafts.user.js
@@ -30,6 +32,10 @@
 	let currentAvatarPromise;
 	let ownAvatarInfoPromise;
 	let scanTimer;
+	// Page-view-scoped only (cleared on every reload/navigation) - stops the battle outcome
+	// fx from refiring on every mutation-observer rescan while a live battle's rounds are still
+	// streaming in, without turning into a permanent "never show again" cache. See showBattleFx*.
+	const fxCheckedBattleIds = new Set();
 	// Module-level (not per-popup state) since an opponent's race never changes mid-session and
 	// the same foes keep reappearing across "Visa fler" clicks and separate analyzer opens - once
 	// resolved here, re-analyzing never re-fetches a race for an avatar id already seen.
@@ -2903,6 +2909,245 @@
 		}
 	}
 
+	// ---- Battle outcome fx (ambulance siren / death bell) ----
+	//
+	// Fires a brief full-screen effect when the battle page shows a fighter (either side) being
+	// sent to the infirmary or killed outright. Detection reads the same /api/battles/{id} JSON
+	// the analyzer popup already uses (see throttledFetch/loadMoreBattles above) rather than
+	// scraping HTML, because the round narrative text carries a stable, language-independent
+	// translation key for both events - confirmed live against two real battles:
+	//   - hospitalization: a round text entry with key "battle.infirmary.infirmary_text_4"
+	//     (matched loosely as battle.infirmary.* since sibling _1/_2/_3 flavor variants almost
+	//     certainly exist, same pattern as every other narrative key in this payload), args.player
+	//     holding the hospitalized fighter's name wrapped in a <green>/<red> color tag.
+	//   - death: a round text entry with key "battle.loot_kill_avatar", args.player_two holding
+	//     the victim's name (also color-tag wrapped) - cross-confirmed by that same fighter's
+	//     participants[].fighter.dead being true.
+	// No freshness/"already shown" cache by design (v1 scope) - this just fires every time the
+	// page loads/refreshes a battle with one of these outcomes, including on old revisits.
+
+	function extractBattleIdFromPath() {
+		const match = location.pathname.match(/\/game\/arena\/battles\/(\d+)/);
+		return match ? match[1] : null;
+	}
+
+	function stripColorTag(text) {
+		return (text || '').replace(/<\/?\w+>/g, '');
+	}
+
+	// Walks every round's text entries looking for the two outcome keys, death checked first
+	// since it's strictly the more severe of the two and can't both apply to the same battle.
+	function detectBattleOutcome(battle) {
+		const allText = (battle.rounds || []).flatMap((round) => round.text || []);
+
+		const killEntry = allText.find((entry) => /kill.*avatar/i.test(entry.key || ''));
+		const deadParticipant = (battle.participants || []).find((participant) => participant.fighter && participant.fighter.dead);
+		if (killEntry || deadParticipant) {
+			const name = killEntry ? stripColorTag(killEntry.args && killEntry.args.player_two) : (deadParticipant.fighter.name || '');
+			return { type: 'death', name };
+		}
+
+		const infirmaryEntry = allText.find((entry) => (entry.key || '').startsWith('battle.infirmary.'));
+		if (infirmaryEntry) {
+			return { type: 'hospital', name: stripColorTag(infirmaryEntry.args && infirmaryEntry.args.player) };
+		}
+
+		return null;
+	}
+
+	// Fallback for when the JSON fetch itself fails - these two substrings are the fixed,
+	// non-templated parts of the narrative sentences confirmed on the two live example battles
+	// ("Marthipan kollapsar och sjukstugans läkare rusar ut på sanden...", "...Vila i frid!").
+	function detectBattleOutcomeFromDom() {
+		const text = document.body.innerText || '';
+		if (text.includes('Vila i frid')) return { type: 'death', name: '' };
+		if (text.includes('sjukstugans läkare')) return { type: 'hospital', name: '' };
+		return null;
+	}
+
+	function ensureBattleFxStyles() {
+		if (document.querySelector('style[data-lanista-battlefx-style]')) return;
+		const style = document.createElement('style');
+		style.dataset.lanistaBattlefxStyle = 'true';
+		style.textContent = `
+			@keyframes lanista-fx-pop { 0% { transform: scale(0.2) rotate(var(--lanista-fx-rot, 0deg)); opacity: 0; } 25% { transform: scale(1.15) rotate(var(--lanista-fx-rot, 0deg)); opacity: 1; } 40% { transform: scale(1) rotate(var(--lanista-fx-rot, 0deg)); opacity: 1; } 75% { transform: scale(1) rotate(var(--lanista-fx-rot, 0deg)); opacity: 1; } 100% { transform: scale(0.85) rotate(var(--lanista-fx-rot, 0deg)); opacity: 0; } }
+			@keyframes lanista-fx-drift { 0% { transform: translateY(-10px) rotate(var(--lanista-fx-rot, 0deg)); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(40vh) rotate(var(--lanista-fx-rot, 0deg)); opacity: 0; } }
+			@keyframes lanista-fx-impact-flash { 0% { opacity: 0; } 12% { opacity: 0.85; } 100% { opacity: 0; } }
+			@keyframes lanista-fx-shake {
+				0% { transform: translate(0, 0); }
+				20% { transform: translate(-6px, 3px); }
+				40% { transform: translate(5px, -4px); }
+				60% { transform: translate(-4px, 4px); }
+				80% { transform: translate(3px, -2px); }
+				100% { transform: translate(0, 0); }
+			}
+			/* Single animation covering the vignette's whole lifecycle (fade in, hold, fade out) rather
+			   than two comma-separated animations both touching opacity - a later animation's
+			   "backwards" fill (from animation-fill-mode:both) applies its 0% value for its entire
+			   delay, which would silently cancel an earlier animation still fading the same property in. */
+			@keyframes lanista-fx-vignette { 0% { opacity: 0; } 12% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+			/* Every keyframe repeats translate(-50%,-50%) alongside the toll scale/glow - an animated
+			   "transform" (and "filter") replaces the element's base value outright rather than
+			   composing with it, so omitting the translate here would have the centered bell jump
+			   off-center for the whole time this animation is active. Three pulses, proportional to
+			   whatever the real church_bell.mp3 clip's actual length turns out to be (see
+			   showDeathFx, which sizes this animation's duration off the audio element itself). */
+			@keyframes lanista-fx-bell {
+				0% { opacity: 0; transform: translate(-50%,-50%) scale(1); filter: drop-shadow(0 0 0 rgba(220,38,38,0)); }
+				7% { opacity: 1; transform: translate(-50%,-50%) scale(1); filter: drop-shadow(0 0 0 rgba(220,38,38,0)); }
+				14% { transform: translate(-50%,-50%) scale(1.28); filter: drop-shadow(0 0 34px rgba(220,38,38,0.9)); }
+				22% { transform: translate(-50%,-50%) scale(1); filter: drop-shadow(0 0 0 rgba(220,38,38,0)); }
+				29% { transform: translate(-50%,-50%) scale(1.28); filter: drop-shadow(0 0 34px rgba(220,38,38,0.9)); }
+				37% { transform: translate(-50%,-50%) scale(1); filter: drop-shadow(0 0 0 rgba(220,38,38,0)); }
+				54% { transform: translate(-50%,-50%) scale(1.36); filter: drop-shadow(0 0 46px rgba(220,38,38,1)); }
+				63% { transform: translate(-50%,-50%) scale(1); filter: drop-shadow(0 0 0 rgba(220,38,38,0)); }
+				85% { opacity: 1; transform: translate(-50%,-50%) scale(1); filter: drop-shadow(0 0 0 rgba(220,38,38,0)); }
+				100% { opacity: 0; transform: translate(-50%,-50%) scale(1); filter: drop-shadow(0 0 0 rgba(220,38,38,0)); }
+			}
+		`;
+		document.head.appendChild(style);
+	}
+
+	function spawnEmojiBurst(emoji, count, { animationName, durationMs, minDelayMs = 0, maxDelayMs = 400, fontSizeRange = [28, 56], shake = false }) {
+		const container = document.createElement('div');
+		container.style.cssText = 'position:fixed;inset:0;z-index:2147483647;pointer-events:none;overflow:hidden;' +
+			(shake ? 'animation:lanista-fx-shake 220ms ease-in-out;' : '');
+
+		for (let i = 0; i < count; i++) {
+			const span = document.createElement('span');
+			span.textContent = emoji;
+			const left = Math.random() * 100;
+			const top = Math.random() * 100;
+			const size = fontSizeRange[0] + Math.random() * (fontSizeRange[1] - fontSizeRange[0]);
+			const delay = minDelayMs + Math.random() * (maxDelayMs - minDelayMs);
+			const rotation = Math.random() * 60 - 30;
+			span.style.cssText = `position:absolute;left:${left}%;top:${top}%;font-size:${size}px;line-height:1;` +
+				`--lanista-fx-rot:${rotation}deg;` +
+				`animation:${animationName} ${durationMs}ms ease-out ${delay}ms both;`;
+			container.appendChild(span);
+		}
+
+		document.body.appendChild(container);
+		setTimeout(() => container.remove(), durationMs + maxDelayMs + 200);
+	}
+
+	// Real audio files (see @resource in the header) instead of synthesized tones - GM_getResourceURL
+	// resolves each to a local blob URL, no network fetch at play time. A fresh HTMLAudioElement's
+	// play() is blocked by the same autoplay-gesture policy a synthesized AudioContext would hit -
+	// arriving via client-side SPA navigation (clicking a match from history) carries over that
+	// click as the gesture, but a direct load of the battle URL has had none yet. On rejection the
+	// same attempt is queued and retried on the page's next interaction (see
+	// ensureAudioUnlockOnGesture, registered once at script init below) instead of being lost.
+	const pendingAudioUnlockRetries = [];
+	let audioUnlockListenersAttached = false;
+	function ensureAudioUnlockOnGesture() {
+		if (audioUnlockListenersAttached) return;
+		audioUnlockListenersAttached = true;
+		const retryPendingAudio = () => {
+			if (!pendingAudioUnlockRetries.length) return;
+			pendingAudioUnlockRetries.splice(0).forEach((retry) => retry());
+		};
+		['pointerdown', 'keydown', 'touchstart'].forEach((eventName) => {
+			document.addEventListener(eventName, retryPendingAudio, { passive: true });
+		});
+	}
+
+	// Returns the HTMLAudioElement so callers that care about playback (e.g. to time a visual
+	// effect off the real clip's length) can read its duration once metadata loads.
+	function playResourceSound(resourceName, volume = 1) {
+		const audio = new Audio(GM_getResourceURL(resourceName));
+		audio.volume = volume;
+		const attempt = () => audio.play().catch(() => pendingAudioUnlockRetries.push(attempt));
+		attempt();
+		return audio;
+	}
+
+	// A punch sound is one instant hit, not a lingering wail, so the visual reads as a single
+	// comic-panel "impact" (flash + shake) with the ambulance emoji scattering as its aftermath,
+	// rather than the old gradual siren-synced trickle-in. Kept snappy (~1.2s total) to match.
+	function showHospitalFx() {
+		ensureBattleFxStyles();
+		playResourceSound('lanistaFxPunch');
+
+		const impactFlash = document.createElement('div');
+		impactFlash.style.cssText = 'position:fixed;inset:0;z-index:2147483646;pointer-events:none;background:#fff6dd;' +
+			'animation:lanista-fx-impact-flash 200ms ease-out both;';
+		document.body.appendChild(impactFlash);
+		setTimeout(() => impactFlash.remove(), 250);
+
+		spawnEmojiBurst('🚨', 40, { animationName: 'lanista-fx-pop', durationMs: 550, maxDelayMs: 450, shake: true });
+	}
+
+	// The vignette/church-icon animation duration is sized off the real audio clip's own length
+	// (read once its metadata loads) rather than a guessed constant, since that length is now
+	// whatever church_bell.mp3 actually is - falls back to a fixed duration if metadata is slow
+	// to arrive so the effect never silently fails to show.
+	function showDeathFx() {
+		ensureBattleFxStyles();
+		const bellAudio = playResourceSound('lanistaFxChurchBell');
+
+		const runVisuals = (durationMs) => {
+			const vignette = document.createElement('div');
+			vignette.style.cssText = 'position:fixed;inset:0;z-index:2147483646;pointer-events:none;background:radial-gradient(circle, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%);' +
+				`animation:lanista-fx-vignette ${durationMs}ms ease-in-out both;`;
+			document.body.appendChild(vignette);
+			setTimeout(() => vignette.remove(), durationMs + 100);
+
+			const church = document.createElement('div');
+			church.textContent = '⛪';
+			church.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:132px;z-index:2147483647;pointer-events:none;' +
+				`animation:lanista-fx-bell ${durationMs}ms ease-in-out both;`;
+			document.body.appendChild(church);
+			setTimeout(() => church.remove(), durationMs + 100);
+
+			spawnEmojiBurst('⚰️', 26, {
+				animationName: 'lanista-fx-drift',
+				durationMs: Math.max(durationMs - 600, 1200),
+				minDelayMs: 200,
+				maxDelayMs: Math.min(durationMs * 0.4, 2400),
+				fontSizeRange: [28, 52]
+			});
+		};
+
+		const fallbackDurationMs = 5200;
+		let resolved = false;
+		bellAudio.addEventListener('loadedmetadata', () => {
+			if (resolved || !Number.isFinite(bellAudio.duration)) return;
+			resolved = true;
+			runVisuals(bellAudio.duration * 1000 + 300);
+		}, { once: true });
+		// Metadata usually loads near-instantly for a small @resource-backed clip, but don't let
+		// the whole effect hang on it - show something on the fallback timing if it doesn't.
+		setTimeout(() => {
+			if (resolved) return;
+			resolved = true;
+			runVisuals(fallbackDurationMs);
+		}, 250);
+	}
+
+	async function checkBattleOutcomeFx() {
+		const battleId = extractBattleIdFromPath();
+		if (!battleId || fxCheckedBattleIds.has(battleId)) return;
+		// Marked up front (not after fetching) since /api/battles/{id} already returns every
+		// round's final outcome regardless of how far the client's reveal animation has gotten -
+		// one check per battle id per page view is enough, and this also prevents the
+		// mutation-observer rescan from re-fetching this same battle on every later DOM change.
+		fxCheckedBattleIds.add(battleId);
+
+		let outcome = null;
+		try {
+			const response = await fetch(`/api/battles/${battleId}`);
+			const battle = response.ok ? await response.json() : null;
+			outcome = battle ? detectBattleOutcome(battle) : detectBattleOutcomeFromDom();
+		} catch {
+			outcome = detectBattleOutcomeFromDom();
+		}
+
+		if (!outcome) return;
+		if (outcome.type === 'death') showDeathFx();
+		else showHospitalFx();
+	}
+
 	const pageFeatures = [
 		{
 			paths: ['/game/market/craft/available'],
@@ -2911,6 +3156,10 @@
 		{
 			paths: ['/game/arena/battles/'],
 			run: scanBattlePage
+		},
+		{
+			paths: ['/game/arena/battles/'],
+			run: checkBattleOutcomeFx
 		},
 		{
 			paths: ['/game/bank'],
@@ -2936,6 +3185,7 @@
 
 	new MutationObserver(scheduleFeatureScan).observe(document.body, { childList: true, subtree: true });
 	scheduleFeatureScan();
+	ensureAudioUnlockOnGesture();
 
 	// Interest keeps accruing purely with the passage of time, with no DOM mutation to trigger a
 	// rescan off of - so the bank page also gets a plain timer, on top of the mutation-driven scan
