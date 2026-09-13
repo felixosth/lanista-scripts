@@ -46,6 +46,10 @@
             padding: 20px;
         }
 
+        .container--wide {
+            max-width: 1680px;
+        }
+
         header {
             background: #2c2416;
             color: white;
@@ -642,6 +646,13 @@
             gap: 15px;
         }
 
+        /* Combat stats in the build simulator: cap the card width instead of letting seven
+           cards stretch to fill a wide results column, which left the last row's odd card
+           awkwardly oversized. */
+        .build-combat-grid {
+            grid-template-columns: repeat(auto-fit, minmax(190px, 220px));
+        }
+
         .stat-item {
             background: #f9f7f4;
             padding: 15px;
@@ -1021,12 +1032,39 @@
             font-size: 0.95em;
         }
 
+        /* Big-screen build view: inputs (race/stats/abilities) live in a narrower sidebar
+           that tracks the scroll, results and equipment get the remaining, wider column -
+           instead of every panel stretching edge-to-edge with sparse, hard-to-scan content. */
+        .build-layout {
+            display: grid;
+            grid-template-columns: minmax(280px, 340px) 1fr;
+            align-items: start;
+            gap: 20px;
+        }
+
+        .build-sidebar,
+        .build-main {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 0;
+        }
+
+        .build-sidebar {
+            position: sticky;
+            top: 20px;
+        }
+
         .build-panel {
             background: white;
             border-radius: 8px;
             padding: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-bottom: 20px;
+        }
+
+        .build-layout .build-panel {
+            margin-bottom: 0;
         }
 
         .build-panel h3 {
@@ -1049,6 +1087,11 @@
             gap: 12px;
         }
 
+        .build-sidebar .build-stats-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px 12px;
+        }
+
         .build-stat-input label {
             display: block;
             font-weight: 600;
@@ -1057,9 +1100,13 @@
             color: #555;
         }
 
+        .build-stat-input input {
+            width: 100%;
+        }
+
         .build-slots-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
             gap: 12px;
         }
 
@@ -1143,6 +1190,26 @@
             color: #b5482f;
         }
 
+        /* Base stats and weapon skills sit side by side once there's room, instead of one
+           table stretched full-width with its number columns spread thin across it. */
+        .stat-tables {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 28px;
+        }
+
+        .stat-table-block {
+            flex: 1 1 320px;
+            min-width: 280px;
+            overflow-x: auto;
+        }
+
+        .stat-table-heading {
+            margin-bottom: 8px;
+            color: var(--bronze);
+            font-size: 0.9em;
+        }
+
         .stat-breakdown-table {
             width: 100%;
             border-collapse: collapse;
@@ -1150,9 +1217,10 @@
 
         .stat-breakdown-table th,
         .stat-breakdown-table td {
-            padding: 8px 10px;
+            padding: 8px 6px;
             text-align: right;
             font-size: 0.88em;
+            font-variant-numeric: tabular-nums;
             border-bottom: 1px solid #eee;
         }
 
@@ -1162,9 +1230,35 @@
             font-weight: 600;
         }
 
+        /* Above phone width, pin the label column and even out the value columns so the
+           numbers read as a tight ledger instead of stretching across the panel - narrower
+           than that, fall back to natural sizing (each block scrolls if it must). */
+        @media (min-width: 640px) {
+            .stat-breakdown-table {
+                table-layout: fixed;
+            }
+
+            .stat-breakdown-table th,
+            .stat-breakdown-table td {
+                overflow-wrap: break-word;
+            }
+
+            .stat-breakdown-table th:not(:first-child),
+            .stat-breakdown-table td:not(:first-child) {
+                width: 15%;
+            }
+
+            .stat-breakdown-table th:first-child,
+            .stat-breakdown-table td:first-child {
+                width: 25%;
+            }
+        }
+
         .stat-breakdown-table td.total {
+            font-family: var(--display-font);
             font-weight: 700;
-            color: #2c2416;
+            font-size: 1.05em;
+            color: var(--ink);
         }
 
         .stat-breakdown-table td.capped {
@@ -1208,6 +1302,20 @@
             flex: none;
             width: auto;
             min-width: 160px;
+        }
+
+        @media (max-width: 1100px) {
+            .build-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .build-sidebar {
+                position: static;
+            }
+
+            .build-sidebar .build-stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            }
         }
 
         @media (max-width: 860px) {
@@ -2668,6 +2776,9 @@
             document.getElementById('detailView').style.display = currentView === 'detail' ? 'block' : 'none';
             document.getElementById('comparisonView').style.display = currentView === 'comparison' ? 'block' : 'none';
             document.getElementById('buildView').style.display = currentView === 'build' ? 'block' : 'none';
+            // The build simulator lays its inputs and outputs out side by side, so it earns
+            // more breathing room on large screens than the single-column browse/detail views.
+            document.querySelector('.container').classList.toggle('container--wide', currentView === 'build');
         }
 
         function openBuildView() {
@@ -3111,16 +3222,21 @@
             }).join('');
 
             return `
-                <div style="overflow-x: auto;">
-                    <table class="stat-breakdown-table">
-                        <thead><tr><th>Egenskap</th><th>Bas</th><th>Ras %</th><th>Ålder %</th><th>Utrustning</th><th>Totalt</th></tr></thead>
-                        <tbody>${statRows}</tbody>
-                    </table>
-                    <h4 style="margin: 15px 0 8px; color: #8b7355; font-size: 0.9em; text-transform: uppercase;">Vapenfärdigheter</h4>
-                    <table class="stat-breakdown-table">
-                        <thead><tr><th>Färdighet</th><th>Bas</th><th>Ras %</th><th>Ålder %</th><th>Utrustning</th><th>Totalt</th></tr></thead>
-                        <tbody>${weaponRows}</tbody>
-                    </table>
+                <div class="stat-tables">
+                    <div class="stat-table-block">
+                        <h4 class="stat-table-heading">Grundegenskaper</h4>
+                        <table class="stat-breakdown-table">
+                            <thead><tr><th>Egenskap</th><th>Bas</th><th>Ras %</th><th>Ålder %</th><th>Utrustning</th><th>Totalt</th></tr></thead>
+                            <tbody>${statRows}</tbody>
+                        </table>
+                    </div>
+                    <div class="stat-table-block">
+                        <h4 class="stat-table-heading">Vapenfärdigheter</h4>
+                        <table class="stat-breakdown-table">
+                            <thead><tr><th>Färdighet</th><th>Bas</th><th>Ras %</th><th>Ålder %</th><th>Utrustning</th><th>Totalt</th></tr></thead>
+                            <tbody>${weaponRows}</tbody>
+                        </table>
+                    </div>
                 </div>
             `;
         }
@@ -3211,83 +3327,90 @@
             container.innerHTML = `
                 ${renderBuildToolbar()}
 
-                <div class="build-panel">
-                    <h3>Karaktär</h3>
-                    <div class="build-basics-grid">
-                        <div class="filter-group">
-                            <label>Ras</label>
-                            <select onchange="setBuildRace(this.value)">
-                                ${raceData.races.map(r => `<option value="${r.id}" ${r.id === buildState.race ? 'selected' : ''}>${r.name}${r.playable ? '' : ' (endast via döden)'}</option>`).join('')}
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label>Nivå</label>
-                            <input type="number" min="1" max="50" value="${buildState.level}" onchange="setBuildLevel(this.value)">
-                        </div>
-                        <div class="filter-group">
-                            <label>Livsstadium</label>
-                            <select onchange="setBuildLifeStage(this.value)">
-                                ${race.ageStages.map(s => `<option value="${s.name}" ${s.name === buildState.lifeStage ? 'selected' : ''}>${s.name}${s.days ? ` (${s.days}+ dagar)` : ''}</option>`).join('')}
-                            </select>
-                        </div>
-                    </div>
-                    <p class="info-note">Startmynt: ${race.startingCoins ?? 'ej tillämpligt'} · Grundvikt: ${race.baseWeight} · Bas-chans perfekt träff: ${race.critMin}% till ${race.critMax}% · Skada i sköldhand: ${race.offhandDamagePct}%</p>
-                    ${race.playableNote ? `<p class="info-note">${race.playableNote}</p>` : ''}
-                    ${race.agingNote ? `<p class="info-note">${race.agingNote}</p>` : ''}
-                    ${race.levelBonus ? `<p class="info-note">${race.levelBonus.note}</p>` : ''}
-                </div>
-
-                <div class="build-panel">
-                    <h3>Rasförmågor</h3>
-                    ${race.abilities.map(a => `<div class="race-ability-card"><h5>${a.name}</h5><p>${a.text}</p></div>`).join('')}
-                </div>
-
-                <div class="build-panel">
-                    <h3>Grundegenskaper</h3>
-                    <p class="info-note">Fyll i poängen du faktiskt spenderat på din karaktär - spelet exponerar ingen formel för nivå → poäng, så det här replikerar din riktiga karaktär i stället för att räkna ut den.</p>
-                    <div class="build-stats-grid">
-                        ${Object.keys(raceData.statLabels).map(key => `
-                            <div class="build-stat-input">
-                                <label>${raceData.statLabels[key]}</label>
-                                <input type="number" min="0" value="${buildState.baseStats[key] || 0}" onchange="setBaseStat('${key}', this.value)">
+                <div class="build-layout">
+                    <div class="build-sidebar">
+                        <div class="build-panel">
+                            <h3>Karaktär</h3>
+                            <div class="build-basics-grid">
+                                <div class="filter-group">
+                                    <label>Ras</label>
+                                    <select onchange="setBuildRace(this.value)">
+                                        ${raceData.races.map(r => `<option value="${r.id}" ${r.id === buildState.race ? 'selected' : ''}>${r.name}${r.playable ? '' : ' (endast via döden)'}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label>Nivå</label>
+                                    <input type="number" min="1" max="50" value="${buildState.level}" onchange="setBuildLevel(this.value)">
+                                </div>
+                                <div class="filter-group">
+                                    <label>Livsstadium</label>
+                                    <select onchange="setBuildLifeStage(this.value)">
+                                        ${race.ageStages.map(s => `<option value="${s.name}" ${s.name === buildState.lifeStage ? 'selected' : ''}>${s.name}${s.days ? ` (${s.days}+ dagar)` : ''}</option>`).join('')}
+                                    </select>
+                                </div>
                             </div>
-                        `).join('')}
-                    </div>
-                    <h3 style="margin-top: 20px;">Vapenfärdigheter</h3>
-                    <div class="build-stats-grid">
-                        ${WEAPON_SKILL_KEYS.map(key => `
-                            <div class="build-stat-input">
-                                <label>${raceData.weaponSkillLabels[key]}</label>
-                                <input type="number" min="0" value="${buildState.weaponSkills[key] || 0}" onchange="setWeaponSkill('${key}', this.value)">
+                            <p class="info-note">Startmynt: ${race.startingCoins ?? 'ej tillämpligt'} · Grundvikt: ${race.baseWeight} · Bas-chans perfekt träff: ${race.critMin}% till ${race.critMax}% · Skada i sköldhand: ${race.offhandDamagePct}%</p>
+                            ${race.playableNote ? `<p class="info-note">${race.playableNote}</p>` : ''}
+                            ${race.agingNote ? `<p class="info-note">${race.agingNote}</p>` : ''}
+                            ${race.levelBonus ? `<p class="info-note">${race.levelBonus.note}</p>` : ''}
+                        </div>
+
+                        <div class="build-panel">
+                            <h3>Rasförmågor</h3>
+                            ${race.abilities.map(a => `<div class="race-ability-card"><h5>${a.name}</h5><p>${a.text}</p></div>`).join('')}
+                        </div>
+
+                        <div class="build-panel">
+                            <h3>Grundegenskaper</h3>
+                            <p class="info-note">Fyll i poängen du faktiskt spenderat på din karaktär - spelet exponerar ingen formel för nivå → poäng, så det här replikerar din riktiga karaktär i stället för att räkna ut den.</p>
+                            <div class="build-stats-grid">
+                                ${Object.keys(raceData.statLabels).map(key => `
+                                    <div class="build-stat-input">
+                                        <label>${raceData.statLabels[key]}</label>
+                                        <input type="number" min="0" value="${buildState.baseStats[key] || 0}" onchange="setBaseStat('${key}', this.value)">
+                                    </div>
+                                `).join('')}
                             </div>
-                        `).join('')}
+                            <h3 style="margin-top: 20px;">Vapenfärdigheter</h3>
+                            <div class="build-stats-grid">
+                                ${WEAPON_SKILL_KEYS.map(key => `
+                                    <div class="build-stat-input">
+                                        <label>${raceData.weaponSkillLabels[key]}</label>
+                                        <input type="number" min="0" value="${buildState.weaponSkills[key] || 0}" onchange="setWeaponSkill('${key}', this.value)">
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="build-main">
+                        <div class="build-panel">
+                            <h3>Utrustning</h3>
+                            <div class="build-slots-grid">
+                                ${BUILD_SLOTS.map(def => renderBuildSlot(def, effective)).join('')}
+                            </div>
+                        </div>
+
+                        <div class="build-panel">
+                            <h3>Resulterande egenskaper</h3>
+                            ${renderStatBreakdownTable(effective)}
+                        </div>
+
+                        <div class="build-panel">
+                            <h3>Stridsvärden från utrustning</h3>
+                            <div class="stat-grid build-combat-grid">
+                                <div class="stat-item"><div class="stat-label">Vapenskada</div><div class="stat-value">${effective.combat.damageMax ? formatRange(effective.combat.damageMin, effective.combat.damageMax) : '-'}</div></div>
+                                <div class="stat-item"><div class="stat-label">Distansskada</div><div class="stat-value">${effective.combat.rangedDamageMax ? formatRange(effective.combat.rangedDamageMin, effective.combat.rangedDamageMax) : '-'}</div></div>
+                                <div class="stat-item"><div class="stat-label">Blockering</div><div class="stat-value">${effective.combat.block || '-'}</div></div>
+                                <div class="stat-item"><div class="stat-label">Perfekt träff (utrustning)</div><div class="stat-value">${effective.combat.critRate ? '+' + effective.combat.critRate + '%' : '-'}</div></div>
+                                <div class="stat-item"><div class="stat-label">PT-potential</div><div class="stat-value">${effective.combat.maxCritRate ? '+' + effective.combat.maxCritRate + '%' : '-'}</div></div>
+                                <div class="stat-item"><div class="stat-label">Träffchans (utrustning)</div><div class="stat-value">${effective.combat.hitRate ? '+' + effective.combat.hitRate : '-'}</div></div>
+                                <div class="stat-item"><div class="stat-label">Total vikt</div><div class="stat-value">${effective.totalWeight}</div></div>
+                            </div>
+                            <p class="info-note">Träffchans, undvikande, kritisk chans och skadepotentialens avtagande är enligt spelets egen wiki inte offentliga formler - de påverkas av värdena ovan men visas inte som en beräknad siffra här. Styrka mildrar viktens negativa effekt med upp till 25, men den exakta kurvan är inte publik.</p>
+                        </div>
                     </div>
                 </div>
-
-                <div class="build-panel">
-                    <h3>Utrustning</h3>
-                    <div class="build-slots-grid">
-                        ${BUILD_SLOTS.map(def => renderBuildSlot(def, effective)).join('')}
-                    </div>
-                </div>
-
-                <div class="build-panel">
-                    <h3>Resulterande egenskaper</h3>
-                    ${renderStatBreakdownTable(effective)}
-                </div>
-
-                <div class="build-panel">
-                    <h3>Stridsvärden från utrustning</h3>
-                    <div class="stat-grid">
-                        <div class="stat-item"><div class="stat-label">Vapenskada</div><div class="stat-value">${effective.combat.damageMax ? formatRange(effective.combat.damageMin, effective.combat.damageMax) : '-'}</div></div>
-                        <div class="stat-item"><div class="stat-label">Distansskada</div><div class="stat-value">${effective.combat.rangedDamageMax ? formatRange(effective.combat.rangedDamageMin, effective.combat.rangedDamageMax) : '-'}</div></div>
-                        <div class="stat-item"><div class="stat-label">Blockering</div><div class="stat-value">${effective.combat.block || '-'}</div></div>
-                        <div class="stat-item"><div class="stat-label">Perfekt träff (utrustning)</div><div class="stat-value">${effective.combat.critRate ? '+' + effective.combat.critRate + '%' : '-'}</div></div>
-                        <div class="stat-item"><div class="stat-label">PT-potential</div><div class="stat-value">${effective.combat.maxCritRate ? '+' + effective.combat.maxCritRate + '%' : '-'}</div></div>
-                        <div class="stat-item"><div class="stat-label">Träffchans (utrustning)</div><div class="stat-value">${effective.combat.hitRate ? '+' + effective.combat.hitRate : '-'}</div></div>
-                        <div class="stat-item"><div class="stat-label">Total vikt</div><div class="stat-value">${effective.totalWeight}</div></div>
-                    </div>
-                    <p class="info-note">Träffchans, undvikande, kritisk chans och skadepotentialens avtagande är enligt spelets egen wiki inte offentliga formler - de påverkas av värdena ovan men visas inte som en beräknad siffra här. Styrka mildrar viktens negativa effekt med upp till 25, men den exakta kurvan är inte publik.</p>
                 </div>
             `;
         }
