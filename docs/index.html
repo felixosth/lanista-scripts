@@ -12,7 +12,21 @@
     <meta name="twitter:title" content="Lanista Item Browser">
     <meta name="twitter:description" content="Bläddra, filtrera och jämför över 1 700 föremål i Lanista – vapen, rustningar, sköldar, smycken och material med fullständiga stats och craft-recept.">
     <title>Lanista Item Browser</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --ink: #2c2416;
+            --parchment: #f5f3f0;
+            --card: #f9f7f4;
+            --bronze: #8b7355;
+            --blood: #9a3324;
+            --iron: #5b6b78;
+            --stone: #8a8478;
+            --display-font: 'Cinzel', Georgia, 'Times New Roman', serif;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -428,15 +442,23 @@
 
         .detail-header {
             display: grid;
-            grid-template-columns: 200px 1fr;
-            gap: 25px;
+            grid-template-columns: 240px 1fr;
+            gap: 36px;
             margin-bottom: 30px;
-            align-items: flex-start;
+            align-items: start;
+        }
+
+        .detail-aside {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            position: sticky;
+            top: 20px;
         }
 
         .detail-image {
-            width: 200px;
-            height: 200px;
+            width: 100%;
+            aspect-ratio: 1;
             flex-shrink: 0;
             background: #f0ede8;
             border-radius: 8px;
@@ -452,30 +474,41 @@
             object-fit: contain;
         }
 
-        .detail-title {
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
+        .detail-main {
+            min-width: 0;
         }
 
         .detail-title h1 {
-            font-size: 1.6em;
-            margin-bottom: 12px;
-            line-height: 1.3;
+            font-family: var(--display-font);
+            font-weight: 700;
+            font-size: 1.9em;
+            letter-spacing: 0.01em;
+            color: var(--ink);
+            line-height: 1.25;
+            margin-bottom: 10px;
+        }
+
+        .detail-meta-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 22px;
         }
 
         .detail-description {
-            margin-top: 12px;
             color: #555;
-            font-size: 0.9em;
-            line-height: 1.5;
+            font-size: 0.92em;
+            line-height: 1.6;
+            max-width: 42ch;
         }
 
-        .detail-meta {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 4px;
-            flex-wrap: wrap;
+        .detail-requirements__title,
+        .detail-subheading {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: var(--bronze);
+            margin-bottom: 8px;
         }
 
         .meta-tag {
@@ -490,9 +523,9 @@
         }
 
         .meta-tag.level {
-            background: #8b7355;
+            background: var(--bronze);
             color: #fff;
-            border-color: #8b7355;
+            border-color: var(--bronze);
             font-weight: 600;
         }
 
@@ -508,19 +541,99 @@
             padding-bottom: 10px;
         }
 
-        .stat-section {
-            margin-bottom: 20px;
+        /* Hero stat: the one headline number (weapon damage, shield block) shown
+           above the ledger. Only rendered when the item has a natural headline stat. */
+        .item-hero-stat {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            background: var(--card);
+            border-radius: 8px;
+            border-left: 4px solid var(--blood);
         }
 
-        .stat-section h4 {
+        .item-hero-stat.cat-defense {
+            border-left-color: var(--iron);
+        }
+
+        .item-hero-stat__value {
+            font-family: var(--display-font);
+            font-weight: 700;
+            font-size: 2em;
+            color: var(--ink);
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .item-hero-stat__label {
+            color: #746b5c;
             font-size: 0.9em;
+        }
+
+        .item-hero-stat__sep {
+            color: #c2b8a5;
+            font-size: 0.6em;
+            font-weight: 400;
+            margin: 0 1px;
+        }
+
+        /* Stat ledger: rows instead of card tiles so a category with many entries
+           (enchanted gear can carry a dozen+ bonuses) stays scannable, and groups
+           stack as their own block rather than fighting an outer grid for columns. */
+        .item-stat-group {
+            margin-bottom: 22px;
+        }
+
+        .item-stat-group__title {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-size: 0.95em;
             font-weight: 600;
-            color: #8b7355;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 10px;
+            color: var(--ink);
+            margin-bottom: 6px;
             padding-bottom: 8px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #ece7dd;
+        }
+
+        .item-stat-group__title::before {
+            content: '';
+            width: 3px;
+            height: 14px;
+            border-radius: 2px;
+            background: var(--cat-color, var(--bronze));
+        }
+
+        .item-stat-group.cat-combat .item-stat-group__title { --cat-color: var(--blood); }
+        .item-stat-group.cat-defense .item-stat-group__title { --cat-color: var(--iron); }
+        .item-stat-group.cat-bonus .item-stat-group__title { --cat-color: var(--bronze); }
+        .item-stat-group.cat-other .item-stat-group__title { --cat-color: var(--stone); }
+
+        .item-stat-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 7px 0;
+            border-bottom: 1px solid #f1ede4;
+            font-size: 0.94em;
+        }
+
+        .item-stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .item-stat-row__label {
+            color: #5c5548;
+        }
+
+        .item-stat-row__value {
+            font-weight: 600;
+            color: var(--ink);
+            font-variant-numeric: tabular-nums;
+            text-align: right;
         }
 
         .stat-grid {
@@ -865,6 +978,21 @@
             padding: 20px;
         }
 
+        /* The item modal reads best at a controlled measure - 95vw alone left
+           description text and stat rows stretched far past a readable line
+           length on wide windows. Scoped to #itemModal so the slot-picker and
+           craft-plan modals keep their own sizing. */
+        #itemModal .modal-content {
+            max-width: min(95vw, 1000px);
+        }
+
+        #itemModal .modal-close h2 {
+            font-size: 0.95em;
+            font-weight: 600;
+            color: #857c6c;
+            letter-spacing: 0.01em;
+        }
+
         .comparison-table th,
         .comparison-table td {
             padding: 12px 8px;
@@ -1082,11 +1210,31 @@
             min-width: 160px;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 860px) {
             .detail-header {
                 grid-template-columns: 1fr;
             }
 
+            .detail-aside {
+                position: static;
+                flex-direction: row;
+                flex-wrap: wrap;
+                align-items: flex-start;
+            }
+
+            .detail-image {
+                width: 140px;
+                aspect-ratio: 1;
+            }
+
+            .detail-description {
+                max-width: none;
+                flex: 1;
+                min-width: 200px;
+            }
+        }
+
+        @media (max-width: 768px) {
             .items-grid {
                 grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             }
@@ -2100,8 +2248,6 @@
             const level = getItemLevel(item);
             const value = getSellValue(item);
 
-            let statsHTML = '';
-
             // Group stats by category for better readability
             const combatStats = [];
             const defenseStats = [];
@@ -2113,42 +2259,73 @@
             // stat is what prevents a stat being handled differently (or dropped entirely, as
             // PT-potential/crit_rate once were) in one of these three places but not another.
             const statBuckets = { combat: combatStats, defense: defenseStats, bonus: bonusStats, other: otherStats };
+
+            // The headline number(s) shown above the ledger - only item types that have a
+            // natural "this is the number that matters" stat get one. Weapons pair damage
+            // with damage potential the same way the game itself does ("9-12 | 25"), since
+            // the two are read together, not separately. Excluded from their category's
+            // ledger below so nothing is shown twice.
+            const heroLabel = item.type === 'weapon' ? 'Skada' : item.type === 'shield' ? 'Blockering' : null;
+            let heroHTML = '';
+            let heroExtraLabel = null;
+            if (heroLabel) {
+                const heroRow = STAT_ROWS.find(r => r.label === heroLabel);
+                const heroValue = heroRow ? heroRow.display(item) : null;
+                if (heroValue !== null && heroValue !== undefined && heroValue !== '') {
+                    let heroDisplay = heroValue;
+                    if (heroLabel === 'Skada') {
+                        const potentialRow = STAT_ROWS.find(r => r.label === 'Skadepotential');
+                        const potentialValue = potentialRow ? potentialRow.display(item) : null;
+                        if (potentialValue !== null && potentialValue !== undefined && potentialValue !== '') {
+                            heroDisplay = `${heroValue} <span class="item-hero-stat__sep">|</span> ${potentialValue}`;
+                            heroExtraLabel = 'Skadepotential';
+                        }
+                    }
+                    const heroCat = heroLabel === 'Blockering' ? 'cat-defense' : 'cat-combat';
+                    heroHTML = `<div class="item-hero-stat ${heroCat}"><span class="item-hero-stat__value">${heroDisplay}</span><span class="item-hero-stat__label">${heroLabel}</span></div>`;
+                }
+            }
+
             STAT_ROWS.forEach(row => {
                 if (!row.category) return; // 'Värde' has no category - handled specially below
+                if (heroHTML && (row.label === heroLabel || row.label === heroExtraLabel)) return; // already shown as the hero stat
                 const displayValue = row.display(item);
                 if (displayValue === null || displayValue === undefined || displayValue === '') return;
-                statBuckets[row.category].push(`<div class="stat-item"><div class="stat-label">${row.label}</div><div class="stat-value">${displayValue}</div></div>`);
+                statBuckets[row.category].push(`<div class="item-stat-row"><span class="item-stat-row__label">${row.label}</span><span class="item-stat-row__value">${displayValue}</span></div>`);
             });
 
             // Bonuses
             if (item.bonuses && item.bonuses.length > 0) {
                 item.bonuses.forEach(bonus => {
-                    bonusStats.push(`<div class="stat-item"><div class="stat-label">${bonus.bonusable_name}</div><div class="stat-value">${bonus.bonus_value_display}</div></div>`);
+                    bonusStats.push(`<div class="item-stat-row"><span class="item-stat-row__label">${bonus.bonusable_name}</span><span class="item-stat-row__value">${bonus.bonus_value_display}</span></div>`);
                 });
             }
 
             // Enchantment modifiers
             if (item.enchant_modifiers && item.enchant_modifiers.length > 0) {
                 item.enchant_modifiers.forEach(mod => {
-                    bonusStats.push(`<div class="stat-item"><div class="stat-label">${mod.enchantable_name}</div><div class="stat-value">${mod.enchant_value_display}</div></div>`);
+                    bonusStats.push(`<div class="item-stat-row"><span class="item-stat-row__label">${mod.enchantable_name}</span><span class="item-stat-row__value">${mod.enchant_value_display}</span></div>`);
                 });
             }
 
-            // Build HTML with sections
+            // Build the stat ledger, grouped into labeled sections that stack top-to-bottom -
+            // each group is its own block rather than a grid track, so groups always read as
+            // groups regardless of how many rows they hold.
+            let statsHTML = '';
             if (combatStats.length > 0) {
-                statsHTML += `<div class="stat-section"><h4>Offensiv</h4><div class="stat-grid">${combatStats.join('')}</div></div>`;
+                statsHTML += `<div class="item-stat-group cat-combat"><div class="item-stat-group__title">Offensiv</div>${combatStats.join('')}</div>`;
             }
             if (defenseStats.length > 0) {
-                statsHTML += `<div class="stat-section"><h4>Försvar</h4><div class="stat-grid">${defenseStats.join('')}</div></div>`;
+                statsHTML += `<div class="item-stat-group cat-defense"><div class="item-stat-group__title">Försvar</div>${defenseStats.join('')}</div>`;
             }
             if (bonusStats.length > 0) {
-                statsHTML += `<div class="stat-section"><h4>Bonusar</h4><div class="stat-grid">${bonusStats.join('')}</div></div>`;
+                statsHTML += `<div class="item-stat-group cat-bonus"><div class="item-stat-group__title">Bonusar</div>${bonusStats.join('')}</div>`;
             }
             if (otherStats.length > 0 || level > 0 || value > 0) {
                 let basicStats = otherStats.slice();
-                if (level > 0) basicStats.push(`<div class="stat-item"><div class="stat-label">Nivå</div><div class="stat-value">${level}</div></div>`);
-                if (value > 0) basicStats.push(`<div class="stat-item"><div class="stat-label">Värde</div><div class="stat-value">${value}</div></div>`);
-                statsHTML += `<div class="stat-section"><h4>Övrigt</h4><div class="stat-grid">${basicStats.join('')}</div></div>`;
+                if (level > 0) basicStats.push(`<div class="item-stat-row"><span class="item-stat-row__label">Nivå</span><span class="item-stat-row__value">${level}</span></div>`);
+                if (value > 0) basicStats.push(`<div class="item-stat-row"><span class="item-stat-row__label">Värde</span><span class="item-stat-row__value">${value}</span></div>`);
+                statsHTML += `<div class="item-stat-group cat-other"><div class="item-stat-group__title">Övrigt</div>${basicStats.join('')}</div>`;
             }
 
             let metaTags = '';
@@ -2159,41 +2336,44 @@
             if (item.categories && item.categories.length > 0) {
                 metaTags += item.categories.map(c => `<span class="meta-tag">${c.name}</span>`).join('');
             }
-            metaTags = metaTags ? `<div class="detail-meta">${metaTags}</div>` : '';
+            metaTags = metaTags ? `<div class="detail-meta-line">${metaTags}</div>` : '';
+
+            // Short "Svärd · Nivå 20" line for the sticky bar, so it doesn't just repeat the
+            // item name that's already the page's actual heading below.
+            const breadcrumb = [
+                subtypeNames[item.type_name] || item.type_name || typeNames[item.type] || item.type,
+                level > 0 ? `Nivå ${level}` : null
+            ].filter(Boolean).join(' · ');
 
             let html = `
                 <div class="detail-view">
                     <div class="detail-header">
-                        <div class="detail-image">
-                            ${item.asset?.url ? `<img src="${item.asset.url}" alt="${item.name}">` : ''}
-                        </div>
-                        <div class="detail-title">
-                            <h1>${item.name}</h1>
-                            ${metaTags}
-                            ${item.description ? `<p class="detail-description">${item.description}</p>` : ''}
+                        <aside class="detail-aside">
+                            <div class="detail-image">
+                                ${item.asset?.url ? `<img src="${item.asset.url}" alt="${item.name}">` : ''}
+                            </div>
+                            ${item.description ? `<div class="detail-description">${item.description}</div>` : ''}
+                            ${item.requirements && item.requirements.length > 0 ? `
+                                <div class="detail-requirements">
+                                    <div class="detail-requirements__title">Krav</div>
+                                    <ul class="requirement-list">
+                                        ${item.requirements.map(req => {
+                                            const recommended = /\bbör\b/i.test(req.requirement_text || '');
+                                            return `<li class="${recommended ? 'recommended' : ''}">${req.requirement_text}</li>`;
+                                        }).join('')}
+                                    </ul>
+                                </div>
+                            ` : ''}
+                        </aside>
+                        <div class="detail-main">
+                            <div class="detail-title">
+                                <h1>${item.name}</h1>
+                                ${metaTags}
+                            </div>
+                            ${heroHTML}
+                            ${statsHTML}
                         </div>
                     </div>
-
-                    ${statsHTML ? `
-                        <div class="detail-section">
-                            <h3>Statistik</h3>
-                            <div class="stat-grid">
-                                ${statsHTML}
-                            </div>
-                        </div>
-                    ` : ''}
-
-                    ${item.requirements && item.requirements.length > 0 ? `
-                        <div class="detail-section">
-                            <h3>Krav</h3>
-                            <ul class="requirement-list">
-                                ${item.requirements.map(req => {
-                                    const recommended = /\bbör\b/i.test(req.requirement_text || '');
-                                    return `<li class="${recommended ? 'recommended' : ''}">${req.requirement_text}</li>`;
-                                }).join('')}
-                            </ul>
-                        </div>
-                    ` : ''}
 
                     ${(() => {
                         const recipe = recipesByKey[item.key];
@@ -2228,7 +2408,7 @@
 
                         const professionHTML = (recipe.profession_requirements && recipe.profession_requirements.length > 0) ? `
                             <div style="margin-bottom: 15px;">
-                                <h4 style="font-size: 0.95em; color: #666; margin-bottom: 8px;">Yrke</h4>
+                                <h4 class="detail-subheading">Yrke</h4>
                                 <div class="stat-grid">
                                     ${recipe.profession_requirements.map(pr => `
                                         <div class="stat-item">
@@ -2246,13 +2426,13 @@
                                 ${professionHTML}
                                 ${hasMaterials ? `
                                     <div style="margin-bottom: 15px;">
-                                        <h4 style="font-size: 0.95em; color: #666; margin-bottom: 8px;">Material</h4>
+                                        <h4 class="detail-subheading">Material</h4>
                                         ${renderReqList(recipe.material_requirements)}
                                     </div>
                                 ` : ''}
                                 ${hasItems ? `
                                     <div>
-                                        <h4 style="font-size: 0.95em; color: #666; margin-bottom: 8px;">Föremål</h4>
+                                        <h4 class="detail-subheading">Föremål</h4>
                                         ${renderReqList(recipe.item_requirements)}
                                     </div>
                                 ` : ''}
@@ -2286,7 +2466,7 @@
                 </div>
             `;
 
-            document.getElementById('modalTitle').textContent = item.name;
+            document.getElementById('modalTitle').textContent = breadcrumb || item.name;
             document.title = `${item.name} – ${DEFAULT_TITLE}`;
             document.getElementById('modalBody').innerHTML = html;
             document.getElementById('itemModal').classList.add('active');
