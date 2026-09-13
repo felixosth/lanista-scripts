@@ -1661,6 +1661,35 @@
             });
         }
 
+        // A build can be handed in from outside (e.g. the companion userscript, which reads
+        // the logged-in player's own race/stats/gear from lanista.se and encodes it here) via
+        // a `?build=<base64 JSON>` URL param. It's captured and stripped from the URL up front
+        // (synchronously, before either data fetch below resolves) so a later refresh/back
+        // doesn't re-trigger the import or leave the (fairly long) param sitting in the address
+        // bar. Applying it has to wait for both allItems and raceData to be loaded, since it
+        // resolves race ids and item names against them - see maybeApplyPendingBuildImport.
+        let pendingBuildImport = null;
+        (function capturePendingBuildImport() {
+            const params = new URLSearchParams(window.location.search);
+            const raw = params.get('build');
+            if (!raw) return;
+            try {
+                pendingBuildImport = JSON.parse(decodeURIComponent(escape(window.atob(raw))));
+            } catch (e) {
+                console.error('Kunde inte tolka importerat bygge:', e);
+            }
+            const url = new URL(window.location.href);
+            url.searchParams.delete('build');
+            history.replaceState(null, '', url.pathname + url.search);
+        })();
+
+        function maybeApplyPendingBuildImport() {
+            if (!pendingBuildImport || !raceData || allItems.length === 0) return;
+            const data = pendingBuildImport;
+            pendingBuildImport = null;
+            applyBuildImport(data);
+        }
+
         // Load data
         fetch('lanista_items_detailed.json')
             .then(response => response.json())
@@ -1678,6 +1707,7 @@
                     getAllStatLabels().map(label => `<option value="${label.replace(/"/g, '&quot;')}">`).join('');
                 subtypesByType = computeSubtypesByType();
                 loadStateFromURL();
+                maybeApplyPendingBuildImport();
             })
             .catch(error => {
                 console.error('Fel vid inläsning av data:', error);
@@ -1691,6 +1721,7 @@
             .then(data => {
                 raceData = data;
                 data.races.forEach(race => { racesById[race.id] = race; });
+                maybeApplyPendingBuildImport();
             })
             .catch(error => {
                 console.error('Fel vid inläsning av rasdata:', error);
@@ -3076,6 +3107,48 @@
         function unequipItem(slot) {
             delete buildState.equipped[slot];
             renderBuildView();
+        }
+
+        // Applies a build handed in via the `?build=` URL param (see capturePendingBuildImport
+        // above). The payload deliberately carries item names rather than our internal
+        // `type:id` keys - the source (a userscript reading lanista.se's own API) has no way to
+        // know how getItemType() buckets a given item here, and worse, item ids aren't unique
+        // across categories (the same id can name a different item per category), so a raw id
+        // would risk equipping the wrong thing entirely. Matching by name against the item(s)
+        // valid for the target slot is slower but unambiguous in practice.
+        function applyBuildImport(data) {
+            buildState = { race: null, level: 1, lifeStage: 'Ung', baseStats: {}, weaponSkills: {}, equipped: {} };
+            if (data.race && racesById[data.race]) buildState.race = data.race;
+            if (data.level) buildState.level = Math.max(1, Math.min(50, parseInt(data.level, 10) || 1));
+            if (data.baseStats) Object.assign(buildState.baseStats, data.baseStats);
+            if (data.weaponSkills) Object.assign(buildState.weaponSkills, data.weaponSkills);
+
+            const race = buildState.race ? racesById[buildState.race] : null;
+            if (race) {
+                const stage = data.lifeStage && race.ageStages.find(s => s.name.toLowerCase() === String(data.lifeStage).toLowerCase());
+                buildState.lifeStage = stage ? stage.name : race.ageStages[0].name;
+            }
+
+            // Applied in BUILD_SLOTS order (weapon before shield) rather than the payload's own
+            // order, so equipItem()'s two-handed-weapon-clears-shield logic below sees the
+            // weapon first - not that a real character could have both equipped anyway.
+            const nameBySlot = {};
+            (data.equipped || []).forEach(({ slot, name }) => { if (slot && name) nameBySlot[slot] = name; });
+
+            const unmatched = [];
+            BUILD_SLOTS.forEach(def => {
+                const name = nameBySlot[def.slot];
+                if (!name) return;
+                const candidates = itemsByName[name] || [];
+                const item = candidates.find(candidate => def.matcher ? def.matcher(candidate) : def.typeNames.includes(candidate.type_name));
+                if (item) equipItem(def.slot, item.key);
+                else unmatched.push(name);
+            });
+
+            openBuildView();
+            if (unmatched.length) {
+                setTimeout(() => alert('Kunde inte matcha följande föremål automatiskt:\n' + unmatched.join('\n')), 300);
+            }
         }
 
         function openSlotPicker(slot) {

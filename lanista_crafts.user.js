@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.23.0
+// @version     1.24.0
 //
 // @match       https://lanista.se/game/*
 // @match       https://lanista.se/
@@ -1765,6 +1765,136 @@
 		return ownAvatarInfoPromise;
 	}
 
+	// Sends the logged-in player's own race/level/age/stats/weapon-skills/gear to the build
+	// simulator (felixosth.github.io/lanista-scripts) via a `?build=` URL param, so it opens
+	// pre-filled instead of starting from scratch. The keys below are the build simulator's
+	// own vocabulary (docs/lanista_races.json's statLabels/weaponSkillLabels and
+	// docs/index.html's race id slugs) - both ends of this contract live in the
+	// lanista-scripts repo, so keep them in sync with docs/index.html's applyBuildImport().
+	// Confirmed live against /api/config and /api/avatars/me (2026-09-13): /api/config's race
+	// list gives the enum name -> Swedish slug mapping (e.g. "TROLL" -> race id "troll" in
+	// lanista_races.json), and the 11 stat/7 weapon-skill enum names below are exactly what
+	// /api/avatars/me's stats/weapon_skills arrays report by elimination against
+	// lanista_races.json's 11 statLabels/7 weaponSkillLabels keys.
+	const BUILD_SIM_URL = 'https://felixosth.github.io/lanista-scripts/';
+
+	const BUILD_SIM_RACE_MAP = {
+		HUMAN: 'manniska',
+		ELF: 'alv',
+		DWARF: 'dvarg',
+		ORC: 'ork',
+		TROLL: 'troll',
+		GOBLIN: 'goblin',
+		UNDEAD: 'odod',
+		SALAMANTH: 'salamanth'
+	};
+
+	const BUILD_SIM_STAT_MAP = {
+		STAMINA: 'bashalsa',
+		STRENGTH: 'styrka',
+		ENDURANCE: 'uthallighet',
+		INITIATIVE: 'initiativ',
+		DODGE: 'undvika',
+		LUCK: 'tur',
+		LEARNING_CAPACITY: 'larande',
+		DISCIPLINE: 'disciplin',
+		LEADERSHIP: 'ledarskap',
+		TAUNT: 'provokation',
+		WISDOM: 'intellekt'
+	};
+
+	const BUILD_SIM_WEAPON_SKILL_MAP = {
+		SWORD: 'sword',
+		AXE: 'axe',
+		MACE: 'mace',
+		STAVE: 'stave',
+		SPEAR: 'spear',
+		CHAIN: 'chain',
+		SHIELD: 'shield'
+	};
+
+	// The build simulator groups every weapon subtype (sword/axe/mace/spear/stave/chain) into
+	// one shared "weapon" slot rather than the game's own per-subtype type_name.
+	const BUILD_SIM_WEAPON_TYPE_NAMES = new Set(['sword', 'axe', 'mace', 'spear', 'stave', 'chain']);
+
+	// Item ids aren't unique across categories in Lanista's own data (the same id can name a
+	// completely different item elsewhere), and the build simulator's internal `type:id` keys
+	// depend on a local item-type classification this script has no visibility into - so gear
+	// is handed over by slot + exact item name instead, and matched by name on the receiving
+	// end (see docs/index.html's applyBuildImport).
+	function buildSimSlotForItem(item) {
+		if (BUILD_SIM_WEAPON_TYPE_NAMES.has(item.type_name)) return 'weapon';
+		return item.type_name || null;
+	}
+
+	function buildSimImportPayload(avatar) {
+		const baseStats = {};
+		(avatar.stats || []).forEach((stat) => {
+			const key = BUILD_SIM_STAT_MAP[stat.name];
+			if (key) baseStats[key] = stat.value;
+		});
+
+		const weaponSkills = {};
+		(avatar.weapon_skills || []).forEach((skill) => {
+			const key = BUILD_SIM_WEAPON_SKILL_MAP[skill.name];
+			if (key) weaponSkills[key] = skill.value;
+		});
+
+		const equipped = (avatar.items || [])
+			.filter((item) => item.equipped)
+			.map((item) => ({ slot: buildSimSlotForItem(item), name: item.name }))
+			.filter((entry) => entry.slot);
+
+		return {
+			race: BUILD_SIM_RACE_MAP[avatar.race?.name] || null,
+			level: avatar.current_level,
+			lifeStage: avatar.age_display,
+			baseStats,
+			weaponSkills,
+			equipped
+		};
+	}
+
+	function openBuildSimForOwnAvatar() {
+		// Opened synchronously (before the fetch resolves) so this still counts as a direct
+		// result of the click - popup blockers otherwise reject a window.open() that only
+		// happens once an async response comes back.
+		const targetWindow = window.open('', '_blank');
+		fetch('/api/avatars/me')
+			.then((response) => response.ok ? response.json() : null)
+			.then((avatar) => {
+				if (!avatar) { if (targetWindow) targetWindow.close(); return; }
+				const payload = buildSimImportPayload(avatar);
+				const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+				if (targetWindow) targetWindow.location.href = `${BUILD_SIM_URL}?build=${encoded}`;
+			})
+			.catch(() => { if (targetWindow) targetWindow.close(); });
+	}
+
+	function createBuildSimButton() {
+		const button = document.createElement('button');
+		button.type = 'button';
+		button.dataset.lanistaBuildSimButton = 'true';
+		button.className = 'inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground';
+		button.textContent = '🛠️ Öppna i bygg-simulatorn';
+		button.addEventListener('click', openBuildSimForOwnAvatar);
+		return button;
+	}
+
+	// The gear tab ("Utrustning") and stats tab ("Egenskaper") on the logged-in player's own
+	// avatar page share one "Min gladiator" card - confirmed live, both /gear and /stats route
+	// to the same card-header component, which is why this only needs one matcher instead of
+	// one per tab. Its action slot (next to the card title) already holds a page-specific
+	// "Utrustningsguide" button on the gear tab; this is inserted as an extra entry there
+	// rather than replacing anything, so it shows up (empty action slot or not) on both tabs.
+	function scanOwnGearOrStatsPage() {
+		const heading = Array.from(document.querySelectorAll('h3[data-slot="card-title"]'))
+			.find((el) => el.textContent.trim().toLowerCase() === 'min gladiator');
+		const actionSlot = heading ? heading.nextElementSibling : null;
+		if (!actionSlot || actionSlot.querySelector('[data-lanista-build-sim-button]')) return;
+		actionSlot.insertBefore(createBuildSimButton(), actionSlot.firstChild);
+	}
+
 	function buildAnalyzerEntryCard(avatarId, avatarName) {
 		const card = document.createElement('div');
 		card.dataset.lanistaAnalyzerEntry = 'true';
@@ -3168,6 +3298,10 @@
 		{
 			paths: ['/game/avatar/me/history'],
 			run: scanOwnHistoryPage
+		},
+		{
+			paths: ['/game/avatar/me/gear', '/game/avatar/me/stats'],
+			run: scanOwnGearOrStatsPage
 		}
 	];
 
