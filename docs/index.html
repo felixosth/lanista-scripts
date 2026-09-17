@@ -1859,6 +1859,18 @@
                 numeric: item => item.crit_damage_max || item.crit_damage_multiplier || null,
                 display: item => item.crit_damage || (item.crit_damage_multiplier ? `+${item.crit_damage_multiplier}%` : null) },
             { label: 'PT-potential', category: 'combat', numeric: item => item.max_crit_rate || null, display: item => item.max_crit_rate ? `+${item.max_crit_rate}%` : null },
+            // Handlingar/runda ("actions") is almost always 1 and thus uninteresting - only
+            // shown when a weapon deviates from that default (staves mainly, 0-4 actions).
+            // The numeric value is still exposed for every weapon that has the field so it
+            // stays fully searchable/comparable, matching how every other STAT_ROWS entry works.
+            { label: 'Handlingar/runda', category: 'combat',
+                numeric: item => (item.actions === undefined || item.actions === null) ? null : item.actions,
+                display: item => (item.actions === undefined || item.actions === null || item.actions === 1) ? null : String(item.actions) },
+            // Momentumskada (stave-only "momentum" mechanic): a stacking damage bonus that
+            // builds up chance-based across a battle, up to stack_max stacks.
+            { label: 'Momentumskada', category: 'combat',
+                numeric: item => item.stack_multiplier || null,
+                display: item => item.stack_multiplier ? `${item.stack_multiplier}% - (${item.stack_chance}% chans, max ${item.stack_max})` : null },
             { label: 'Perfekt träff', category: 'bonus', numeric: item => item.crit_rate || null, display: item => item.crit_rate ? `+${item.crit_rate}%` : null },
             { label: 'Blockering', category: 'defense',
                 numeric: item => item.base_block || item.absorption || null,
@@ -3060,7 +3072,8 @@
             let weight = 0;
             const combat = {
                 damageMin: 0, damageMax: 0, block: 0, critRate: 0, maxCritRate: 0, hitRate: 0,
-                rangedDamageMin: 0, rangedDamageMax: 0, rangedHitRate: 0, rangedCritRate: 0, rangedMaxCritRate: 0
+                rangedDamageMin: 0, rangedDamageMax: 0, rangedHitRate: 0, rangedCritRate: 0, rangedMaxCritRate: 0,
+                actions: 0, momentumMultiplier: 0, momentumChance: 0, momentumMax: 0
             };
             const statMap = statBonusKeyMap();
             const weaponMap = weaponBonusKeyMap();
@@ -3086,6 +3099,15 @@
                 if (item.is_weapon) {
                     combat.damageMin += item.base_damage_min || 0;
                     combat.damageMax += item.base_damage_max || 0;
+                    // Only the single 'weapon' slot (see BUILD_SLOTS) can ever carry these, so
+                    // summing is equivalent to "take this weapon's value" - same simplification
+                    // already used for damageMin/damageMax above.
+                    if (item.actions !== undefined && item.actions !== null) combat.actions += item.actions;
+                    if (item.stack_multiplier) {
+                        combat.momentumMultiplier += item.stack_multiplier;
+                        combat.momentumChance += item.stack_chance || 0;
+                        combat.momentumMax += item.stack_max || 0;
+                    }
                 }
                 if (item.is_shield || item.is_armor) {
                     combat.block += item.base_block || item.absorption || 0;
@@ -3666,6 +3688,8 @@
                                 <div class="stat-item"><div class="stat-label">Perfekt träff (utrustning)</div><div class="stat-value">${effective.combat.critRate ? '+' + effective.combat.critRate + '%' : '-'}</div>${compareEffective ? formatDelta(effective.combat.critRate - compareEffective.combat.critRate) : ''}</div>
                                 <div class="stat-item"><div class="stat-label">PT-potential</div><div class="stat-value">${effective.combat.maxCritRate ? '+' + effective.combat.maxCritRate + '%' : '-'}</div>${compareEffective ? formatDelta(effective.combat.maxCritRate - compareEffective.combat.maxCritRate) : ''}</div>
                                 <div class="stat-item"><div class="stat-label">Träffchans (utrustning)</div><div class="stat-value">${effective.combat.hitRate ? '+' + effective.combat.hitRate : '-'}</div>${compareEffective ? formatDelta(effective.combat.hitRate - compareEffective.combat.hitRate) : ''}</div>
+                                <div class="stat-item"><div class="stat-label">Handlingar/runda</div><div class="stat-value">${effective.combat.actions || '-'}</div>${compareEffective ? formatDelta(effective.combat.actions - compareEffective.combat.actions, 0) : ''}</div>
+                                <div class="stat-item"><div class="stat-label">Momentumskada</div><div class="stat-value">${effective.combat.momentumMultiplier ? effective.combat.momentumMultiplier + '% (' + effective.combat.momentumChance + '% chans, max ' + effective.combat.momentumMax + ')' : '-'}</div>${compareEffective ? formatDelta(effective.combat.momentumMultiplier - compareEffective.combat.momentumMultiplier) : ''}</div>
                                 <div class="stat-item"><div class="stat-label">Total vikt</div><div class="stat-value">${effective.totalWeight}</div>${compareEffective ? formatDelta(effective.totalWeight - compareEffective.totalWeight, 0, true) : ''}</div>
                             </div>
                             <p class="info-note">Träffchans, undvikande, kritisk chans och skadepotentialens avtagande är enligt spelets egen wiki inte offentliga formler - de påverkas av värdena ovan men visas inte som en beräknad siffra här. Styrka mildrar viktens negativa effekt med upp till 25, men den exakta kurvan är inte publik.</p>
