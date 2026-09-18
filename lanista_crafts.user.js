@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.24.1
+// @version     1.24.2
 //
 // @match       https://lanista.se/game/*
 // @match       https://lanista.se/
@@ -588,7 +588,7 @@
 						incrementStat(stats, widenedAttacker, 'attacksMade');
 						incrementStat(stats, widenedAttacker, 'evadedByDodge');
 						incrementStat(stats, lastName, 'attacksAgainst');
-						combatEvents.push({ offset: sentenceOffsets[index], attacker: widenedAttacker });
+						combatEvents.push({ offset: sentenceOffsets[index], attacker: widenedAttacker, target: lastName });
 					}
 				}
 				if (hasSuccessfulParry) {
@@ -597,7 +597,7 @@
 						incrementStat(stats, widenedAttacker, 'attacksMade');
 						incrementStat(stats, widenedAttacker, 'evadedByParry');
 						incrementStat(stats, lastName, 'attacksAgainst');
-						combatEvents.push({ offset: sentenceOffsets[index], attacker: widenedAttacker });
+						combatEvents.push({ offset: sentenceOffsets[index], attacker: widenedAttacker, target: lastName });
 					}
 				}
 				if (hasSuccessfulBlock) {
@@ -606,7 +606,7 @@
 						incrementStat(stats, widenedAttacker, 'attacksMade');
 						incrementStat(stats, widenedAttacker, 'evadedByBlock');
 						incrementStat(stats, lastName, 'attacksAgainst');
-						combatEvents.push({ offset: sentenceOffsets[index], attacker: widenedAttacker });
+						combatEvents.push({ offset: sentenceOffsets[index], attacker: widenedAttacker, target: lastName });
 					}
 				}
 			}
@@ -623,7 +623,7 @@
 					incrementStat(stats, widenedAttacker, 'attacksMade');
 					incrementStat(stats, lastName, 'missesAgainst');
 					incrementStat(stats, lastName, 'attacksAgainst');
-					combatEvents.push({ offset: sentenceOffsets[index], attacker: widenedAttacker });
+					combatEvents.push({ offset: sentenceOffsets[index], attacker: widenedAttacker, target: lastName });
 				}
 			}
 			const healIndex = sentence.indexOf('helas med');
@@ -666,16 +666,22 @@
 				stats.get(attacker).attacksMade++;
 				stats.get(attacker).hitsLanded++;
 				if (isCrit) stats.get(attacker).crits++;
-				combatEvents.push({ offset: match.index, attacker });
+				combatEvents.push({ offset: match.index, attacker, target });
 			}
 		}
 
 		combatEvents.sort((left, right) => left.offset - right.offset);
-		const firstAttacker = combatEvents.length ? combatEvents[0].attacker : null;
+		// Self-relative rather than "whoever acted first in the whole round" - a team round
+		// narrates several simultaneous pairings (see computeAttackedFirst's comment for the same
+		// reasoning on the JSON side), so what's well-defined for any battle shape is this
+		// fighter's own first resolved involvement, as attacker or target. In a duel this is
+		// identical to the old whole-round check, since every combat entry involves both fighters.
+		const ownFirstEvent = combatEvents.find((event) => event.attacker === currentName || event.target === currentName);
+		const selfActedFirst = ownFirstEvent ? ownFirstEvent.attacker === currentName : null;
 
 		return {
 			participants: names.map((name) => ({ name, side: sideByName.get(name), isSelf: name === currentName, ...stats.get(name) })),
-			firstAttacker
+			selfActedFirst
 		};
 	}
 
@@ -833,7 +839,8 @@
 		panel.appendChild(line2);
 		panel.appendChild(line3);
 
-		// Only set (battle totals card, viewer's own row, duel only - see scanBattlePage).
+		// Only set on the battle totals card, and only for the viewer's own row - see
+		// scanBattlePage (works for duels and team battles alike).
 		if (context.attackedFirst) {
 			const line4 = document.createElement('div');
 			line4.className = 'text-muted-foreground';
@@ -975,14 +982,14 @@
 		let cumulativeAlly = 0;
 		let cumulativeEnemy = 0;
 		rounds.forEach(({ number, container }) => {
-			const { participants, firstAttacker } = summarizeRound(container, currentName);
-			// firstAttacker is the resolved attacker of the round's earliest combat-outcome
-			// event (see summarizeRound) - only meaningful for a 1v1 duel; a team-battle round
-			// narrates several simultaneous pairings at once, so this is tallied unconditionally
-			// but only surfaced when isDuel (below) says it's safe to interpret.
-			if (participants.length) {
+			const { participants, selfActedFirst } = summarizeRound(container, currentName);
+			// selfActedFirst is null for a round where the viewer's own fighter had no resolved
+			// combat-outcome event at all (see summarizeRound) - excluded from both the numerator
+			// and denominator rather than counted as a miss, so a round of pure flavor text (or one
+			// this fighter sat out in a team battle) doesn't dilute the rate.
+			if (selfActedFirst !== null) {
 				roundsCounted++;
-				if (firstAttacker === currentName) selfAttackedFirstRounds++;
+				if (selfActedFirst) selfAttackedFirstRounds++;
 			}
 			participants.forEach((participant) => {
 				const entry = totals.get(participant.name) || createStatBucket({ side: participant.side, isSelf: participant.isSelf });
@@ -1049,10 +1056,9 @@
 					roundHistory.forEach((point) => { point[side] *= scale; });
 				});
 			}
-			// "Attacked first" only means something with exactly two fighters in the whole
-			// battle - a team battle has no single "who went first this round" to attribute.
-			const isDuel = totals.size === 2;
-			const attackedFirst = isDuel ? { count: selfAttackedFirstRounds, total: roundsCounted } : null;
+			// roundsCounted/selfAttackedFirstRounds are already self-relative (see the
+			// selfActedFirst tally above), so this works the same for a duel or a team battle.
+			const attackedFirst = roundsCounted ? { count: selfAttackedFirstRounds, total: roundsCounted } : null;
 			const firstCard = rounds[0].container.parentElement;
 			renderBattleTotals(firstCard.parentElement, firstCard, totals, battleTeamDamage, battleTeamSize, attackedFirst, roundHistory, loot);
 		}
@@ -1116,29 +1122,35 @@
 	// when (like "start") they happen to carry a player_one of their own.
 	const NON_COMBAT_ROUND_CATEGORIES = new Set(['start', 'line_break', 'slow', 'racials', 'item_broken', 'second', 'break', 'winner', 'loser', 'stats']);
 
-	// Only meaningful for a 1v1 (a team battle round narrates several simultaneous pairings at
-	// once, so there's no single "who went first"). round.text preserves chronological order and
-	// - confirmed live across several categories (attack_with_armor_block*, ranged*, weapon_block,
-	// dodge, miss, ...) - "player_one" is always the attacker in a genuine combat-resolution
-	// event, so the round's first non-flavor entry names who acted first. A ranged/thrown weapon
-	// can resolve before the round's own "start" line (confirmed live: seen as round.text[0],
-	// ahead of "start"), so this scans for the first qualifying entry rather than trusting
-	// round.text[0] or the "start" entry specifically. Same fighter went first in every round of
-	// both real battles this was checked against, but a status effect (see the "slow" category)
-	// could plausibly flip initiative mid-battle, so this is computed per round rather than
-	// assumed constant for the whole battle.
+	// A team battle round narrates several simultaneous pairings one after another (confirmed
+	// live against a real 2v2: e.g. Brog->Rotvältare, then Rotvältare->Isana, then Wesker->Brog,
+	// then Isana->Rotvältare, then Wesker->Isana, all inside one round) - so there's no single
+	// "who went first" across the whole round. What *is* well-defined for any battle shape is
+	// self-relative: the fighter's own first resolved combat event that round, whether they were
+	// the attacker or the target of it. In a duel this is identical to the old "round's first
+	// entry, period" check, since every combat entry necessarily involves both fighters. round.text
+	// preserves chronological order and - confirmed live across several categories
+	// (attack_with_armor_block*, ranged*, weapon_block, dodge, miss, ...) - "player_one" is always
+	// the attacker in a genuine combat-resolution event, so the round's first non-flavor entry
+	// naming this fighter (as player_one or player_two) tells us whether they struck first in
+	// their own first exchange. A ranged/thrown weapon can resolve before the round's own "start"
+	// line (confirmed live: seen as round.text[0], ahead of "start"), so this scans for the first
+	// qualifying entry rather than trusting round.text[0] or the "start" entry specifically. Same
+	// fighter went first in every round of both real duels this was checked against, but a status
+	// effect (see the "slow" category) could plausibly flip initiative mid-battle, so this is
+	// computed per round rather than assumed constant for the whole battle.
 	function computeAttackedFirst(battle, fighterName) {
-		if ((battle.participants || []).length !== 2) return null;
 		let total = 0;
 		let count = 0;
 		(battle.rounds || []).forEach((round) => {
-			const firstCombatEntry = (round.text || []).find((entry) => {
+			const firstOwnEntry = (round.text || []).find((entry) => {
 				const category = entry.key.split('.')[1];
-				return !NON_COMBAT_ROUND_CATEGORIES.has(category) && entry.args && entry.args.player_one;
+				if (NON_COMBAT_ROUND_CATEGORIES.has(category) || !entry.args) return false;
+				return stripSideTags(entry.args.player_one) === fighterName || stripSideTags(entry.args.player_two) === fighterName;
 			});
-			if (!firstCombatEntry) return;
+			if (!firstOwnEntry) return;
 			total++;
-			if (stripSideTags(firstCombatEntry.args.player_one) === fighterName) count++;
+			if (stripSideTags(firstOwnEntry.args.player_one) === fighterName) count++;
 		});
 		return total ? { count, total } : null;
 	}
@@ -1424,9 +1436,10 @@
 		const sum = (key) => battles.reduce((total, battle) => total + battle[key], 0);
 		const decided = battles.filter((battle) => battle.won === true || battle.won === false);
 		const wins = decided.filter((battle) => battle.won === true).length;
-		// Only 1v1s carry an attackedFirst (see computeAttackedFirst) - a team battle/monster
-		// hunt mixed into the same batch of matches just doesn't contribute rounds either way.
-		const duels = battles.filter((battle) => battle.attackedFirst);
+		// Only battles where this fighter actually landed in a resolved combat event carry an
+		// attackedFirst (see computeAttackedFirst) - a monster hunt or empty battle mixed into the
+		// same batch of matches just doesn't contribute rounds either way.
+		const battlesWithAttackedFirst = battles.filter((battle) => battle.attackedFirst);
 		// ownAttackOutcomes is null for a battle where the fighter never landed a resolved attack
 		// of its own (see computeOwnAttackOutcomes) - excluded here rather than counted as zeroes,
 		// same reasoning as duels above.
@@ -1442,8 +1455,8 @@
 			totalAttacksAgainst: sum('attacksAgainst'),
 			totalDodges: sum('dodges'),
 			totalBlocks: sum('blocks'),
-			totalAttackedFirstCount: duels.reduce((total, battle) => total + battle.attackedFirst.count, 0),
-			totalAttackedFirstRounds: duels.reduce((total, battle) => total + battle.attackedFirst.total, 0),
+			totalAttackedFirstCount: battlesWithAttackedFirst.reduce((total, battle) => total + battle.attackedFirst.count, 0),
+			totalAttackedFirstRounds: battlesWithAttackedFirst.reduce((total, battle) => total + battle.attackedFirst.total, 0),
 			totalOwnAttempts: sumOwnAttacks('total'),
 			totalOwnLanded: sumOwnAttacks('landed'),
 			totalOwnFumbled: sumOwnAttacks('fumbled'),
