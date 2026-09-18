@@ -69,9 +69,16 @@
 		}
 	}
 
-	async function fetchPortraitUrl(avatarId) {
-		const avatar = await fetchJson(`/api/avatars/${avatarId}`);
-		return (avatar && avatar.asset && avatar.asset.url) || null;
+	// fighter.id is only unique within its own entity type - a monster/NPC opponent (fighter.
+	// is_avatar === false, unique_id "npc_{id}_{hash}" instead of "avatar_{id}") lives at
+	// /api/npcs/{id}, a completely different id space from /api/avatars/{id}, confirmed live
+	// against a real solo monster hunt (npc id 65 = "Blå drake"). Hitting the avatar endpoint for
+	// an NPC id would 404 at best and risk matching an unrelated avatar that happens to share the
+	// same small numeric id at worst.
+	async function fetchPortraitUrl(fighter) {
+		const endpoint = fighter.is_avatar ? `/api/avatars/${fighter.id}` : `/api/npcs/${fighter.id}`;
+		const profile = await fetchJson(endpoint);
+		return (profile && profile.asset && profile.asset.url) || null;
 	}
 
 	function loadImage(url) {
@@ -201,8 +208,8 @@
 		}
 	}
 
-	async function resolvePortrait(avatarId) {
-		const rawUrl = await fetchPortraitUrl(avatarId);
+	async function resolvePortrait(fighter) {
+		const rawUrl = await fetchPortraitUrl(fighter);
 		if (!rawUrl) return null;
 		if (portraitCache.has(rawUrl)) return portraitCache.get(rawUrl);
 
@@ -600,13 +607,16 @@
 		const ownId = ownAvatar ? ownAvatar.id : null;
 
 		let [leftParticipant, rightParticipant] = participants;
-		if (ownId && rightParticipant.fighter.id === ownId) {
+		// is_avatar guard matters here - an NPC's fighter.id (a monster-catalog id, e.g. 65 for
+		// "Blå drake") lives in a completely different id space than a real avatar's id, so
+		// without it a small NPC id could coincidentally match the viewer's own avatar id.
+		if (ownId && rightParticipant.fighter.is_avatar && rightParticipant.fighter.id === ownId) {
 			[leftParticipant, rightParticipant] = [rightParticipant, leftParticipant];
 		}
 
 		const [leftPictureUrl, rightPictureUrl] = await Promise.all([
-			resolvePortrait(leftParticipant.fighter.id),
-			resolvePortrait(rightParticipant.fighter.id)
+			resolvePortrait(leftParticipant.fighter),
+			resolvePortrait(rightParticipant.fighter)
 		]);
 
 		playDuel({
