@@ -2,13 +2,14 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.24.3
+// @version     1.25.0
 //
 // @match       https://lanista.se/game/*
 // @match       https://lanista.se/
 // @grant       GM_getResourceURL
 // @resource    lanistaFxWhip       https://github.com/felixosth/lanista-scripts/raw/refs/heads/main/sounds/whip.mp3
 // @resource    lanistaFxChurchBell https://github.com/felixosth/lanista-scripts/raw/refs/heads/main/sounds/church_bell.mp3
+// @require     https://github.com/felixosth/lanista-scripts/raw/refs/heads/main/fight-animation.js
 //
 // @downloadURL https://github.com/felixosth/lanista-scripts/raw/refs/heads/main/lanista_crafts.user.js
 // @updateURL   https://github.com/felixosth/lanista-scripts/raw/refs/heads/main/lanista_crafts.user.js
@@ -903,6 +904,7 @@
 		heading.className = 'mb-1 font-semibold';
 		heading.textContent = 'Totalt för striden';
 		body.appendChild(heading);
+		if (window.LanistaFightAnimation) body.appendChild(window.LanistaFightAnimation.renderSettingsToggle());
 		const colors = sideColors();
 		// The only other place a viewer can currently see who won is the small 🏆 prefix on
 		// the winning participant's own name further down this card (see buildParticipantPanel)
@@ -3303,6 +3305,14 @@
 		// one check per battle id per page view is enough, and this also prevents the
 		// mutation-observer rescan from re-fetching this same battle on every later DOM change.
 		fxCheckedBattleIds.add(battleId);
+
+		// The fight-animation modal (see fight-animation.js, @require'd above) already
+		// dramatizes who won/lost a duel with its own winner reveal - showing the ambulance/
+		// church-bell fx on top of or right after it would just be two full-screen effects
+		// competing for attention. maybeShowForBattle only actually plays (and returns true) for
+		// a real 1v1 duel with the setting on, so team battles/monster hunts and duels with the
+		// toggle off fall straight through to the outcome fx below as before.
+		if (window.LanistaFightAnimation && await window.LanistaFightAnimation.maybeShowForBattle(battleId)) return;
 
 		let outcome = null;
 		try {
