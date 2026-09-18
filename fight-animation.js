@@ -92,12 +92,19 @@
 	// Untitled-1.html's removeWhiteBackground, so a plain white-background portrait photo reads
 	// as a floating character instead of a white card sitting on the versus gradient. Throws if
 	// the canvas is CORS-tainted (see tryRemoveWhiteBackground for the fallback).
-	function removeWhiteBackground(img, { threshold = 215, colorTolerance = 40, feather = 35 } = {}) {
+	//
+	// Downscales to maxDimension first - confirmed live that a real CDN portrait can be large
+	// enough that flood-filling it at full resolution blocks the main thread for ~20s (looks like
+	// a tab crash to the user). The portrait only ever renders small inside the modal, so there's
+	// no quality reason to process it at full size - 480px on the long edge is already well above
+	// what's visible on screen.
+	function removeWhiteBackground(img, { threshold = 215, colorTolerance = 40, feather = 35, maxDimension = 480 } = {}) {
+		const scale = Math.min(1, maxDimension / Math.max(img.naturalWidth, img.naturalHeight));
 		const canvas = document.createElement('canvas');
 		const ctx = canvas.getContext('2d', { willReadFrequently: true });
-		canvas.width = img.naturalWidth;
-		canvas.height = img.naturalHeight;
-		ctx.drawImage(img, 0, 0);
+		canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+		canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+		ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
 		const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 		const data = imageData.data;
