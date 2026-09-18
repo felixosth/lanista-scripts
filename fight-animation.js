@@ -9,6 +9,34 @@
 	const STORAGE_KEY = 'lanista-fight-animation-enabled';
 	const shownBattleIds = new Set();
 
+	// Portraits are keyed by race/gender, not by individual player (confirmed live: the asset
+	// url comes straight off /api/avatars/{id} and is shared across every avatar with the same
+	// race+gender), so there's only ever a small, fixed set of distinct images in practice -
+	// worth persisting the processed (flood-filled) result across page loads rather than paying
+	// the GM_xmlhttpRequest fetch + canvas work again on every single duel.
+	const PORTRAIT_CACHE_KEY = 'lanista-fight-animation-portrait-cache';
+	const portraitCache = new Map();
+
+	function loadPortraitCache() {
+		try {
+			const stored = JSON.parse(localStorage.getItem(PORTRAIT_CACHE_KEY) || '{}');
+			Object.entries(stored).forEach(([url, dataUrl]) => portraitCache.set(url, dataUrl));
+		} catch {
+			// Corrupt or unavailable - just start with an empty cache for this page view.
+		}
+	}
+
+	function savePortraitCache() {
+		try {
+			localStorage.setItem(PORTRAIT_CACHE_KEY, JSON.stringify(Object.fromEntries(portraitCache)));
+		} catch {
+			// Storage full/unavailable (data URLs aren't tiny) - the in-memory cache still helps
+			// for the rest of this page view, it just won't carry over to the next one.
+		}
+	}
+
+	loadPortraitCache();
+
 	function isEnabled() {
 		const stored = localStorage.getItem(STORAGE_KEY);
 		return stored === null ? true : stored === 'true';
@@ -176,8 +204,14 @@
 	async function resolvePortrait(avatarId) {
 		const rawUrl = await fetchPortraitUrl(avatarId);
 		if (!rawUrl) return null;
+		if (portraitCache.has(rawUrl)) return portraitCache.get(rawUrl);
+
 		const transparent = await tryRemoveWhiteBackground(rawUrl);
-		return transparent || rawUrl;
+		if (!transparent) return rawUrl; // don't cache a failure - let the next duel retry it
+
+		portraitCache.set(rawUrl, transparent);
+		savePortraitCache();
+		return transparent;
 	}
 
 	// ---- Modal markup, styles and animation ----
