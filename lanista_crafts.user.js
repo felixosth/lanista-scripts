@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.24.2
+// @version     1.24.3
 //
 // @match       https://lanista.se/game/*
 // @match       https://lanista.se/
@@ -2535,36 +2535,40 @@
 		return (toMs - fromMs) / MS_PER_DAY;
 	}
 
-	// The bank's deposit dropdown itself lists these as fixed rates per lock length ("En dag
-	// (1.50% ränta)", "Två dagar (2.00% ränta)", "Fyra dagar (2.50% ränta)", "En vecka (3.00%
-	// ränta)", "Två veckor (3.50% ränta)", "En månad (4.00% ränta)") - confirmed live: for every
-	// deposit in a real account, amount * (1 + this rate) ^ lockDays, floored, lands exactly on
-	// the API's own amount_at_withdrawal. Solving for the rate from those two (already-rounded-
-	// to-whole-silvermynt) numbers instead - the earlier approach here - gives a close but subtly
-	// wrong value for short lock lengths (2.41%/day instead of 2.50% for a 4-day lock, say), and
-	// that error then compounds across a multi-week projection instead of staying a rounding blip.
-	const FIXED_DAILY_RATES = { 1: 0.015, 2: 0.02, 4: 0.025, 7: 0.03, 14: 0.035, 30: 0.04 };
-
-	// Confirmed live only for 1-day locks (the only ones old enough to have matured in the
-	// account this was checked against): every matured, unclaimed one kept compounding afterwards
-	// at very close to this same rate, which for a 1-day lock is identical to its own locked-in
-	// rate - so this data can't actually distinguish "matured deposits drop to a shared idle rate"
-	// from "each deposit just keeps compounding at its own original rate forever". Assumes the
-	// former (the more conservative estimate, and the more common pattern for this kind of
-	// mechanic - it gives a reason to withdraw and re-lock rather than leave money idle at its
-	// best rate permanently) until a matured 2+ day deposit is available to check.
-	const BANK_IDLE_RATE = FIXED_DAILY_RATES[1];
-
-	// The rate a deposit earns while locked. Prefers the fixed table above (exact); falls back to
-	// solving it from the deposit's own numbers only for a lock length outside the known tiers
-	// (a future game update, or some other one-off) rather than silently returning 0.
+	// The bank's deposit dropdown lists rates per lock length ("En dag (1.50% ränta)", "Fyra
+	// dagar (2.50% ränta)", ...), but those are only the *base* rates - the Köpslå profession
+	// ("bättre ränta på banken", confirmed in its own description in lanista_items_detailed.json)
+	// raises them for any gladiator who has it, and by an amount this script has no way to know
+	// in advance. So the rate can't be a fixed table; it has to be solved per deposit from that
+	// account's own numbers - amount * (1 + rate) ^ lockDays, floored, always lands exactly on
+	// the API's own amount_at_withdrawal, so reversing it recovers whatever rate actually applies,
+	// Köpslå bonus included. This does reintroduce a small rounding artifact for short lock
+	// lengths on small deposits (amount_at_withdrawal is already floored to a whole silvermynt,
+	// so solving backward from it can land a little off the true rate, e.g. 2.41%/day instead of
+	// 2.50%) - accepted, since it's still far closer than a static rate that ignores Köpslå
+	// entirely and can be wrong for every deposit on a given account.
 	function depositOwnRate(deposit) {
 		const created = Date.parse(deposit.created_at);
 		const maturity = Date.parse(deposit.earliest_withdrawal_date);
-		const lockDays = Math.round(daysBetween(created, maturity));
-		if (FIXED_DAILY_RATES[lockDays] !== undefined) return FIXED_DAILY_RATES[lockDays];
+		const lockDays = daysBetween(created, maturity);
 		if (!(lockDays > 0) || !(deposit.amount > 0)) return 0;
 		return Math.pow(deposit.amount_at_withdrawal / deposit.amount, 1 / lockDays) - 1;
+	}
+
+	// The rate matured, unclaimed deposits keep compounding at afterwards. Can't be solved the
+	// same way depositOwnRate is (a matured deposit's own amount_at_withdrawal only proves its
+	// *locked* rate, not what it earns post-maturity), and for the same Köpslå reason it can't be
+	// a fixed constant either. Approximated instead as the account's own shortest-lock deposit
+	// rate, since that's the one the account could withdraw into and immediately re-lock at - the
+	// same conservative "matured deposits drop to a shared idle rate rather than keep compounding
+	// at their original rate forever" assumption as before, just read from this account's real
+	// rates instead of a base-game one.
+	function deriveIdleRate(deposits) {
+		const shortest = deposits.reduce((best, deposit) => {
+			const lockDays = daysBetween(Date.parse(deposit.created_at), Date.parse(deposit.earliest_withdrawal_date));
+			return lockDays > 0 && (!best || lockDays < best.lockDays) ? { deposit, lockDays } : best;
+		}, null);
+		return shortest ? depositOwnRate(shortest.deposit) : 0;
 	}
 
 	// Reconstructs one deposit's value at any point in time: flat before it existed, compounding
@@ -2677,12 +2681,12 @@
 	// deposit-creation dropdown, and what produces Värde Vid Uttagsdatum from Insättning) -
 	// Tillväxt is the accumulated interest earned so far, a different question that shouldn't be
 	// conflated into one column. This always shows the rate it locked in at creation, even after
-	// maturity - a previous version switched to BANK_IDLE_RATE once matured (reasoning that's
+	// maturity - a previous version switched to the idle rate once matured (reasoning that's
 	// what it's *currently* earning), but that made the row visibly self-contradictory: a matured
 	// 4-day deposit still showing "2.50%" in Värde Vid Uttagsdatum right next to "1.50%" in Ränta
 	// (reported live - a 200/50 sm 2-day/4-day deposit each showed 1.50% post-maturity despite
-	// Värde Vid Uttagsdatum only being reachable at 2.00%/2.50%). BANK_IDLE_RATE is still used for
-	// the chart's own post-maturity growth projection, just not surfaced in this column.
+	// Värde Vid Uttagsdatum only being reachable at 2.00%/2.50%). The idle rate (deriveIdleRate)
+	// is still used for the chart's own post-maturity growth projection, just not surfaced here.
 	const BANK_COLUMNS = [
 		{ key: 'rate', label: 'Ränta' },
 		{ key: 'growth', label: 'Tillväxt' }
@@ -2852,7 +2856,7 @@
 			return;
 		}
 
-		const baseRate = BANK_IDLE_RATE;
+		const baseRate = deriveIdleRate(deposits);
 		const earliest = Math.min(...deposits.map((deposit) => Date.parse(deposit.created_at)));
 		const maxMaturity = Math.max(...deposits.map((deposit) => Date.parse(deposit.earliest_withdrawal_date)));
 		const horizon = Math.max(now + BANK_PROJECTION_DAYS * MS_PER_DAY, maxMaturity + 2 * MS_PER_DAY);
