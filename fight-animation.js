@@ -46,13 +46,44 @@
 		return (avatar && avatar.asset && avatar.asset.url) || null;
 	}
 
-	function loadImage(url, crossOrigin) {
+	function loadImage(url) {
 		return new Promise((resolve, reject) => {
 			const img = new Image();
-			if (crossOrigin) img.crossOrigin = crossOrigin;
 			img.addEventListener('load', () => resolve(img), { once: true });
 			img.addEventListener('error', () => reject(new Error(`failed to load ${url}`)), { once: true });
 			img.src = url;
+		});
+	}
+
+	// Reading pixels off a <canvas> requires the source image to have loaded with CORS
+	// (Access-Control-Allow-Origin) - confirmed live that the portrait CDN doesn't send that
+	// header, so a same-origin-page fetch()/crossOrigin='anonymous' <img> can never read it.
+	// GM_xmlhttpRequest sidesteps this entirely: it's a privileged extension-level request, not
+	// a page-context one, so it isn't subject to the page's CORS restrictions at all. Fetches the
+	// portrait as a blob and hands back a data: URL, which - being same-origin by definition - a
+	// canvas can always read regardless of what the CDN sends.
+	function gmFetchAsDataUrl(url) {
+		return new Promise((resolve, reject) => {
+			if (typeof GM_xmlhttpRequest !== 'function') {
+				reject(new Error('GM_xmlhttpRequest is not granted'));
+				return;
+			}
+			GM_xmlhttpRequest({
+				method: 'GET',
+				url,
+				responseType: 'blob',
+				onload(response) {
+					if (response.status < 200 || response.status >= 300) {
+						reject(new Error(`GM_xmlhttpRequest ${response.status} for ${url}`));
+						return;
+					}
+					const reader = new FileReader();
+					reader.onload = () => resolve(reader.result);
+					reader.onerror = () => reject(reader.error || new Error('FileReader failed'));
+					reader.readAsDataURL(response.response);
+				},
+				onerror: () => reject(new Error(`GM_xmlhttpRequest network error for ${url}`))
+			});
 		});
 	}
 
@@ -123,14 +154,12 @@
 		return canvas.toDataURL('image/png');
 	}
 
-	// Best-effort: reading pixels off a canvas requires the image to have loaded with CORS
-	// (Access-Control-Allow-Origin) - the CDN serving portraits may or may not send that header.
-	// Loads a separate crossOrigin='anonymous' probe rather than setting crossOrigin on the
-	// portrait <img> itself, so a CDN that rejects CORS just leaves the original (opaque) image
-	// showing instead of failing to load at all.
+	// Best-effort: if GM_xmlhttpRequest isn't granted, or the fetch/read fails for any reason,
+	// just fall back to the original (opaque-background) image instead of breaking the modal.
 	async function tryRemoveWhiteBackground(url) {
 		try {
-			const probe = await loadImage(url, 'anonymous');
+			const dataUrl = await gmFetchAsDataUrl(url);
+			const probe = await loadImage(dataUrl);
 			return removeWhiteBackground(probe);
 		} catch {
 			return null;
