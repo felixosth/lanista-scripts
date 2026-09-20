@@ -39,6 +39,7 @@
             background: #f5f3f0;
             color: #333;
             line-height: 1.6;
+            overflow-x: hidden;
         }
 
         .container {
@@ -374,8 +375,13 @@
             background: #ccc;
         }
 
+        #tableContainer {
+            overflow-x: auto;
+        }
+
         .items-table {
             width: 100%;
+            min-width: 600px;
             border-collapse: collapse;
             background: white;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -1446,6 +1452,14 @@
 
             .filters {
                 grid-template-columns: 1fr;
+            }
+
+            .stat-filter-row {
+                flex-wrap: wrap;
+            }
+
+            .stat-filter-row .stat-filter-label {
+                flex: 1 1 100%;
             }
 
             .header-inner {
