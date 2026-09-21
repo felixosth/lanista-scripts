@@ -39,6 +39,7 @@
             background: #f5f3f0;
             color: #333;
             line-height: 1.6;
+            overflow-x: hidden;
         }
 
         .container {
@@ -93,6 +94,7 @@
             margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             display: grid;
+            grid-template-columns: minmax(0, 1fr);
             gap: 15px;
         }
 
@@ -374,8 +376,13 @@
             background: #ccc;
         }
 
+        #tableContainer {
+            overflow-x: auto;
+        }
+
         .items-table {
             width: 100%;
+            min-width: 600px;
             border-collapse: collapse;
             background: white;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -1448,6 +1455,14 @@
                 grid-template-columns: 1fr;
             }
 
+            .stat-filter-row {
+                flex-wrap: wrap;
+            }
+
+            .stat-filter-row .stat-filter-label {
+                flex: 1 1 100%;
+            }
+
             .header-inner {
                 flex-direction: column;
                 text-align: center;
@@ -1575,7 +1590,7 @@
         .filter-rail .reset-button { color: #c5b9a5; border-color: var(--line-dark); }
         .filter-rail .reset-button:hover { color: #fff0d5; border-color: rgba(213,182,117,.5); background: rgba(213,182,117,.06); }
         .filters { display: grid; grid-template-columns: 1fr 1fr; gap: 17px 12px; }
-        .filter-group:first-child, .filter-group:nth-child(2), .filter-group:last-child { grid-column: 1 / -1; }
+        .filter-group:first-child, .filter-group:nth-child(2), .filter-group:nth-child(3), .filter-group:last-child { grid-column: 1 / -1; }
         .filter-group label, .stat-filters > label {
             display: block; margin: 0 0 7px; color: #554d41; font-size: .69rem; font-weight: 700;
             text-transform: uppercase; letter-spacing: .11em;
@@ -1685,7 +1700,7 @@
             .filter-rail:not(.is-open) .controls { display: none; }
             .filter-rail.is-open .controls { margin-top: 18px; }
             .filters { grid-template-columns: repeat(3, minmax(0,1fr)); }
-            .filter-group:first-child, .filter-group:nth-child(2), .filter-group:last-child { grid-column: auto; }
+            .filter-group:first-child, .filter-group:nth-child(2), .filter-group:nth-child(3), .filter-group:last-child { grid-column: auto; }
             .stat-filters { margin-top: 16px; }
             .results-toolbar { grid-template-columns: 1fr auto; }
             .count-info { grid-column: 1 / -1; grid-row: 2; }
@@ -1703,7 +1718,7 @@
             .app-container { padding-top: 16px; }
             .filter-rail { padding: 15px; }
             .filters { grid-template-columns: 1fr 1fr; }
-            .filter-group:first-child, .filter-group:nth-child(2), .filter-group:last-child { grid-column: 1 / -1; }
+            .filter-group:first-child, .filter-group:nth-child(2), .filter-group:nth-child(3), .filter-group:last-child { grid-column: 1 / -1; }
             .results-toolbar { gap: 9px; }
             .search-bar input { min-height: 48px; font-size: .88rem; }
             .view-toggle button { width: 44px; height: 44px; }
@@ -1778,6 +1793,13 @@
                                 <label for="subtypeFilter">Undertyp</label>
                                 <select id="subtypeFilter" disabled>
                                     <option value="">Alla undertyper</option>
+                                </select>
+                            </div>
+
+                            <div class="filter-group">
+                                <label for="raceFilter">Ras</label>
+                                <select id="raceFilter">
+                                    <option value="">Alla raser</option>
                                 </select>
                             </div>
 
@@ -2099,11 +2121,28 @@
             .then(data => {
                 raceData = data;
                 data.races.forEach(race => { racesById[race.id] = race; });
+                populateRaceFilterOptions();
                 maybeApplyPendingBuildImport();
             })
             .catch(error => {
                 console.error('Fel vid inläsning av rasdata:', error);
             });
+
+        // The race filter's options depend on lanista_races.json, which loads in parallel
+        // with (and isn't guaranteed to resolve before) the items fetch that first restores
+        // filter state from the URL - so a ?race= param may arrive before there's an option
+        // to select. Once race data lands, fill the dropdown and, if the URL asked for a
+        // race the initial restore couldn't set yet, apply it now.
+        function populateRaceFilterOptions() {
+            const select = document.getElementById('raceFilter');
+            const wanted = new URLSearchParams(window.location.search).get('race') || '';
+            select.innerHTML = '<option value="">Alla raser</option>' +
+                raceData.races.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+            if (wanted && racesById[wanted]) {
+                select.value = wanted;
+                applyFilters();
+            }
+        }
 
         function getItemType(item) {
             if (item.is_weapon) return 'weapon';
@@ -2245,10 +2284,23 @@
             select.disabled = subtypes.length === 0;
         }
 
+        // Extracts the race names (lowercase, matching race.name.toLowerCase()) an item is
+        // restricted to, from the same requirement_text markup checkRequirements() parses.
+        // An empty result means the item carries no race requirement - equippable by anyone.
+        function getItemAllowedRaceNames(item) {
+            const races = [];
+            (item.requirements || []).forEach(req => {
+                const match = (req.requirement_text || '').match(/rasen\s*<strong>([^<]+)<\/strong>/i);
+                if (match) races.push(match[1].trim().toLowerCase());
+            });
+            return races;
+        }
+
         function applyFilters() {
             const searchText = document.getElementById('searchInput').value.toLowerCase();
             const typeFilter = document.getElementById('typeFilter').value;
             const subtypeFilter = document.getElementById('subtypeFilter').value;
+            const raceFilter = document.getElementById('raceFilter').value;
             const minLevel = parseInt(document.getElementById('minLevelFilter').value) || 0;
             const maxLevel = parseInt(document.getElementById('maxLevelFilter').value) || 999;
             const craftableOnly = document.getElementById('craftableFilter').checked;
@@ -2278,6 +2330,14 @@
                 // Subtype (only meaningful once a Typ is chosen - see updateSubtypeOptions)
                 if (subtypeFilter && item.type_name !== subtypeFilter) {
                     return false;
+                }
+
+                // Race - items with no race requirement are equippable by every race
+                if (raceFilter && racesById[raceFilter]) {
+                    const allowedRaces = getItemAllowedRaceNames(item);
+                    if (allowedRaces.length > 0 && !allowedRaces.includes(racesById[raceFilter].name.toLowerCase())) {
+                        return false;
+                    }
                 }
 
                 // Level
@@ -2372,6 +2432,7 @@
             const search = document.getElementById('searchInput').value;
             const type = document.getElementById('typeFilter').value;
             const subtype = document.getElementById('subtypeFilter').value;
+            const race = document.getElementById('raceFilter').value;
             const minLevel = document.getElementById('minLevelFilter').value;
             const maxLevel = document.getElementById('maxLevelFilter').value;
             const craftable = document.getElementById('craftableFilter').checked;
@@ -2380,6 +2441,7 @@
             if (search) params.set('q', search);
             if (type) params.set('type', type);
             if (subtype) params.set('subtype', subtype);
+            if (race) params.set('race', race);
             if (minLevel) params.set('min', minLevel);
             if (maxLevel) params.set('max', maxLevel);
             if (craftable) params.set('craftable', '1');
@@ -2409,6 +2471,7 @@
             document.getElementById('typeFilter').value = params.get('type') || '';
             updateSubtypeOptions();
             document.getElementById('subtypeFilter').value = params.get('subtype') || '';
+            document.getElementById('raceFilter').value = params.get('race') || '';
             document.getElementById('minLevelFilter').value = params.get('min') || '';
             document.getElementById('maxLevelFilter').value = params.get('max') || '';
             document.getElementById('craftableFilter').checked = params.get('craftable') === '1';
@@ -3184,6 +3247,7 @@
             document.getElementById('searchInput').value = '';
             document.getElementById('typeFilter').value = '';
             updateSubtypeOptions();
+            document.getElementById('raceFilter').value = '';
             document.getElementById('minLevelFilter').value = '';
             document.getElementById('maxLevelFilter').value = '';
             document.getElementById('craftableFilter').checked = false;
@@ -4000,6 +4064,7 @@
         document.getElementById('searchInput').addEventListener('input', applyFilters);
         document.getElementById('typeFilter').addEventListener('change', () => { updateSubtypeOptions(); applyFilters(); });
         document.getElementById('subtypeFilter').addEventListener('change', applyFilters);
+        document.getElementById('raceFilter').addEventListener('change', applyFilters);
         document.getElementById('minLevelFilter').addEventListener('change', applyFilters);
         document.getElementById('maxLevelFilter').addEventListener('change', applyFilters);
         document.getElementById('craftableFilter').addEventListener('change', applyFilters);
