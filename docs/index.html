@@ -14,7 +14,7 @@
     <title>Lanista Item Browser</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --ink: #2c2416;
@@ -1474,133 +1474,422 @@
             }
         }
     </style>
+    <style>
+        /* 2026 armory archive redesign */
+        :root {
+            --ink: #171714;
+            --ink-soft: #5f5b53;
+            --paper: #f4f1ea;
+            --paper-bright: #fbfaf7;
+            --paper-deep: #e9e3d7;
+            --iron: #171918;
+            --iron-raised: #202321;
+            --line: rgba(60, 53, 42, 0.16);
+            --line-dark: rgba(232, 218, 187, 0.18);
+            --brass: #a88448;
+            --brass-bright: #d5b675;
+            --oxblood: #713023;
+            --oxblood-bright: #963f2c;
+            --laurel: #536c50;
+            --display-font: 'Cinzel', Georgia, serif;
+            --ui-font: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --shadow-sm: 0 1px 2px rgba(31, 26, 18, .08), 0 7px 22px rgba(31, 26, 18, .05);
+            --shadow-lg: 0 20px 70px rgba(22, 18, 12, .16);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--ui-font);
+            background:
+                radial-gradient(circle at 70% 0%, rgba(168, 132, 72, .07), transparent 28rem),
+                var(--paper);
+            color: var(--ink);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            opacity: .16;
+            z-index: 100;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.08'/%3E%3C/svg%3E");
+            mix-blend-mode: multiply;
+        }
+
+        .container { max-width: 1660px; padding: 0 28px; }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 80;
+            margin: 0;
+            padding: 0;
+            color: #f4ead5;
+            background: rgba(20, 22, 21, .96);
+            border-bottom: 1px solid rgba(213, 182, 117, .46);
+            box-shadow: 0 10px 30px rgba(0,0,0,.16);
+            backdrop-filter: blur(16px);
+        }
+
+        .header-inner { min-height: 76px; }
+
+        .brand-lockup { display: flex; align-items: center; gap: 22px; }
+        .brand-mark {
+            width: 42px; height: 42px; display: grid; place-items: center;
+            border: 1px solid rgba(213,182,117,.48); transform: rotate(45deg);
+            color: var(--brass-bright); position: relative;
+        }
+        .brand-mark::after { content: ''; position: absolute; inset: 5px; border: 1px solid rgba(213,182,117,.18); }
+        .brand-mark span { transform: rotate(-45deg); font-family: var(--display-font); font-size: 13px; }
+        .brand-copy { display: flex; align-items: baseline; gap: 20px; }
+        .brand-copy h1 { font-family: var(--display-font); font-size: 1.55rem; letter-spacing: .16em; color: #e4cb98; margin: 0; }
+        .brand-copy p { position: relative; color: #cbc4b6; font-family: Georgia, serif; font-size: .96rem; letter-spacing: .03em; margin: 0; }
+        .brand-copy p::before { content: ''; position: absolute; left: -11px; top: -3px; bottom: -3px; width: 1px; background: rgba(213,182,117,.42); }
+
+        button { font-family: var(--ui-font); font-weight: 600; letter-spacing: .01em; }
+        .build-sim-button {
+            display: inline-flex; align-items: center; gap: 10px;
+            padding: 11px 17px; border: 1px solid #a65c48; border-radius: 2px;
+            background: linear-gradient(180deg, #873c2e, #65281f); color: #fff4e4;
+            box-shadow: inset 0 0 0 2px rgba(255,255,255,.05), 0 6px 20px rgba(82,22,14,.24);
+        }
+        .build-sim-button:hover { background: linear-gradient(180deg, #9b4736, #753024); transform: translateY(-1px); }
+        .build-sim-button svg { width: 18px; height: 18px; }
+
+        .app-container { padding-top: 26px; padding-bottom: 70px; }
+        .browser-shell { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 30px; align-items: start; }
+        .filter-rail {
+            position: sticky; top: 102px; padding: 23px 22px 27px;
+            border: 1px solid rgba(213,182,117,.17); border-radius: 2px;
+            background: linear-gradient(145deg, #1d201e, #151716);
+            box-shadow: 0 14px 38px rgba(26,22,16,.14);
+            max-height: calc(100vh - 120px); overflow-y: auto; scrollbar-width: thin;
+        }
+        .filter-rail-head { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+        .filter-heading {
+            display: flex; align-items: center; gap: 12px; margin: 0 0 22px;
+            color: #ddc89c; font-family: var(--display-font); font-size: .82rem; letter-spacing: .2em;
+        }
+        .filter-rail-head .filter-heading { flex: 1; margin: 0; }
+        .filter-heading::after { content: ''; height: 1px; flex: 1; background: linear-gradient(90deg, var(--brass), transparent); }
+        .mobile-filter-toggle { display: none; padding: 7px 10px; color: var(--oxblood); background: transparent; border: 1px solid rgba(113,48,35,.28); border-radius: 2px; font-size: .7rem; }
+
+        .controls { display: block; padding: 0; margin: 0; background: transparent; border-radius: 0; box-shadow: none; }
+        .filter-rail .filter-group label, .filter-rail .stat-filters > label { color: #c7bdad; }
+        .filter-rail input[type='text'], .filter-rail input[type='number'], .filter-rail select {
+            border-color: rgba(226,211,180,.25); background: rgba(255,255,255,.035); color: #eee6d6; box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+        }
+        .filter-rail input::placeholder { color: #8f8a81; }
+        .filter-rail select option { color: #181a19; background: #f7f4ed; }
+        .filter-rail .filter-group.checkbox-group, .filter-rail .stat-filters { border-color: var(--line-dark); }
+        .filter-rail .stat-filter-add { color: #d8c69f !important; border-color: rgba(213,182,117,.34); }
+        .filter-rail .reset-button { color: #c5b9a5; border-color: var(--line-dark); }
+        .filter-rail .reset-button:hover { color: #fff0d5; border-color: rgba(213,182,117,.5); background: rgba(213,182,117,.06); }
+        .filters { display: grid; grid-template-columns: 1fr 1fr; gap: 17px 12px; }
+        .filter-group:first-child, .filter-group:nth-child(2), .filter-group:nth-child(3), .filter-group:last-child { grid-column: 1 / -1; }
+        .filter-group label, .stat-filters > label {
+            display: block; margin: 0 0 7px; color: #554d41; font-size: .69rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .11em;
+        }
+        .filter-group.checkbox-group { grid-column: 1 / -1; align-items: center; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+        .filter-group.checkbox-group label { padding: 11px 0; margin: 0; font-size: .72rem; cursor: pointer; }
+        .filter-group.checkbox-group input { accent-color: var(--oxblood); }
+        input[type='text'], input[type='number'], select {
+            width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid rgba(57,49,38,.22);
+            border-radius: 2px; background: rgba(255,255,255,.58); color: var(--ink); font: 500 .82rem/1.2 var(--ui-font);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.56); transition: border-color .2s, box-shadow .2s, background .2s;
+        }
+        input[type='text']:focus, input[type='number']:focus, select:focus {
+            border-color: var(--brass); background: #fff; box-shadow: 0 0 0 3px rgba(168,132,72,.12); outline: none;
+        }
+        select:disabled { opacity: .48; }
+        .stat-filters { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--line); }
+        .stat-filter-row { display: grid; grid-template-columns: 1fr 64px 64px 38px; gap: 7px; margin-bottom: 8px; }
+        .stat-filter-row input { min-width: 0; padding-inline: 9px; }
+        .stat-filter-row .stat-filter-remove { padding: 0; min-width: 38px; color: #615b52; background: transparent; border: 1px solid var(--line); }
+        .stat-filter-add { width: 100%; margin-top: 4px; padding: 10px; color: #5f5139 !important; background: transparent !important; border: 1px dashed rgba(133,101,51,.45); }
+        .reset-button { width: 100%; margin-top: 20px; padding: 11px 12px; color: #5d554a; background: transparent; border: 1px solid var(--line); border-radius: 2px; }
+        .reset-button:hover { color: var(--oxblood); border-color: rgba(113,48,35,.45); background: rgba(113,48,35,.04); }
+
+        .results-panel { min-width: 0; }
+        .results-toolbar { display: grid; grid-template-columns: minmax(280px,1fr) auto auto; gap: 14px; align-items: center; margin-bottom: 21px; }
+        .search-bar { position: relative; display: block; }
+        .search-bar svg { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; color: #766e62; pointer-events: none; }
+        .search-bar input { min-height: 51px; padding-left: 49px; padding-right: 16px; font-family: Georgia, serif; font-size: 1rem; background: rgba(255,255,255,.75); box-shadow: var(--shadow-sm); }
+        .view-toggle { display: flex; gap: 0; margin: 0; border: 1px solid rgba(57,49,38,.22); border-radius: 2px; overflow: hidden; }
+        .view-toggle button { flex: none; width: 48px; height: 48px; padding: 0; display: grid; place-items: center; border-radius: 0; background: rgba(255,255,255,.54) !important; color: #726a5e !important; }
+        .view-toggle button + button { border-left: 1px solid rgba(57,49,38,.17); }
+        .view-toggle button.active { background: var(--oxblood) !important; color: white !important; }
+        .view-toggle svg { width: 19px; height: 19px; }
+        .count-info { margin: 0; color: var(--ink); font-family: Georgia, serif; font-size: .96rem; white-space: nowrap; }
+
+        .comparison-bar { position: sticky; top: 89px; z-index: 50; padding: 14px 16px; margin: 0 0 20px; border: 1px solid rgba(168,132,72,.34); border-radius: 2px; background: rgba(244,241,234,.96); box-shadow: var(--shadow-lg); backdrop-filter: blur(14px); }
+        .comparison-bar > div:first-child { display: flex; align-items: center; gap: 12px; }
+        .selected-items { gap: 7px; }
+        .item-chip { border: 1px solid var(--line); border-radius: 2px; box-shadow: none; background: white; }
+        .comparison-actions button { border-radius: 2px; background: var(--oxblood); }
+
+        .items-grid { grid-template-columns: repeat(4, minmax(0,1fr)); gap: 15px; margin: 0; }
+        .item-card {
+            position: relative; border: 1px solid rgba(63,54,41,.13); border-radius: 2px; overflow: hidden;
+            background: rgba(250,249,245,.84); box-shadow: var(--shadow-sm); transition: transform .24s ease, box-shadow .24s ease, border-color .24s ease;
+        }
+        .item-card::after { content: ''; position: absolute; inset: 0; border: 1px solid rgba(255,255,255,.65); pointer-events: none; }
+        .item-card:hover { transform: translateY(-5px); border-color: rgba(168,132,72,.52); box-shadow: 0 17px 40px rgba(37,28,14,.12); }
+        .item-card.selected { border: 2px solid var(--oxblood); box-shadow: 0 0 0 3px rgba(113,48,35,.1), var(--shadow-sm); }
+        .item-image { height: auto; aspect-ratio: 1.36; margin: 8px 8px 0; width: auto; background: #202321; border-radius: 1px; }
+        .item-image::before { content: ''; position: absolute; inset: 8px 8px auto; aspect-ratio: 1.36; background: radial-gradient(circle at 50% 38%, rgba(208,183,132,.12), transparent 58%); pointer-events: none; }
+        .item-image img { width: 100%; height: 100%; object-fit: cover; transition: transform .45s ease; }
+        .item-image--empty { background: linear-gradient(145deg, #222522, #141615); }
+        .item-image__placeholder { color: rgba(213,182,117,.42); font: 700 2rem/1 var(--display-font); letter-spacing: .12em; }
+        .item-card:hover .item-image img { transform: scale(1.035); }
+        .item-info { padding: 13px 13px 12px; }
+        .item-name { margin: 0 0 4px; font-family: Georgia, 'Times New Roman', serif; font-size: 1.08rem; font-weight: 700; line-height: 1.2; color: var(--ink); }
+        .item-type { margin: 0 0 9px; color: #6e675d; font-size: .72rem; font-weight: 600; letter-spacing: .035em; }
+        .item-stats { display: flex; flex-wrap: wrap; gap: 6px 14px; min-height: 22px; margin: auto 0 11px; color: #4c463c; font-size: .72rem; }
+        .item-stat-row { justify-content: flex-start; gap: 5px; padding: 0; border: 0; }
+        .item-stat-row span:first-child { color: #81786b; }
+        .compare-btn { position: relative; z-index: 2; padding: 9px 10px; border: 1px solid rgba(58,50,39,.17); border-radius: 2px; background: transparent; color: #4f493f; font-size: .73rem; }
+        .compare-btn:hover { border-color: var(--brass); color: var(--oxblood); background: rgba(168,132,72,.07); }
+
+        .pagination { padding: 30px 0 0; gap: 5px; }
+        .pagination button { min-width: 38px; height: 38px; padding: 0 10px; border-radius: 2px; border: 1px solid transparent; color: #625c52; background: transparent; }
+        .pagination button:hover { background: rgba(168,132,72,.08); border-color: rgba(168,132,72,.3); }
+        .pagination button.active { background: var(--oxblood); color: white; border-color: var(--oxblood); }
+
+        .items-table { border: 1px solid var(--line); border-radius: 2px; box-shadow: var(--shadow-sm); background: rgba(255,255,255,.72); }
+        .items-table thead { background: var(--iron); }
+        .items-table th { padding: 14px 16px; font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; }
+        .items-table td { padding: 12px 16px; border-color: var(--line); font-size: .82rem; }
+        .item-row-image { background: #202321; border-radius: 1px; }
+
+        .back-button { margin: 3px 0 20px; padding: 9px 0; color: #5d5548; background: transparent; }
+        .back-button:hover { color: var(--oxblood); background: transparent; }
+        .detail-view, .comparison-table, .build-panel, .build-toolbar, .build-compare-bar {
+            border: 1px solid var(--line); border-radius: 2px; background: rgba(251,250,247,.78); box-shadow: var(--shadow-sm);
+        }
+        .build-toolbar button, .build-compare-bar button { border-radius: 2px; background: var(--oxblood); color: white; }
+        .build-toolbar button:hover, .build-compare-bar button:hover { background: var(--oxblood-bright); }
+        .detail-view { padding: 30px; }
+        .detail-image { border-radius: 2px; background: var(--iron); }
+        .detail-title h1, .comparison-table h2, .build-panel h3 { font-family: var(--display-font); }
+        .stat-item, .requirement-list li, .race-ability-card, .build-slot { border-radius: 2px; }
+        .modal { background: rgba(12,13,12,.72); backdrop-filter: blur(8px); }
+        .modal-content { border: 1px solid rgba(213,182,117,.28); border-radius: 2px; box-shadow: 0 30px 100px rgba(0,0,0,.35); }
+        .modal-close { background: var(--iron); color: #f4ead5; }
+
+        @media (max-width: 1220px) {
+            .items-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+            .browser-shell { grid-template-columns: 235px minmax(0,1fr); gap: 23px; }
+        }
+        @media (max-width: 920px) {
+            .container { padding-left: 18px; padding-right: 18px; }
+            .browser-shell { display: block; }
+            .filter-rail { position: relative; top: auto; max-height: none; padding: 18px; margin-bottom: 20px; border: 1px solid var(--line); background: rgba(255,255,255,.55); }
+            .filter-rail .filter-heading { color: var(--ink); }
+            .filter-rail .filter-group label, .filter-rail .stat-filters > label { color: #554d41; }
+            .filter-rail input[type='text'], .filter-rail input[type='number'], .filter-rail select { border-color: rgba(57,49,38,.22); background: rgba(255,255,255,.58); color: var(--ink); }
+            .filter-rail .stat-filter-add { color: #5f5139 !important; border-color: rgba(133,101,51,.45); }
+            .filter-rail .reset-button { color: #5d554a; border-color: var(--line); }
+            .filter-rail-head { margin-bottom: 0; }
+            .mobile-filter-toggle { display: inline-flex; align-items: center; }
+            .filter-rail:not(.is-open) .controls { display: none; }
+            .filter-rail.is-open .controls { margin-top: 18px; }
+            .filters { grid-template-columns: repeat(3, minmax(0,1fr)); }
+            .filter-group:first-child, .filter-group:nth-child(2), .filter-group:nth-child(3), .filter-group:last-child { grid-column: auto; }
+            .stat-filters { margin-top: 16px; }
+            .results-toolbar { grid-template-columns: 1fr auto; }
+            .count-info { grid-column: 1 / -1; grid-row: 2; }
+            .items-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+            .brand-mark { display: none; }
+        }
+        @media (max-width: 700px) {
+            .header-inner { min-height: 66px; }
+            .brand-copy { display: block; }
+            .brand-copy h1 { font-size: 1.1rem; }
+            .brand-copy p { font-size: .72rem; margin-top: 2px; }
+            .brand-copy p::before { display: none; }
+            .build-sim-button { padding: 10px 12px; font-size: .75rem; }
+            .build-sim-button svg { display: none; }
+            .app-container { padding-top: 16px; }
+            .filter-rail { padding: 15px; }
+            .filters { grid-template-columns: 1fr 1fr; }
+            .filter-group:first-child, .filter-group:nth-child(2), .filter-group:nth-child(3), .filter-group:last-child { grid-column: 1 / -1; }
+            .results-toolbar { gap: 9px; }
+            .search-bar input { min-height: 48px; font-size: .88rem; }
+            .view-toggle button { width: 44px; height: 44px; }
+            .items-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+            .item-image { margin: 6px 6px 0; aspect-ratio: 1.1; }
+            .item-image::before { inset: 6px 6px auto; aspect-ratio: 1.1; }
+            .item-info { padding: 11px 10px 10px; }
+            .item-name { font-size: .94rem; }
+            .comparison-bar { top: 76px; align-items: stretch; }
+            .comparison-actions { flex-wrap: wrap; }
+            .detail-view { padding: 18px; }
+            .detail-header { grid-template-columns: 1fr; }
+            .detail-aside { position: static; }
+        }
+        @media (max-width: 430px) {
+            .container { padding-left: 12px; padding-right: 12px; }
+            .items-grid { grid-template-columns: 1fr; }
+            .item-image { aspect-ratio: 1.45; }
+            .item-image::before { aspect-ratio: 1.45; }
+            .results-toolbar { grid-template-columns: 1fr; }
+            .view-toggle { position: absolute; right: 12px; margin-top: 58px; }
+            .count-info { grid-column: 1; grid-row: auto; padding-right: 105px; min-height: 45px; display: flex; align-items: center; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+        }
+    </style>
 </head>
 <body>
     <header>
         <div class="container header-inner">
-            <div>
-                <h1>Lanista grejer</h1>
-                <p>Sök, jämför och utforska</p>
+            <div class="brand-lockup">
+                <div class="brand-mark" aria-hidden="true"><span>L</span></div>
+                <div class="brand-copy">
+                    <h1>Lanista</h1>
+                    <p>Föremålsarkiv</p>
+                </div>
             </div>
-            <button id="buildSimBtn" class="secondary" onclick="openBuildView()">Bygg-simulator</button>
+            <button id="buildSimBtn" class="build-sim-button" onclick="openBuildView()">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3 17 4l3 3-2.3 2.3M5 19l6.2-6.2M8.5 4.5l11 11M4 8l4-4M16 20l4-4"/></svg>
+                Bygg-simulator
+            </button>
         </div>
     </header>
 
-    <div class="container">
+    <div class="container app-container">
         <div id="listView" class="view">
-            <!-- Search and filters -->
-            <div class="controls">
-                <div class="search-bar">
-                    <input type="text" id="searchInput" placeholder="Sök föremål (namn)...">
-                    <button onclick="resetFilters()">Återställ</button>
-                </div>
+            <div class="browser-shell">
+                <aside class="filter-rail" aria-label="Filter">
+                    <div class="filter-rail-head">
+                        <h2 class="filter-heading">Filter</h2>
+                        <button type="button" class="mobile-filter-toggle" aria-expanded="false" onclick="toggleFilterRail(this)">Visa filter</button>
+                    </div>
+                    <div class="controls">
+                        <div class="filters">
+                            <div class="filter-group">
+                                <label for="typeFilter">Typ</label>
+                                <select id="typeFilter">
+                                    <option value="">Alla typer</option>
+                                    <option value="weapon">Vapen</option>
+                                    <option value="armor">Rustning</option>
+                                    <option value="shield">Sköld</option>
+                                    <option value="trinket">Föremål</option>
+                                    <option value="consumable">Förbrukningsvara</option>
+                                    <option value="enchantment">Förtrollning</option>
+                                    <option value="material">Material</option>
+                                </select>
+                            </div>
 
-                <div class="filters">
-                    <div class="filter-group">
-                        <label>Typ</label>
-                        <select id="typeFilter">
-                            <option value="">Alla typer</option>
-                            <option value="weapon">Vapen</option>
-                            <option value="armor">Rustning</option>
-                            <option value="shield">Sköld</option>
-                            <option value="trinket">Föremål</option>
-                            <option value="consumable">Förbrukningsvara</option>
-                            <option value="enchantment">Förtrollning</option>
-                            <option value="material">Material</option>
-                        </select>
+                            <div class="filter-group">
+                                <label for="subtypeFilter">Undertyp</label>
+                                <select id="subtypeFilter" disabled>
+                                    <option value="">Alla undertyper</option>
+                                </select>
+                            </div>
+
+                            <div class="filter-group">
+                                <label for="raceFilter">Ras</label>
+                                <select id="raceFilter">
+                                    <option value="">Alla raser</option>
+                                </select>
+                            </div>
+
+                            <div class="filter-group">
+                                <label for="minLevelFilter">Min nivå</label>
+                                <input type="number" id="minLevelFilter" min="0" max="50" placeholder="0">
+                            </div>
+
+                            <div class="filter-group">
+                                <label for="maxLevelFilter">Max nivå</label>
+                                <input type="number" id="maxLevelFilter" min="0" max="50" placeholder="50">
+                            </div>
+
+                            <div class="filter-group checkbox-group">
+                                <label>
+                                    <input type="checkbox" id="craftableFilter">
+                                    Kan tillverkas
+                                </label>
+                            </div>
+
+                            <div class="filter-group">
+                                <label for="sortFilter">Sortering</label>
+                                <select id="sortFilter">
+                                    <option value="name">Namn (A-Z)</option>
+                                    <option value="level">Nivå (låg-hög)</option>
+                                    <option value="level-desc">Nivå (hög-låg)</option>
+                                    <option value="sell_value">Försäljningsvärde</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="stat-filters">
+                            <label>Statfilter</label>
+                            <div id="statFilterRows"></div>
+                            <button type="button" class="secondary stat-filter-add" onclick="addStatFilterRow()">+ Lägg till statfilter</button>
+                            <datalist id="statLabelOptions"></datalist>
+                        </div>
+                        <button type="button" class="reset-button" onclick="resetFilters()">Återställ alla filter</button>
+                    </div>
+                </aside>
+
+                <main class="results-panel">
+                    <div class="results-toolbar">
+                        <div class="search-bar">
+                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+                            <input type="text" id="searchInput" aria-label="Sök föremål" placeholder="Sök bland 1 740 föremål...">
+                        </div>
+                        <div class="view-toggle" aria-label="Visningsläge">
+                            <button class="active" data-mode="grid" onclick="switchView('grid')" aria-label="Rutnät" title="Rutnät">
+                                <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>
+                            </button>
+                            <button data-mode="table" onclick="switchView('table')" aria-label="Tabell" title="Tabell">
+                                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 6h13M7 12h13M7 18h13"/><circle cx="4" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1" fill="currentColor" stroke="none"/></svg>
+                            </button>
+                        </div>
+                        <div id="countInfo" class="count-info"></div>
                     </div>
 
-                    <div class="filter-group">
-                        <label>Undertyp</label>
-                        <select id="subtypeFilter" disabled>
-                            <option value="">Alla undertyper</option>
-                        </select>
+                    <div id="comparisonBar" style="display: none;" class="comparison-bar">
+                        <div>
+                            <strong>Valda föremål:</strong>
+                            <div class="selected-items" id="selectedItemsDisplay"></div>
+                        </div>
+                        <div class="comparison-actions">
+                            <button onclick="showComparison()">Jämför</button>
+                            <button onclick="showCraftPlan()">Tillverkningsplan</button>
+                            <button class="secondary" onclick="clearSelection()">Rensa val</button>
+                        </div>
                     </div>
 
-                    <div class="filter-group">
-                        <label>Ras</label>
-                        <select id="raceFilter">
-                            <option value="">Alla raser</option>
-                        </select>
+                    <div id="gridContainer" class="items-grid"></div>
+
+                    <div id="tableContainer" style="display: none;">
+                        <table class="items-table">
+                            <thead>
+                                <tr>
+                                    <th>Namn</th>
+                                    <th>Typ</th>
+                                    <th>Nivå</th>
+                                    <th>Försäljningsvärde</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody"></tbody>
+                        </table>
                     </div>
 
-                    <div class="filter-group">
-                        <label>Min nivå</label>
-                        <input type="number" id="minLevelFilter" min="0" max="50" placeholder="0">
-                    </div>
-
-                    <div class="filter-group">
-                        <label>Max nivå</label>
-                        <input type="number" id="maxLevelFilter" min="0" max="50" placeholder="50">
-                    </div>
-
-                    <div class="filter-group checkbox-group">
-                        <label>
-                            <input type="checkbox" id="craftableFilter">
-                            Kan tillverkas
-                        </label>
-                    </div>
-
-                    <div class="filter-group">
-                        <label>Sortering</label>
-                        <select id="sortFilter">
-                            <option value="name">Namn (A-Z)</option>
-                            <option value="level">Nivå (låg-hög)</option>
-                            <option value="level-desc">Nivå (hög-låg)</option>
-                            <option value="sell_value">Försäljningsvärde</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="stat-filters">
-                    <label>Statfilter</label>
-                    <div id="statFilterRows"></div>
-                    <button type="button" class="secondary stat-filter-add" onclick="addStatFilterRow()">+ Lägg till statfilter</button>
-                    <datalist id="statLabelOptions"></datalist>
-                </div>
-
-                <div class="view-toggle">
-                    <button class="active" data-mode="grid" onclick="switchView('grid')">Rutnät</button>
-                    <button data-mode="table" onclick="switchView('table')">Tabell</button>
-                </div>
+                    <div id="pagination" class="pagination"></div>
+                </main>
             </div>
-
-            <!-- Selection bar -->
-            <div id="comparisonBar" style="display: none;" class="comparison-bar">
-                <div>
-                    <strong>Valda föremål:</strong>
-                    <div class="selected-items" id="selectedItemsDisplay"></div>
-                </div>
-                <div class="comparison-actions">
-                    <button onclick="showComparison()">Jämför</button>
-                    <button onclick="showCraftPlan()">Tillverkningsplan</button>
-                    <button class="secondary" onclick="clearSelection()">Rensa val</button>
-                </div>
-            </div>
-
-            <div id="countInfo" class="count-info"></div>
-
-            <!-- Grid view -->
-            <div id="gridContainer" class="items-grid"></div>
-
-            <!-- Table view -->
-            <div id="tableContainer" style="display: none;">
-                <table class="items-table">
-                    <thead>
-                        <tr>
-                            <th>Namn</th>
-                            <th>Typ</th>
-                            <th>Nivå</th>
-                            <th>Försäljningsvärde</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody">
-                    </tbody>
-                </table>
-            </div>
-
-            <div id="pagination" class="pagination"></div>
         </div>
 
         <!-- Detail view -->
@@ -2219,7 +2508,14 @@
 
         function updateCountInfo() {
             const count = filteredItems.length;
-            document.getElementById('countInfo').textContent = `Visar ${count} föremål`;
+            document.getElementById('countInfo').textContent = `${count.toLocaleString('sv-SE')} föremål`;
+        }
+
+        function toggleFilterRail(button) {
+            const rail = button.closest('.filter-rail');
+            const open = rail.classList.toggle('is-open');
+            button.setAttribute('aria-expanded', String(open));
+            button.textContent = open ? 'Dölj filter' : 'Visa filter';
         }
 
         function renderItems() {
@@ -2238,8 +2534,8 @@
             const container = document.getElementById('gridContainer');
             container.innerHTML = pageItems.map(item => `
                 <div class="item-card ${selectedItems.includes(item.key) ? 'selected' : ''}" onclick="showDetail('${item.key}')">
-                    <div class="item-image">
-                        ${item.asset?.url ? `<img src="${item.asset.url}" alt="${item.name}">` : ''}
+                    <div class="item-image ${item.asset?.url ? '' : 'item-image--empty'}">
+                        ${item.asset?.url ? `<img src="${item.asset.url}" alt="${item.name}">` : '<span class="item-image__placeholder" aria-hidden="true">L</span>'}
                     </div>
                     <div class="item-info">
                         <div class="item-name">${item.name}</div>
@@ -2247,7 +2543,7 @@
                         <div class="item-stats">
                             ${getItemStatsHTML(item)}
                         </div>
-                        <button class="compare-btn" onclick="event.stopPropagation(); selectItem(event, '${item.key}')">+ Markera</button>
+                        <button class="compare-btn" onclick="event.stopPropagation(); selectItem(event, '${item.key}')">Markera</button>
                     </div>
                 </div>
             `).join('');
@@ -2273,7 +2569,7 @@
                     <td>${getItemLevel(item)}</td>
                     <td>${getSellValue(item).toLocaleString('sv-SE')}</td>
                     <td style="text-align: center;">
-                        <button class="compare-btn" onclick="event.stopPropagation(); selectItem(event, '${item.key}')">+ Markera</button>
+                        <button class="compare-btn" onclick="event.stopPropagation(); selectItem(event, '${item.key}')">Markera</button>
                     </td>
                 </tr>
             `).join('');
