@@ -2,7 +2,7 @@
 // @name        Lanista scripts
 // @namespace   Violentmonkey Scripts
 // @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC5UlEQVQ4T6WTS0gbYRSFz6+jySAaEQtqFiJEKaLQLEpwo5L6AmEkEnxU69KpRsTQwtStGylpjRvdWSxoJTF2obhQLAhiEIoU20TbWhVrlYQ2JkYZdZhxyvwS6QO66VnNhXO/ew78Q/CfIjdfv6i7u5snhPhGRkYi2tzb2/uAYZjloaGhg4QnIQro6up6mJmZOT04OEgXeJ7/pijKgSzLHePj49sOh2OJZVkjIaTT5XKtaEBZlpdHR0cPKKCnp+eQZdmvADpcLte20+l85Ha7n1/fAP6ceZ5fkmU5T1EUngL6+voeDw8PP0sYnE6n0+12u/8x3wApQBCEJ4IgBJKTiTUaPbkjSZI5Ho8nhcNhPcMwik6nk0tLS3clSfrM6nRvPdPT2TzPCxQQiUTqRFF8LUkSOzY2hlAohJKSEuTl5WJhYZFezM/PR1lZGXw+HwoKCtDU1ISsrKxVVVU7SfT4+PurqalsQgiMRiNmZ2eRmpqK5uZm+P1+XF1doaioEBsb73F0dISqqntgmBQoioyamtpPZH9/X1xcXGQ1c05ODurr6xEOhxCLneDi4gIamGVZGAwZyMgwUOje3h7MZjNsNluUbG5uigDYQOADtre/wGQyYWdnB7Is0/gJaaDCQhO2tj7SShaLRUt3DYjH42xaWho1SpIEvV6Ps7MzXF5e0gpapfT0dJyfn9M0mrQDDMNcAzweD1tXVwdVVelySkoKwuEwgsEgNRcXF9N6Gkw7oKWZm5uD3W6PkmAwKHq9XrayshLr6+sUUltbC6/XC1HU2oEmaGlpwcrKCk1WXl6O+fl5tLa2RkkgEHjp8/k6KioqKOD09BQcx2FycpIuJ9TY2EgBiqLAarXSBO3t7W+IqqpEEIT7HMc51tbWLNoDamho+Atgs9mwurpKu1dXVx/OzMy8aGtre/rb39jf339Lp9Pd5Tju9sTERG5SUpJBVVUGgGi323/4/f7dWCz2bmBgIEAIUbWdn0Q7ZfawRhyhAAAAAElFTkSuQmCC
-// @version     1.25.3
+// @version     1.25.4
 //
 // @match       https://lanista.se/game/*
 // @match       https://lanista.se/
@@ -43,6 +43,11 @@
 	// the same foes keep reappearing across "Visa fler" clicks and separate analyzer opens - once
 	// resolved here, re-analyzing never re-fetches a race for an avatar id already seen.
 	const opponentRaceCache = new Map();
+	// Keyed by battle id, holding the in-flight/resolved fetch of that battle's outcome (see
+	// fetchBattleOutcome) - a finished battle's result never changes, and scanBattlePage reruns
+	// on every DOM mutation while the page is open, so this avoids refetching the same battle
+	// JSON over and over.
+	const battleOutcomeCache = new Map();
 
 	// Jewelry-type slots (neck, finger, back, amulet, bracelet, ...) are flagged both is_armor
 	// and is_trinket at once, and it isn't knowable up front which of those two words (if
@@ -705,10 +710,8 @@
 	}
 
 	// The end-of-battle block starts with a "Lag N går segrande ur striden!" heading -
-	// both detectWinningSide and detectLoot below key off it (the winner's reward
-	// flavor text, any loot pickup, and the confirmation phrasing all live in the same
-	// card as this heading), so they share this one lookup rather than re-finding it
-	// twice.
+	// detectLoot below keys off it (the loot pickup and confirmation phrasing live in
+	// the same card as this heading).
 	//
 	// Confirmed live against the actual rendered markup: the heading is a plain <p> with
 	// no font-semibold class of its own (only its inner "Lag N" text is wrapped in
@@ -728,16 +731,34 @@
 		return heading.closest('.bg-card') || heading.parentElement;
 	}
 
-	// The site groups winners' reward lines before losers' in this block, so whichever
-	// side's name is mentioned first (in a real green/red tag) is the winning side.
-	// Rather than trying to match reward-sentence wording (which, unlike this grouping
-	// order, looks like it varies by performance), this is the one part of the block
-	// that looks like a fixed, non-varying signal.
-	function detectWinningSide() {
-		const card = findEndOfBattleCard();
-		const firstTag = card && card.querySelector('green, red');
-		if (!firstTag) return null;
-		return firstTag.tagName.toLowerCase() === 'green' ? 'ally' : 'enemy';
+	// Used to be "whichever side's name is mentioned first (in a real green/red tag) in
+	// the end-of-battle card is the winning side" - broke whenever a fighter on the
+	// losing team died: the undead-revival ("reser sig ur dödens grepp...") or death
+	// flavor text for that fighter renders as the very first colored tag in the card,
+	// ahead of the actual winners' paragraph, so the losing side's own color got picked
+	// as the "winner". The API's participants[].won is the ground truth and isn't
+	// affected by flavor-text ordering, so fetch that instead and key it by fighter
+	// name (round parsing already keys everything by name too, and a revived undead's
+	// API name already carries its in-battle "Odöde"-prefixed display name).
+	async function fetchBattleOutcome() {
+		const battleId = extractBattleIdFromPath();
+		if (!battleId) return null;
+		if (!battleOutcomeCache.has(battleId)) {
+			battleOutcomeCache.set(battleId, fetch(`/api/battles/${battleId}`)
+				.then((response) => response.ok ? response.json() : null)
+				.then((battle) => {
+					const participants = battle && battle.participants;
+					if (!participants || !participants.length) return null;
+					const wonByName = new Map();
+					participants.forEach((participant) => {
+						const name = participant.fighter && participant.fighter.name;
+						if (name) wonByName.set(name, participant.won === true);
+					});
+					return wonByName;
+				})
+				.catch(() => null));
+		}
+		return battleOutcomeCache.get(battleId);
 	}
 
 	// Confirmed against a real battle's own API response (a monster hunt vs. Fullvuxen
@@ -911,7 +932,7 @@
 		// The only other place a viewer can currently see who won is the small 🏆 prefix on
 		// the winning participant's own name further down this card (see buildParticipantPanel)
 		// - easy to miss, especially in a team battle with several panels to scroll past. Only
-		// entries actually get isWinner set once detectWinningSide() has resolved a result (see
+		// entries actually get isWinner set once fetchBattleOutcome() has resolved a result (see
 		// scanBattlePage), so this stays hidden for a still-in-progress battle rather than
 		// guessing.
 		const winnerEntries = entries.filter((entry) => entry.isWinner);
@@ -1027,10 +1048,12 @@
 		});
 
 		if (rounds.length) {
-			const winningSide = detectWinningSide();
+			const wonByName = await fetchBattleOutcome();
 			const loot = detectLoot(currentName);
-			if (winningSide) {
-				totals.forEach((entry) => { entry.isWinner = entry.side === winningSide; });
+			if (wonByName) {
+				totals.forEach((entry, name) => {
+					if (wonByName.has(name)) entry.isWinner = wonByName.get(name);
+				});
 			}
 			const exactStats = parseFinalStatsSummary(Array.from(totals.keys()));
 			exactStats.forEach((exact, name) => {
@@ -2957,7 +2980,7 @@
 			`<text x="${xScale(round).toFixed(1)}" y="${height - 6}" text-anchor="${anchor}" font-size="10" fill="${colors.muted}">Runda ${round}</text>`
 		).join('');
 
-		// Only rendered once detectWinningSide has actually resolved a result (see
+		// Only rendered once fetchBattleOutcome has actually resolved a result (see
 		// renderBattleTotals) - drawn before the crosshair/dot/overlay layer below so it
 		// stays purely decorative and never steals a hover near the last round from the
 		// overlay rect that needs it.
